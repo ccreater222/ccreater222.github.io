@@ -130,7 +130,7 @@
             animation-duration: 2.8s;
             background-image:
                 radial-gradient(ellipse closest-side, rgba(0, 0, 0, 0.56), #100e17),
-                url(/img/cover.jpg);">
+                url(https://ws1.sinaimg.cn/large/006pWR9agy1g9xmub9q6mj33341qeb2d.jpg);">
         </div>
     </div>
     
@@ -143,13 +143,13 @@
             December 15, 2019
         </p>
         <h3 class="post-title animated fadeInDown">
-            <a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" title="在线oj获取数据" class="posttitle">在线oj获取数据</a></h3>
+            <a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" title="勉强能用的论文降重" class="posttitle">勉强能用的论文降重</a></h3>
         
         <p class="post-count animated fadeInDown">
             
             <span>
                 <b class="iconfont icon-text2"></b> <i>Words count</i>
-                1k
+                1.1k
             </span>
             
             
@@ -166,18 +166,13 @@
         
         <div class="md-content animated fadeIn">
             
-            <p>在线oj获取数据</p>
-<hr>
-<p>python3:</p>
-<pre><code class="python">import socket
-import sys    
+            <pre><code class="python">import sys
 
-ip = &#39;39.108.164.219&#39;
-port = 60000
-
-def send_raw(...</code></pre>
+if len(sys.argv) !=2:
+    print(&quot;Usage: %s inputfile outputfile&quot; % sys.argv[0])
+    exit...</code></pre>
             
-            <span class="read-more"><a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" title="Read article" class="posttitle">Read article</a>
+            <span class="read-more"><a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" title="Read article" class="posttitle">Read article</a>
                 <b class="iconfont icon-arrow-right- gradient-text"></b></span>
         </div>
     </div>
@@ -213,13 +208,13 @@ def send_raw(...</code></pre>
             
             December 15, 2019
         </p>
-        <h3 class="post-title animated fadeInDown"><a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" title="勉强能用的论文降重" class="posttitle">勉强能用的论文降重</a></h3>
+        <h3 class="post-title animated fadeInDown"><a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" title="在线oj获取数据" class="posttitle">在线oj获取数据</a></h3>
         
             <p class="post-count animated fadeInDown">
                 
                     <span>
                         <b class="iconfont icon-text2"></b> <i>Words count</i>
-                        1.2k
+                        997
                     </span>
                 
                 
@@ -236,24 +231,24 @@ def send_raw(...</code></pre>
         
         <div class="md-content animated fadeIn">
             
-                <pre><code class="python">import sys
+                <p>python3:</p>
+<pre><code class="python">import socket
+import sys    
 
-if len(sys.argv) !=2:
-    print(&quot;Usage: %s inputfile outputfile&quot; % sys.argv[0])
-    exit()
+ip = &#39;39.108.164.219&#39;
+port = 60000
 
-import synonyms
+def send_raw(raw):
 
-
-f=sys.argv[1]
-s=&quot;&quot;
-with open(f,&quot;r&quot;) as fl:
-    s=fl.read()
-resstr,stype=synonyms.seg(s)
-
-with open(sys.argv[2],&quot...</code></pre>
+    try:
+        with socket.create_connection((ip, port), timeout=10) as conn:
+            conn.send(bytes(raw,encoding=&quot;ascii&quot;))
+            conn.close()
+    except:
+        return False  
+    return...</code></pre>
             
-            <span class="read-more"><a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" title="Read article" class="posttitle">Read article</a> <b class="iconfont icon-arrow-right- gradient-text"></b></span>
+            <span class="read-more"><a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" title="Read article" class="posttitle">Read article</a> <b class="iconfont icon-arrow-right- gradient-text"></b></span>
         </div>
     </div>
 </div>
