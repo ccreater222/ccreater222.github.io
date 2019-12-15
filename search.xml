@@ -4,6 +4,56 @@
   
     
     <entry>
+      <title>在线oj获取数据</title>
+      <link href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/"/>
+      <url>/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/</url>
+      
+        <content type="html"><![CDATA[<p>在线oj获取数据</p><hr><h1 id="在线oj获取数据"><a href="#在线oj获取数据" class="headerlink" title="在线oj获取数据"></a>在线oj获取数据</h1><p>python3:</p><pre><code class="python">import socketimport sys    ip = &#39;39.108.164.219&#39;port = 60000def send_raw(raw):    try:        with socket.create_connection((ip, port), timeout=10) as conn:            conn.send(bytes(raw,encoding=&quot;ascii&quot;))            conn.close()    except:        return False      return Truedata=&quot;&quot;for line in sys.stdin:    data+=linesend_raw(data)</code></pre><p>vps上运行</p><pre><code class="shell">#!/bin/bashi=1while [ $i -eq 1 ]do      nc -FNlp 60000  &gt;&gt; /tmp/data    echo -e  &quot;\n---------------------------------\n&quot; &gt;&gt; /tmp/datadone</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/15/在线oj获取数据/">https://explorersss.github.io/2019/12/15/在线oj获取数据/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 杂 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 小工具 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>勉强能用的论文降重</title>
+      <link href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/"/>
+      <url>/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/</url>
+      
+        <content type="html"><![CDATA[<h2 id="title-勉强能用的论文降重"><a href="#title-勉强能用的论文降重" class="headerlink" title="title:勉强能用的论文降重"></a>title:勉强能用的论文降重</h2><h1 id="勉强能用的论文降重"><a href="#勉强能用的论文降重" class="headerlink" title="勉强能用的论文降重"></a>勉强能用的论文降重</h1><pre><code class="python">import sysif len(sys.argv) !=2:    print(&quot;Usage: %s inputfile outputfile&quot; % sys.argv[0])    exit()import synonymsf=sys.argv[1]s=&quot;&quot;with open(f,&quot;r&quot;) as fl:    s=fl.read()resstr,stype=synonyms.seg(s)with open(sys.argv[2],&quot;w&quot;) as fw:    for i in resstr:        if len(i)==1:            fw.write(i)        else :            nearbystr,num=synonyms.nearby(i)            if len(nearbystr)&gt;1 and num[1]&gt; 0.75:                print(nearbystr[1],num[1])                fw.write(nearbystr[1])            else :                fw.write(i)</code></pre><p>可以调整<code>if len(nearbystr)&gt;1 and num[1]&gt; 0.75:</code>来修改近义词的准确率.</p><p>用完之后一定要自己校对一遍!!!不然…..</p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/15/勉强能用的论文降重/">https://explorersss.github.io/2019/12/15/勉强能用的论文降重/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 杂 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 小工具 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>由cout和printf来对函数传参过程的探讨</title>
       <link href="/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/"/>
       <url>/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/</url>
