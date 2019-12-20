@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>django快速查找配置</title>
+      <link href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/"/>
+      <url>/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/</url>
+      
+        <content type="html"><![CDATA[<h1 id="django快速查找配置"><a href="#django快速查找配置" class="headerlink" title="django快速查找配置"></a>django快速查找配置</h1><h2 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h2><p>在看p牛的picklecode wp的时候卡在secret_key查找那边</p><p>看到p牛一句很容易,人就傻掉了</p><p><img src="https://i.loli.net/2019/12/21/8mnp5l7ODuPkBQo.png" alt="image152"></p><p>花了一天时间(踩了个坑),写了个快速查找secret_key的脚本</p><pre><code class="python">from django.http.response import HttpResponse, HttpResponseRedirectfrom django.template import enginesfrom django.contrib.auth import login as auth_login, get_user_model, authenticatefrom django.contrib.auth.views import LoginView, logout_then_loginfrom django.contrib.auth.decorators import login_requiredfrom django.views import genericfrom django import templateimport djangofrom django import templateregister = template.Library()@register.filterdef get_dict(obj,way=&quot;&quot;,depth=0):    if depth&gt;11:        return     objdir=dir(obj)    r={&quot;dict&quot;:objdir,&quot;way&quot;:way}    result=&quot;&quot;    for i in objdir:                    try :            if &#39;_&#39; == i[0]:                continue            if getattr(obj, &#39;__module__&#39;, None)!=None and getattr(obj, &#39;__module__&#39;, None).split(&#39;.&#39;)[0] == django.__name__:                result+=get_dict(getattr(obj,i,None),way+&quot;.&quot;+i,depth+1)         except TypeError:            pass    if &quot;SECRET_KEY&quot; in objdir or &quot;settings&quot; in objdir:        print(way)        return result+way+&quot;\n&quot;    return result</code></pre><p>这个是把所有符合条件的都输出,你可以通过修改递归深度和返回条件来加快,不然要等个几分钟</p><h2 id="顺便说下踩到的坑"><a href="#顺便说下踩到的坑" class="headerlink" title="顺便说下踩到的坑"></a>顺便说下踩到的坑</h2><p>因为不知道dir()和<code>__dict__</code>的区别,一直以为<code>__dict__</code>==dir,然后就boomm</p><p>dir()和<code>__dict__</code>的区别</p><p>最简单的一句发\话是<code>__dict__</code>是dir的子集合</p><p> <a href="https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981" target="_blank" rel="noopener">https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981</a> </p><p>所以以后查看对象的所有属性一定要用dir()</p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/21/django快速查找配置/">https://explorersss.github.io/2019/12/21/django快速查找配置/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> web </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 小工具 </tag>
+            
+            <tag> ctf </tag>
+            
+            <tag> django </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>django快速查找secret_key</title>
       <link href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BEsecret_key/"/>
       <url>/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BEsecret_key/</url>

