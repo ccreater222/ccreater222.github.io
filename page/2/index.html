@@ -66,6 +66,82 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-勉强能用的论文降重" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" class="article-date">
+  <time class="dt-published" datetime="2019-12-15T10:38:45.000Z" itemprop="datePublished">2019-12-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/">勉强能用的论文降重</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="勉强能用的论文降重"><a href="#勉强能用的论文降重" class="headerlink" title="勉强能用的论文降重"></a>勉强能用的论文降重</h1><pre><code class="python">import sys
+
+if len(sys.argv) !=2:
+    print(&quot;Usage: %s inputfile outputfile&quot; % sys.argv[0])
+    exit()
+
+import synonyms
+
+
+f=sys.argv[1]
+s=&quot;&quot;
+with open(f,&quot;r&quot;) as fl:
+    s=fl.read()
+resstr,stype=synonyms.seg(s)
+
+with open(sys.argv[2],&quot;w&quot;) as fw:
+    for i in resstr:
+        if len(i)==1:
+            fw.write(i)
+        else :
+            nearbystr,num=synonyms.nearby(i)
+
+            if len(nearbystr)&gt;1 and num[1]&gt; 0.75:
+                print(nearbystr[1],num[1])
+                fw.write(nearbystr[1])
+            else :
+                fw.write(i)
+
+</code></pre>
+<p>可以调整<code>if len(nearbystr)&gt;1 and num[1]&gt; 0.75:</code>来修改近义词的准确率.</p>
+<p>用完之后一定要自己校对一遍!!!不然…..</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/15/勉强能用的论文降重/">https://explorersss.github.io/2019/12/15/勉强能用的论文降重/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://explorersss.github.io/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" data-id="ck46ssk240001zkv05ck512ur" data-title="勉强能用的论文降重" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-在线oj获取数据" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" class="article-date">
@@ -356,7 +432,7 @@ int main()
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li></ul>
     </div>
   </div>
 
@@ -366,7 +442,7 @@ int main()
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 20px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 13.33px;">web</a> <a href="/tags/wp/" style="font-size: 10px;">wp</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 16.67px;">小工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 10px;">杂</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 13.33px;">编程</a>
+      <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 20px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 13.33px;">web</a> <a href="/tags/wp/" style="font-size: 10px;">wp</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 16.67px;">小工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 10px;">杂</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 13.33px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a>
     </div>
   </div>
 
@@ -388,6 +464,10 @@ int main()
       <ul>
         
           <li>
+            <a href="/2020/01/31/%E6%88%91%E7%9A%842020/">我的2020</a>
+          </li>
+        
+          <li>
             <a href="/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/">ThinkPHP 2.x任意代码执行漏洞</a>
           </li>
         
@@ -401,10 +481,6 @@ int main()
         
           <li>
             <a href="/2020/01/28/tp5rce%E5%A4%8D%E7%8E%B0/">tp5rce复现</a>
-          </li>
-        
-          <li>
-            <a href="/2020/01/25/coursera-%E6%9D%9C%E5%85%8B%E5%A4%A7%E5%AD%A6%20%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1%E4%B8%8E%20Web%20%E5%85%A5%E9%97%A8/">coursera-杜克大学 程序设计与 Web 入门</a>
           </li>
         
       </ul>
