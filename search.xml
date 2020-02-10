@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>DedeCMS 5.7 plusguestbook.php注入漏洞</title>
+      <link href="/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/"/>
+      <url>/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/</url>
+      
+        <content type="html"><![CDATA[<h1 id="DedeCMS-5-7-plus-guestbook-php-注入漏洞"><a href="#DedeCMS-5-7-plus-guestbook-php-注入漏洞" class="headerlink" title="DedeCMS 5.7 plus/guestbook.php 注入漏洞"></a>DedeCMS 5.7 plus/guestbook.php 注入漏洞</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p>漏洞成功需要条件：</p><ol><li>php magic_quotes_gpc=off</li><li>漏洞文件存在 plus/guestbook.php dede_guestbook 表当然也要存在。</li></ol><h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>poc:<code>www.xxx.com/plus/guestbook.php?action=admin&amp;job=editok&amp;msg=sebug&#39;&amp;id=存在的留言ID</code></p><p><code>/plus/guestbook.php</code>中为对身份进行验证:</p><pre><code class="php">if($action==&#39;admin&#39;){    include_once(dirname(__FILE__).&#39;/guestbook/edit.inc.php&#39;);    exit();}</code></pre><p><code>/plus/guestbook/edit.inc.php</code></p><pre><code class="php">if($job==&#39;editok&#39;){    $remsg = trim($remsg);    if($remsg!=&#39;&#39;)    {        //管理员回复不过滤HTML        if($g_isadmin)        {            $msg = &quot;&lt;div class=\\&#39;rebox\\&#39;&gt;&quot;.$msg.&quot;&lt;/div&gt;\n&quot;.$remsg;             //$remsg &lt;br&gt;&lt;font color=red&gt;管理员回复：&lt;/font&gt;        }        else        {            $row = $dsql-&gt;GetOne(&quot;SELECT msg From `#@__guestbook` WHERE id=&#39;$id&#39; &quot;);            $oldmsg = &quot;&lt;div class=\\&#39;rebox\\&#39;&gt;&quot;.addslashes($row[&#39;msg&#39;]).&quot;&lt;/div&gt;\n&quot;;            $remsg = trimMsg(cn_substrR($remsg, 1024), 1);            $msg = $oldmsg.$remsg;        }    }     $msg = HtmlReplace($msg, -1);    $dsql-&gt;ExecuteNoneQuery(&quot;UPDATE `#@__guestbook` SET `msg`=&#39;$msg&#39;, `posttime`=&#39;&quot;.time().&quot;&#39; WHERE id=&#39;$id&#39; &quot;);    ShowMsg(&quot;成功更改或回复一条留言！&quot;, $GUEST_BOOK_POS);    exit();}</code></pre><p>其中:</p><pre><code class="php">$msg = HtmlReplace($msg, -1);    $dsql-&gt;ExecuteNoneQuery(&quot;UPDATE `#@__guestbook` SET `msg`=&#39;$msg&#39;, `posttime`=&#39;&quot;.time().&quot;&#39; WHERE id=&#39;$id&#39; &quot;);</code></pre><p>dedecms中的<code>common.inc.php</code>,有这样的一段代码</p><pre><code class="php">foreach(Array(&#39;_GET&#39;,&#39;_POST&#39;,&#39;_COOKIE&#39;) as $_request)    {        foreach($$_request as $_k =&gt; $_v)         {            if($_k == &#39;nvarname&#39;) ${$_k} = $_v;            else ${$_k} = _RunMagicQuotes($_v);        }    }</code></pre><p>它将<code>_GET</code>,<code>_POST</code>,<code>_COOKIE</code>中的变量放出来,而<code>_RunMagicQuotes</code></p><pre><code class="php">function _RunMagicQuotes(&amp;$svar){    if(!get_magic_quotes_gpc())    {        ...    }    return $svar;}</code></pre><p>所以<code>magic_quotes_gpc=off</code>的情况下便会引起sql注入</p><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://www.seebug.org/vuldb/ssvid-89599" target="_blank" rel="noopener">https://www.seebug.org/vuldb/ssvid-89599</a> </p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="https://explorersss.github.io/2020/02/10/DedeCMS">https://explorersss.github.io/2020/02/10/DedeCMS</a> 5.7 plusguestbook.php注入漏洞/](<a href="https://explorersss.github.io/2020/02/10/DedeCMS">https://explorersss.github.io/2020/02/10/DedeCMS</a> 5.7 plusguestbook.php注入漏洞/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> cve复现 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> cve复现 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>S2-013_S2-014远程代码执行漏洞</title>
       <link href="/2020/02/08/S2-013_S2-014%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/"/>
       <url>/2020/02/08/S2-013_S2-014%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/</url>
