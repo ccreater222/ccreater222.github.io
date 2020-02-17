@@ -4,6 +4,25 @@
   
     
     <entry>
+      <title>避免rm -rf *的悲惨命运</title>
+      <link href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/"/>
+      <url>/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/</url>
+      
+        <content type="html"><![CDATA[<h1 id="避免rm-rf-的悲惨命运"><a href="#避免rm-rf-的悲惨命运" class="headerlink" title="避免rm -rf *的悲惨命运"></a>避免rm -rf *的悲惨命运</h1><p>今天又是悲惨的一天,没认真看,rm -rf *错地方了</p><p>为了再次避免悲惨命运</p><ol><li><p>还是不要老是用root用户了,创个日常的低权限用户,有必要时再登陆root</p></li><li><p>别用rm 啦,改用trash吧</p></li></ol><h2 id="安装trash-cli"><a href="#安装trash-cli" class="headerlink" title="安装trash-cli"></a>安装trash-cli</h2><p><code>apt-get install trash-cli</code></p><p><code>echo alias rm=trash &gt;&gt; ~/.zshrc</code></p><p><code>source ~/.zshrc</code> </p><h2 id="trash-cli-命令"><a href="#trash-cli-命令" class="headerlink" title="trash-cli 命令"></a>trash-cli 命令</h2><table><thead><tr><th>command</th><th>explain</th></tr></thead><tbody><tr><td>trash-put/trash</td><td>将文件或目录放进回收站</td></tr><tr><td>trash-empty</td><td>清空回收站</td></tr><tr><td>trash-list</td><td>列出回收站中的文件</td></tr><tr><td>restore-trash</td><td>还原回收站中的文件</td></tr><tr><td>trash-rm</td><td>删除回收站中的单个文件</td></tr></tbody></table><h2 id="垃圾站所在位置"><a href="#垃圾站所在位置" class="headerlink" title="垃圾站所在位置"></a>垃圾站所在位置</h2><p><code>~/.local/share/Trash/files</code></p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/02/17/避免rm-rf-的悲惨命运/">https://explorersss.github.io/2020/02/17/避免rm-rf-的悲惨命运/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> 杂 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>域渗透</title>
       <link href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/"/>
       <url>/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/</url>
