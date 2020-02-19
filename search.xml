@@ -4,6 +4,33 @@
   
     
     <entry>
+      <title>某misc</title>
+      <link href="/2020/02/20/%E6%9F%90misc/"/>
+      <url>/2020/02/20/%E6%9F%90misc/</url>
+      
+        <content type="html"><![CDATA[<h1 id="不知道哪里的misc"><a href="#不知道哪里的misc" class="headerlink" title="不知道哪里的misc"></a>不知道哪里的misc</h1><p>题目给了一个压缩包</p><p>里面有一个加密的视频文件和未加密的图片</p><p><img src="https://i.loli.net/2020/02/19/ptInrs6axclk12u.png" alt="image105"></p><p>想着图片会不会有提示,用hxd打开发现末尾果然有提示</p><p>kobe code</p><p><img src="https://i.loli.net/2020/02/19/mVqDzgoHdyOWBnT.png" alt="image211"></p><p>得到密码:<code>OAEBEYTKNRBANB</code>,成功拿到视频文件</p><p>但是提示文件无法打开,用binwalk啥的弄了一会,发现里面没有藏啥</p><p>于是换了个思路,猜测这题是要让我们修复mp4文件?头大</p><blockquote><p>一个MP4文件首先会有且只有一个“ftyp”类型的box，作为MP4格式的标志并包含关于文件的一些信息；之后会有且只有一个“moov”类型的box（Movie Box），它是一种container box，子box包含了媒体的metadata信息；MP4文件的媒体数据包含在“mdat”类型的box（Midia Data Box）中，该类型的box也是container box，可以有很多个，也可以没有（当媒体数据全部引用其他文件时），媒体数据的结构由metadata进行描述。</p></blockquote><p><img src="https://i.loli.net/2020/02/19/NVA3PtERXBqfwcd.png" alt="image622"></p><p>图中方框即为第一个box的head,原本应该是<code>ftyp(0x66747970)</code>而这里确实<code>66459707</code>,位置反了</p><p>恢复脚本</p><pre><code class="python">with open(&#39;NBA.mp4&#39;, &#39;rb&#39;) as f:    keydata =f.read()t= keydata.encode(&quot;hex&quot;)l=len(t)t2=&quot;&quot;for i in range(0,l,2):    a=t[i]    b=t[i+1]    t2+=b    t2+=aprint t2[:100]t2=t2.decode(&quot;hex&quot;)f2 = open(&#39;NBA2.mp4&#39;, &#39;wb&#39;)f2.write(t2)</code></pre><p>等脚本跑完后成功恢复原来的视频文件</p><p>视频隐写通常把内容存储在视频中的某个图片,我们用 ffmpeg ,将视频分离成图片</p><p><code>ffmpeg -i NBA2.mp4 -f image2 image%d.jpg</code></p><p>一张一张看过去,我们发现,在第3028张突然全黑了</p><p><img src="https://i.loli.net/2020/02/20/Q9dsOuiVGFgwAcm.png" alt="image1136"></p><p>调整一下图片的对比对,跑出一个二维码</p><p><img src="https://i.loli.net/2020/02/20/aE3PpqcrJzn852V.png" alt="image1223"></p><p><code>flag{I_l0v3_pl4ying_b4sk3tb4ll}</code></p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/02/20/某misc/">https://explorersss.github.io/2020/02/20/某misc/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 做题笔记 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> ctf </tag>
+            
+            <tag> misc </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>js原型链污染</title>
       <link href="/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/"/>
       <url>/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/</url>
