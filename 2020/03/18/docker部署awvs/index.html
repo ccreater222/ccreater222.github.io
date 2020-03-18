@@ -4,15 +4,22 @@
   <meta charset="utf-8">
   
   
-  <title>Category: 杂 | oxcccccc</title>
+  <title>docker部署awvs | oxcccccc</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="oxcccccc">
-<meta property="og:url" content="https:&#x2F;&#x2F;explorersss.github.io&#x2F;categories&#x2F;%E6%9D%82&#x2F;index.html">
+  <meta name="description" content="docker部署awvs链接: https:&#x2F;&#x2F;pan.baidu.com&#x2F;s&#x2F;1QqtdmgOOd-CCPgmD1aZMCw 提取码: buti  将百度云下载内容放到awvs文件夹下 Dockerfile FROM ubuntu:16.04 COPY awvs &#x2F;awvs EXPOSE 3443 RUN &#x2F;awvs&#x2F;setenv.sh&amp;&amp; echo -e &quot;\nyes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="docker部署awvs">
+<meta property="og:url" content="https:&#x2F;&#x2F;explorersss.github.io&#x2F;2020&#x2F;03&#x2F;18&#x2F;docker%E9%83%A8%E7%BD%B2awvs&#x2F;index.html">
 <meta property="og:site_name" content="oxcccccc">
+<meta property="og:description" content="docker部署awvs链接: https:&#x2F;&#x2F;pan.baidu.com&#x2F;s&#x2F;1QqtdmgOOd-CCPgmD1aZMCw 提取码: buti  将百度云下载内容放到awvs文件夹下 Dockerfile FROM ubuntu:16.04 COPY awvs &#x2F;awvs EXPOSE 3443 RUN &#x2F;awvs&#x2F;setenv.sh&amp;&amp; echo -e &quot;\nyes">
 <meta property="og:locale" content="zh">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;03&#x2F;18&#x2F;5nruJk7RmfLYjtw.png">
+<meta property="article:published_time" content="2020-03-18T09:21:36.011Z">
+<meta property="article:modified_time" content="2020-03-18T09:21:36.012Z">
 <meta property="article:author" content="ccreater">
+<meta property="article:tag" content="工具">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;03&#x2F;18&#x2F;5nruJk7RmfLYjtw.png">
   
     <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
   
@@ -64,125 +71,108 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2020" class="archive-year">2020</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/" class="archive-article-date">
-  <time class="dt-published" datetime="2020-03-18T09:21:36.011Z" itemprop="datePublished">Mar 18</time>
+        <section id="main"><article id="post-docker部署awvs" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/" class="article-date">
+  <time class="dt-published" datetime="2020-03-18T09:21:36.011Z" itemprop="datePublished">2020-03-18</time>
 </a>
-      
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/">docker部署awvs</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      docker部署awvs
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2020/01/31/%E6%88%91%E7%9A%842020/" class="archive-article-date">
-  <time class="dt-published" datetime="2020-01-31T15:11:23.717Z" itemprop="datePublished">Jan 31</time>
-</a>
+    <div class="e-content article-entry" itemprop="articleBody">
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2020/01/31/%E6%88%91%E7%9A%842020/">我的2020</a>
-    </h1>
-  
+        <h1 id="docker部署awvs"><a href="#docker部署awvs" class="headerlink" title="docker部署awvs"></a>docker部署awvs</h1><p>链接: <a href="https://pan.baidu.com/s/1QqtdmgOOd-CCPgmD1aZMCw" target="_blank" rel="noopener">https://pan.baidu.com/s/1QqtdmgOOd-CCPgmD1aZMCw</a> 提取码: buti </p>
+<p>将百度云下载内容放到awvs文件夹下</p>
+<p>Dockerfile</p>
+<pre><code class="dockerfile">FROM ubuntu:16.04
+COPY awvs /awvs
+EXPOSE 3443
+RUN /awvs/setenv.sh&amp;&amp; echo -e &quot;\nyes\nubuntu\nccreater@163.com\nccr,123456\nccr,123456\n&quot;|/awvs/acunetix_13.0.200217097_x64_.sh &amp;&amp; \
+cp /awvs/wvsc /home/acunetix/.acunetix/v_200217097/scanner/wvsc &amp;&amp;\
+cp /awvs/license_info.json  /home/acunetix/.acunetix/data/license/license_info.json &amp;&amp;\
+echo -e &#39;#!/bin/bash\nsu acunetix &amp;&amp; (nohup bash ~/.acunetix/start.sh &amp;) &amp;&amp; exit&#39;&gt; /etc/rc.local
+</code></pre>
+<p>setenv.sh</p>
+<pre><code class="shell">#!/bin/bash
 
-    </header>
-  </div>
-</article>
-  
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2020/01/25/coursera-%E6%9D%9C%E5%85%8B%E5%A4%A7%E5%AD%A6%20%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1%E4%B8%8E%20Web%20%E5%85%A5%E9%97%A8/" class="archive-article-date">
-  <time class="dt-published" datetime="2020-01-24T16:41:56.268Z" itemprop="datePublished">Jan 25</time>
-</a>
-      
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2020/01/25/coursera-%E6%9D%9C%E5%85%8B%E5%A4%A7%E5%AD%A6%20%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1%E4%B8%8E%20Web%20%E5%85%A5%E9%97%A8/">coursera-杜克大学 程序设计与 Web 入门</a>
-    </h1>
-  
+shared_obj_deps=(libpango-1.0.so.0 libXext.so.6 libpthread.so.0 libXi.so.6 libgobject-2.0.so.0 libgtk-3.so.0 libdl.so.2 libgdk_pixbuf-2.0.so.0 libX11.so.6 libuuid.so.1 librt.so.1 libexpat.so.1 libglib-2.0.so.0 libXdamage.so.1 libatk-1.0.so.0 libm.so.6 libatspi.so.0 libcups.so.2 libgio-2.0.so.0 libXfixes.so.3 libXrender.so.1 libxcb.so.1 libsmime3.so libcairo.so.2 libXcomposite.so.1 libgdk-3.so.0 libpangocairo-1.0.so.0 libgcc_s.so.1 libX11-xcb.so.1 libdbus-1.so.3 libnss3.so libXrandr.so.2 libnspr4.so libXcursor.so.1 libnssutil3.so libXss.so.1 libasound.so.2 libatk-bridge-2.0.so.0 libc.so.6 libXtst.so.6)
+read -d &#39;&#39; source &lt;&lt;EOF
+deb-src http://archive.ubuntu.com/ubuntu xenial main restricted #Added by software-properties
+deb http://mirrors.aliyun.com/ubuntu/ xenial main restricted
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial main restricted multiverse universe #Added by software-properties
+deb http://mirrors.aliyun.com/ubuntu/ xenial-updates main restricted
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-updates main restricted multiverse universe #Added by software-properties
+deb http://mirrors.aliyun.com/ubuntu/ xenial universe
+deb http://mirrors.aliyun.com/ubuntu/ xenial-updates universe
+deb http://mirrors.aliyun.com/ubuntu/ xenial multiverse
+deb http://mirrors.aliyun.com/ubuntu/ xenial-updates multiverse
+deb http://mirrors.aliyun.com/ubuntu/ xenial-backports main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-backports main restricted universe multiverse #Added by software-properties
+deb http://archive.canonical.com/ubuntu xenial partner
+deb-src http://archive.canonical.com/ubuntu xenial partner
+deb http://mirrors.aliyun.com/ubuntu/ xenial-security main restricted
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-security main restricted multiverse universe #Added by software-properties
+deb http://mirrors.aliyun.com/ubuntu/ xenial-security universe
+deb http://mirrors.aliyun.com/ubuntu/ xenial-security multiverse
+EOF
+echo &quot;$source&quot; &gt; /etc/apt/sources.list 
+cat /etc/apt/sources.list 
+apt-get update
+#for i in ${shared_obj_deps[@]}
+#do
+#    echo install $i
+#    apt-get install $i -y
+#done
+apt-get install libxdamage1 libgtk-3-0 libasound2 libnss3 libxss1 bzip2 sudo libv8-dev -y
+echo &quot;install success&quot;
+</code></pre>
+<p>用Dockerfile创建镜像后,用<code>docker run --privileged=true -p 443:3443-it -d awvs &quot;/sbin/init&quot;</code>来创建容器</p>
+<p>接着等待一会就可以运行了,在改一下本机的hosts,美滋滋,记得是用https去访问</p>
+<p><img src="https://i.loli.net/2020/03/18/5nruJk7RmfLYjtw.png" alt="image3059"></p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://youngrichog.github.io/2019/08/10/Docker-AWVS批量部署/" target="_blank" rel="noopener">https://youngrichog.github.io/2019/08/10/Docker-AWVS%E6%89%B9%E9%87%8F%E9%83%A8%E7%BD%B2/</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/03/18/docker部署awvs/">https://explorersss.github.io/2020/03/18/docker部署awvs/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
-    </header>
-  </div>
-</article>
-  
-    
-    
       
-        </div></section>
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://explorersss.github.io/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/" data-id="ck7x49p6f00005cv05ndl118j" data-title="docker部署awvs" class="article-share-link">Share</a>
       
       
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" class="archive-article-date">
-  <time class="dt-published" datetime="2019-12-15T10:38:45.000Z" itemprop="datePublished">Dec 15</time>
-</a>
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/">勉强能用的论文降重</a>
-    </h1>
-  
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li></ul>
 
-    </header>
+    </footer>
   </div>
-</article>
   
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" class="archive-article-date">
-  <time class="dt-published" datetime="2019-12-15T09:17:13.844Z" itemprop="datePublished">Dec 15</time>
-</a>
-      
+<nav id="article-nav">
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/">在线oj获取数据</a>
-    </h1>
   
+    <a href="/2020/03/10/xctf%E9%AB%98%E6%A0%A1%E6%8A%97%E7%96%AB/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">xctf高校抗疫</div>
+    </a>
+  
+</nav>
 
-    </header>
-  </div>
+  
 </article>
-  
-  
-    </div></section>
-  
 
 
 </section>
