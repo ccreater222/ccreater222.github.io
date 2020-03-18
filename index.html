@@ -137,9 +137,10 @@ apt-get update
 apt-get install libxdamage1 libgtk-3-0 libasound2 libnss3 libxss1 bzip2 sudo libv8-dev -y
 echo &quot;install success&quot;
 </code></pre>
+<p>将Dockerfile放在awvs同级目录下,打开命令行移动到Dockerfile所在文件夹,<code>docker build -t awvs .</code></p>
 <p>用Dockerfile创建镜像后,用<code>docker run --privileged=true -p 443:3443-it -d awvs &quot;/sbin/init&quot;</code>来创建容器</p>
 <p>接着等待一会就可以运行了,在改一下本机的hosts,美滋滋,记得是用https去访问</p>
-<p><img src="https://i.loli.net/2020/03/18/5nruJk7RmfLYjtw.png" alt="image3059"></p>
+<p><img src="https://i.loli.net/2020/03/18/5nruJk7RmfLYjtw.png" alt="image3135"></p>
 <h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://youngrichog.github.io/2019/08/10/Docker-AWVS批量部署/" target="_blank" rel="noopener">https://youngrichog.github.io/2019/08/10/Docker-AWVS%E6%89%B9%E9%87%8F%E9%83%A8%E7%BD%B2/</a> </p>
 <p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/03/18/docker部署awvs/">https://explorersss.github.io/2020/03/18/docker部署awvs/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
