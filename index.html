@@ -126,11 +126,15 @@
 <pre><code class="shell">#!/bin/bash
 if [ ! $# -eq 3 ];then
     echo -e &quot;Usage : $0 natport trojanserver trojanport&quot;
+    exit
 fi
+natport=$1
+trojanserver=$2
+trojanport=$3
 apt-get install iptables || yum install iptables
 iptables -t nat -A PREROUTING -p tcp --dport $natport  -j DNAT --to-destination &quot;$trojanserver:$trojanport&quot;
 iptables -t nat -A POSTROUTING -d $trojanserver -p tcp --dport $trojanport -j MASQUERADE
-iptables -I FORWARD -d $trojanserver -p tcp --dport  $trojanport -j ACCEPT 
+iptables -I FORWARD -d $trojanserver -p tcp --dport  $trojanport -j ACCEPT
 iptables -I FORWARD -s $trojanserver  -p tcp --sport  $trojanport -j ACCEPT
 service iptables save
 service iptables restart
@@ -166,7 +170,7 @@ copy /Y config_through_nta.json config.json
 %1 start mshta vbscript:createobject(&quot;wscript.shell&quot;).run(&quot;&quot;&quot;%~0&quot;&quot; ::&quot;,0)(window.close)&amp;&amp;exit
 start /b trojan.exe</code></pre>
 <p>将两个批处理放到trojan客户端目录下</p>
-<h2 id="vpn测试"><a href="#vpn测试" class="headerlink" title="vpn测试"></a>vpn测试</h2><p>通过 <a href="https://fast.com/" target="_blank" rel="noopener">https://fast.com/</a>  来测速 稳定10Mbits(联通),5Mbits(电信平时),500Kbits(电信夜间,丢包率贼高,体验极差),稳定1Mbits(走中转服务器路线,因为我专门拿来中转的服务器还没买,暂时直接用阿里云的服务器来中转,但是阿里云服务器也在电信机房)</p>
+<h2 id="vpn测试"><a href="#vpn测试" class="headerlink" title="vpn测试"></a>vpn测试</h2><p>通过 <a href="https://fast.com/" target="_blank" rel="noopener">https://fast.com/</a>  来测速 稳定10Mbits(联通),5Mbits(电信平时),500Kbits(电信夜间,丢包率贼高,体验极差),稳定1Mbits(走中转服务器路线,因为我专门拿来中转的服务器还没买,暂时直接用阿里云的服务器来中转,但是阿里云服务器也在电信机房),去买了个中转的服务器现在夜间电信稳定5Mbits</p>
 <p>利用BEST TRACE来看vps的线路</p>
 <p>各种线路的分析文章: <a href="https://www.duangvps.com/archives/135" target="_blank" rel="noopener">https://www.duangvps.com/archives/135</a> </p>
 <p>youtube打开4k视频右键查看统计信息,我的是5w左右</p>
