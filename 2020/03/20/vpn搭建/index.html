@@ -5,14 +5,14 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>docker部署awvs - oxcccccc</title>
+    <title>vpn搭建 - oxcccccc</title>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="google" content="notranslate" />
     <meta name="keywords" content="ccreater,"> 
-    <meta name="description" content="docker部署awvs链接: https://pan.baidu.com/s/1QqtdmgOOd-CCPgmD1aZMCw 提取码: buti 
-将百度云下载内容放到awvs文件夹下
-Docke,"> 
+    <meta name="description" content="vpn搭建小记刚好最近有人叫我帮忙搭个vpn自己去了解了一下,发现搭vpn还挺有意思的
+vpn的最终方案经过自己瞎折腾后最后是搞成这样的:
+家宽-内地中转服务器-gfw-国外vps(使用trojan,"> 
     <meta name="author" content="ccreater"> 
     <link rel="alternative" href="atom.xml" title="oxcccccc" type="application/atom+xml"> 
     <link rel="icon" href="/img/favicon.png"> 
@@ -60,7 +60,7 @@ Docke,">
     <div class="navigation animated fadeIn fast delay-1s">
         <img id="home-icon" class="icon-home" src="/img/favicon.png" alt="" data-url="https://explorersss.github.io">
         <div id="play-icon" title="Play/Pause" class="iconfont icon-play"></div>
-        <h3 class="subtitle">docker部署awvs</h3>
+        <h3 class="subtitle">vpn搭建</h3>
         <div class="social">
             <!--        <div class="like-icon">-->
             <!--            <a href="javascript:;" class="likeThis active"><span class="icon-like"></span><span class="count">76</span></a>-->
@@ -93,16 +93,16 @@ Docke,">
                 <a href="/categories/杂"><b>「
                     </b>杂<b> 」</b></a>
                 
-                March 18, 2020
+                March 20, 2020
             </p>
-            <h3 class="post-title animated fadeInDown"><a href="/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/" title="docker部署awvs" class="">docker部署awvs</a>
+            <h3 class="post-title animated fadeInDown"><a href="/2020/03/20/vpn%E6%90%AD%E5%BB%BA/" title="vpn搭建" class="">vpn搭建</a>
             </h3>
             
             <p class="post-count animated fadeInDown">
                 
                 <span>
                     <b class="iconfont icon-text2"></b> <i>Words count</i>
-                    4.1k
+                    4.3k
                 </span>
                 
                 
@@ -120,8 +120,6 @@ Docke,">
                 
             </p>
             
-            
-            <ul class="animated fadeInDown post-tags-list" itemprop="keywords"><li class="animated fadeInDown post-tags-list-item"><a class="animated fadeInDown post-tags-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li></ul>
             
         </div>
     </div>
@@ -142,57 +140,84 @@ Docke,">
 <div class="article">
     <div class='main'>
         <div class="content markdown animated fadeIn">
-            <h1 id="docker部署awvs"><a href="#docker部署awvs" class="headerlink" title="docker部署awvs"></a>docker部署awvs</h1><p>链接: <a href="https://pan.baidu.com/s/1QqtdmgOOd-CCPgmD1aZMCw" target="_blank" rel="noopener">https://pan.baidu.com/s/1QqtdmgOOd-CCPgmD1aZMCw</a> 提取码: buti </p>
-<p>将百度云下载内容放到awvs文件夹下</p>
-<p>Dockerfile</p>
-<pre><code class="dockerfile">FROM ubuntu:16.04
-COPY awvs /awvs
-EXPOSE 3443
-RUN /awvs/setenv.sh&amp;&amp; echo -e &quot;\nyes\nubuntu\nccreater@163.com\nccr,123456\nccr,123456\n&quot;|/awvs/acunetix_13.0.200217097_x64_.sh &amp;&amp; \
-cp /awvs/wvsc /home/acunetix/.acunetix/v_200217097/scanner/wvsc &amp;&amp;\
-cp /awvs/license_info.json  /home/acunetix/.acunetix/data/license/license_info.json &amp;&amp;\
-echo -e &#39;#!/bin/bash\nsu acunetix &amp;&amp; (nohup bash ~/.acunetix/start.sh &amp;) &amp;&amp; exit&#39;&gt; /etc/rc.local
-</code></pre>
-<p>setenv.sh</p>
+            <h1 id="vpn搭建小记"><a href="#vpn搭建小记" class="headerlink" title="vpn搭建小记"></a>vpn搭建小记</h1><p>刚好最近有人叫我帮忙搭个vpn自己去了解了一下,发现搭vpn还挺有意思的</p>
+<h2 id="vpn的最终方案"><a href="#vpn的最终方案" class="headerlink" title="vpn的最终方案"></a>vpn的最终方案</h2><p>经过自己瞎折腾后最后是搞成这样的:</p>
+<p>家宽-内地中转服务器-gfw-国外vps(使用trojan+bbr)</p>
+<p>以后打算在gfw和国外vps在加个cdn,这样我们vps对gfw也就是透明的了,以后gfw把我们vps的ip ban掉了也没关系,不太好的影响就是延迟会变高</p>
+<p>这里加个中转服务器是因为电信晚上网络会炸裂,而家宽就是电信,虽然手机是联通的,但是我自己一个月40g流量都不够用</p>
+<blockquote>
+<p>电信 163 网连接国际网络，会在高峰时段，在路由出海前的最后一跳，根据优先级，策略性地人为丢包，以减轻对主网的负担(QOS)，这让普通电信用户糟糕的外网访问质量雪上加霜 </p>
+</blockquote>
+<h2 id="vpn搭建具体细节"><a href="#vpn搭建具体细节" class="headerlink" title="vpn搭建具体细节"></a>vpn搭建具体细节</h2><h3 id="国外vps选购"><a href="#国外vps选购" class="headerlink" title="国外vps选购"></a>国外vps选购</h3><p>首先是vpn的选购,因为是萌新,就去了别人推荐的vultr,搬瓦工太贵了</p>
+<p>听说vultr销毁服务器,再重新购买会有新的ip,但是我这样弄还是同一个被ban掉的ip,后来小脑瓜一动,我一口气开了10个服务器,这样ip就不一样了,我真tm机智/cy</p>
+<h3 id="国外vps配置"><a href="#国外vps配置" class="headerlink" title="国外vps配置"></a>国外vps配置</h3><p>这里用波仔提供的一键安装脚本,看了一下没啥安全问题</p>
+<p> <a href="https://www.v2rayssr.com/trojan-1.html/comment-page-1" target="_blank" rel="noopener">https://www.v2rayssr.com/trojan-1.html/comment-page-1</a> </p>
+<p>这里你还需要一个域名,建议用二级域名来弄trojan</p>
+<blockquote>
+<ol>
+<li><p><code>bash &lt;(curl -s -L https://github.com/V2RaySSR/Trojan/raw/master/Trojan.sh)</code></p>
+</li>
+<li><p>先安装bbr,除了重启的选y,其他都选no</p>
+</li>
+<li><p>再次运行脚本,运行bbr,并优化配置</p>
+</li>
+<li><p>安装trojan</p>
+</li>
+<li><p>下载客户端</p>
+</li>
+</ol>
+</blockquote>
+<p>视频教程: <a href="https://www.youtube.com/watch?v=LgZKirXKZms&amp;feature=youtu.be" target="_blank" rel="noopener">https://www.youtube.com/watch?v=LgZKirXKZms&amp;feature=youtu.be</a> </p>
+<h3 id="中转服务器配置"><a href="#中转服务器配置" class="headerlink" title="中转服务器配置"></a>中转服务器配置</h3><p>xxx.sh</p>
 <pre><code class="shell">#!/bin/bash
-
-shared_obj_deps=(libpango-1.0.so.0 libXext.so.6 libpthread.so.0 libXi.so.6 libgobject-2.0.so.0 libgtk-3.so.0 libdl.so.2 libgdk_pixbuf-2.0.so.0 libX11.so.6 libuuid.so.1 librt.so.1 libexpat.so.1 libglib-2.0.so.0 libXdamage.so.1 libatk-1.0.so.0 libm.so.6 libatspi.so.0 libcups.so.2 libgio-2.0.so.0 libXfixes.so.3 libXrender.so.1 libxcb.so.1 libsmime3.so libcairo.so.2 libXcomposite.so.1 libgdk-3.so.0 libpangocairo-1.0.so.0 libgcc_s.so.1 libX11-xcb.so.1 libdbus-1.so.3 libnss3.so libXrandr.so.2 libnspr4.so libXcursor.so.1 libnssutil3.so libXss.so.1 libasound.so.2 libatk-bridge-2.0.so.0 libc.so.6 libXtst.so.6)
-read -d &#39;&#39; source &lt;&lt;EOF
-deb-src http://archive.ubuntu.com/ubuntu xenial main restricted #Added by software-properties
-deb http://mirrors.aliyun.com/ubuntu/ xenial main restricted
-deb-src http://mirrors.aliyun.com/ubuntu/ xenial main restricted multiverse universe #Added by software-properties
-deb http://mirrors.aliyun.com/ubuntu/ xenial-updates main restricted
-deb-src http://mirrors.aliyun.com/ubuntu/ xenial-updates main restricted multiverse universe #Added by software-properties
-deb http://mirrors.aliyun.com/ubuntu/ xenial universe
-deb http://mirrors.aliyun.com/ubuntu/ xenial-updates universe
-deb http://mirrors.aliyun.com/ubuntu/ xenial multiverse
-deb http://mirrors.aliyun.com/ubuntu/ xenial-updates multiverse
-deb http://mirrors.aliyun.com/ubuntu/ xenial-backports main restricted universe multiverse
-deb-src http://mirrors.aliyun.com/ubuntu/ xenial-backports main restricted universe multiverse #Added by software-properties
-deb http://archive.canonical.com/ubuntu xenial partner
-deb-src http://archive.canonical.com/ubuntu xenial partner
-deb http://mirrors.aliyun.com/ubuntu/ xenial-security main restricted
-deb-src http://mirrors.aliyun.com/ubuntu/ xenial-security main restricted multiverse universe #Added by software-properties
-deb http://mirrors.aliyun.com/ubuntu/ xenial-security universe
-deb http://mirrors.aliyun.com/ubuntu/ xenial-security multiverse
-EOF
-echo &quot;$source&quot; &gt; /etc/apt/sources.list 
-cat /etc/apt/sources.list 
-apt-get update
-#for i in ${shared_obj_deps[@]}
-#do
-#    echo install $i
-#    apt-get install $i -y
-#done
-apt-get install libxdamage1 libgtk-3-0 libasound2 libnss3 libxss1 bzip2 sudo libv8-dev -y
-echo &quot;install success&quot;
+if [ ! $# -eq 3 ];then
+    echo -e &quot;Usage : $0 natport trojanserver trojanport&quot;
+fi
+apt-get install iptables || yum install iptables
+iptables -t nat -A PREROUTING -p tcp --dport $natport  -j DNAT --to-destination &quot;$trojanserver:$trojanport&quot;
+iptables -t nat -A POSTROUTING -d $trojanserver -p tcp --dport $trojanport -j MASQUERADE
+iptables -I FORWARD -d $trojanserver -p tcp --dport  $trojanport -j ACCEPT 
+iptables -I FORWARD -s $trojanserver  -p tcp --sport  $trojanport -j ACCEPT
+service iptables save
+service iptables restart
+echo &quot;setting complete&quot;</code></pre>
+<h3 id="客户端配置"><a href="#客户端配置" class="headerlink" title="客户端配置"></a>客户端配置</h3><p>将config.json拷贝一份,config_through_nat.json</p>
+<p>并做出如下修改</p>
+<pre><code class="json">{
+    ...
+    &quot;remote_addr&quot;: &quot;中转服务器ip&quot;,
+    &quot;remote_port&quot;: 中转的端口,
+   ...
+    &quot;ssl&quot;: {
+        &quot;verify&quot;: false,
+        &quot;verify_hostname&quot;: false,
+        ...
+    }
+    ...
+}
 </code></pre>
-<p>将Dockerfile放在awvs同级目录下,打开命令行移动到Dockerfile所在文件夹,<code>docker build -t awvs .</code></p>
-<p>用Dockerfile创建镜像后,用<code>docker run --privileged=true -p 443:3443-it -d awvs &quot;/sbin/init&quot;</code>来创建容器</p>
-<p>接着等待一会就可以运行了,在改一下本机的hosts,美滋滋,记得是用https去访问</p>
-<p><img src="https://i.loli.net/2020/03/18/5nruJk7RmfLYjtw.png" alt="image3135"></p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://youngrichog.github.io/2019/08/10/Docker-AWVS批量部署/" target="_blank" rel="noopener">https://youngrichog.github.io/2019/08/10/Docker-AWVS%E6%89%B9%E9%87%8F%E9%83%A8%E7%BD%B2/</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/03/18/docker部署awvs/">https://explorersss.github.io/2020/03/18/docker部署awvs/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+<p>config.json重命名为:config_normal.json</p>
+<p>start.bat</p>
+<pre><code class="shell">@ECHO OFF
+taskkill /im trojan.exe /f
+ping -n 2 127.1 &gt;nul
+copy /Y config_normal.json config.json
+%1 start mshta vbscript:createobject(&quot;wscript.shell&quot;).run(&quot;&quot;&quot;%~0&quot;&quot; ::&quot;,0)(window.close)&amp;&amp;exit
+start /b trojan.exe</code></pre>
+<p>start_with_nat.bat</p>
+<pre><code class="shell">@ECHO OFF
+taskkill /im trojan.exe /f
+ping -n 2 127.1 &gt;nul
+copy /Y config_through_nta.json config.json
+%1 start mshta vbscript:createobject(&quot;wscript.shell&quot;).run(&quot;&quot;&quot;%~0&quot;&quot; ::&quot;,0)(window.close)&amp;&amp;exit
+start /b trojan.exe</code></pre>
+<p>将两个批处理放到trojan客户端目录下</p>
+<h2 id="vpn测试"><a href="#vpn测试" class="headerlink" title="vpn测试"></a>vpn测试</h2><p>通过 <a href="https://fast.com/" target="_blank" rel="noopener">https://fast.com/</a>  来测速 稳定10Mbits</p>
+<p>利用BEST TRACE来看vps的线路</p>
+<p>各种线路的分析文章: <a href="https://www.duangvps.com/archives/135" target="_blank" rel="noopener">https://www.duangvps.com/archives/135</a> </p>
+<p>youtube打开4k视频右键查看统计信息,我的是5w左右</p>
+<p>linux回程路由测试: <a href="https://github.com/nanqinlang-script/testrace" target="_blank" rel="noopener">https://github.com/nanqinlang-script/testrace</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/03/20/vpn搭建/">https://explorersss.github.io/2020/03/20/vpn搭建/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
             <!--[if lt IE 9]><script>document.createElement('audio');</script><![endif]-->
             <audio id="audio" loop="1" preload="auto" controls="controls"
@@ -251,7 +276,7 @@ echo &quot;install success&quot;
             <div class="box sticky animated fadeInRight faster">
                 <div id="toc" class="subbox">
                     <h4>Contents</h4>
-                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#docker部署awvs"><span class="toc-number">1.</span> <span class="toc-text">docker部署awvs</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#参考"><span class="toc-number">1.1.</span> <span class="toc-text">参考</span></a></li></ol></li></ol>
+                    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#vpn搭建小记"><span class="toc-number">1.</span> <span class="toc-text">vpn搭建小记</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#vpn的最终方案"><span class="toc-number">1.1.</span> <span class="toc-text">vpn的最终方案</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#vpn搭建具体细节"><span class="toc-number">1.2.</span> <span class="toc-text">vpn搭建具体细节</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#国外vps选购"><span class="toc-number">1.2.1.</span> <span class="toc-text">国外vps选购</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#国外vps配置"><span class="toc-number">1.2.2.</span> <span class="toc-text">国外vps配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#中转服务器配置"><span class="toc-number">1.2.3.</span> <span class="toc-text">中转服务器配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#客户端配置"><span class="toc-number">1.2.4.</span> <span class="toc-text">客户端配置</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#vpn测试"><span class="toc-number">1.3.</span> <span class="toc-text">vpn测试</span></a></li></ol></li></ol>
                 </div>
             </div>
             
