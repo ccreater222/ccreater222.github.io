@@ -102,6 +102,7 @@
 </blockquote>
 <h2 id="vpn搭建具体细节"><a href="#vpn搭建具体细节" class="headerlink" title="vpn搭建具体细节"></a>vpn搭建具体细节</h2><h3 id="国外vps选购"><a href="#国外vps选购" class="headerlink" title="国外vps选购"></a>国外vps选购</h3><p>首先是vpn的选购,因为是萌新,就去了别人推荐的vultr,搬瓦工太贵了</p>
 <p>听说vultr销毁服务器,再重新购买会有新的ip,但是我这样弄还是同一个被ban掉的ip,后来小脑瓜一动,我一口气开了10个服务器,这样ip就不一样了,我真tm机智/cy</p>
+<p>具体怎么选购就百度谷歌吧</p>
 <h3 id="国外vps配置"><a href="#国外vps配置" class="headerlink" title="国外vps配置"></a>国外vps配置</h3><p>这里用波仔提供的一键安装脚本,看了一下没啥安全问题</p>
 <p> <a href="https://www.v2rayssr.com/trojan-1.html/comment-page-1" target="_blank" rel="noopener">https://www.v2rayssr.com/trojan-1.html/comment-page-1</a> </p>
 <p>这里你还需要一个域名,建议用二级域名来弄trojan</p>
@@ -120,7 +121,8 @@
 </ol>
 </blockquote>
 <p>视频教程: <a href="https://www.youtube.com/watch?v=LgZKirXKZms&amp;feature=youtu.be" target="_blank" rel="noopener">https://www.youtube.com/watch?v=LgZKirXKZms&amp;feature=youtu.be</a> </p>
-<h3 id="中转服务器配置"><a href="#中转服务器配置" class="headerlink" title="中转服务器配置"></a>中转服务器配置</h3><p>xxx.sh</p>
+<h3 id="中转服务器配置"><a href="#中转服务器配置" class="headerlink" title="中转服务器配置"></a>中转服务器配置</h3><p>中转服务器去买共享端口+docker虚拟机的那种,一个月5元左右吧,出口最好联通</p>
+<p>xxx.sh</p>
 <pre><code class="shell">#!/bin/bash
 if [ ! $# -eq 3 ];then
     echo -e &quot;Usage : $0 natport trojanserver trojanport&quot;
@@ -164,7 +166,7 @@ copy /Y config_through_nta.json config.json
 %1 start mshta vbscript:createobject(&quot;wscript.shell&quot;).run(&quot;&quot;&quot;%~0&quot;&quot; ::&quot;,0)(window.close)&amp;&amp;exit
 start /b trojan.exe</code></pre>
 <p>将两个批处理放到trojan客户端目录下</p>
-<h2 id="vpn测试"><a href="#vpn测试" class="headerlink" title="vpn测试"></a>vpn测试</h2><p>通过 <a href="https://fast.com/" target="_blank" rel="noopener">https://fast.com/</a>  来测速 稳定10Mbits</p>
+<h2 id="vpn测试"><a href="#vpn测试" class="headerlink" title="vpn测试"></a>vpn测试</h2><p>通过 <a href="https://fast.com/" target="_blank" rel="noopener">https://fast.com/</a>  来测速 稳定10Mbits(联通),5Mbits(电信平时),500Kbits(电信夜间,丢包率贼高,体验极差),稳定1Mbits(走中转服务器路线,因为我专门拿来中转的服务器还没买,暂时直接用阿里云的服务器来中转,但是阿里云服务器也在电信机房)</p>
 <p>利用BEST TRACE来看vps的线路</p>
 <p>各种线路的分析文章: <a href="https://www.duangvps.com/archives/135" target="_blank" rel="noopener">https://www.duangvps.com/archives/135</a> </p>
 <p>youtube打开4k视频右键查看统计信息,我的是5w左右</p>
