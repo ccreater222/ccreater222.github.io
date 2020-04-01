@@ -66,6 +66,95 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-django快速查找配置" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/" class="article-date">
+  <time class="dt-published" datetime="2019-12-20T17:14:33.085Z" itemprop="datePublished">2019-12-21</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/">django快速查找配置</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="django快速查找配置"><a href="#django快速查找配置" class="headerlink" title="django快速查找配置"></a>django快速查找配置</h1><h2 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h2><p>在看p牛的picklecode wp的时候卡在secret_key查找那边</p>
+<p>看到p牛一句很容易,人就傻掉了</p>
+<p><img src="https://i.loli.net/2019/12/21/8mnp5l7ODuPkBQo.png" alt="image209"></p>
+<p>花了一天时间(踩了个坑),写了个快速查找secret_key的脚本</p>
+<p>代码写的不太好,自己改改用吧////</p>
+<pre><code class="python">from django.http.response import HttpResponse, HttpResponseRedirect
+from django.template import engines
+from django.contrib.auth import login as auth_login, get_user_model, authenticate
+from django.contrib.auth.views import LoginView, logout_then_login
+from django.contrib.auth.decorators import login_required
+from django.views import generic
+from django import template
+
+import django
+from django import template
+register = template.Library()
+
+@register.filter
+def get_dict(obj,way=&quot;&quot;,depth=0):
+    if depth&gt;11:
+        return 
+    objdir=dir(obj)
+    r={&quot;dict&quot;:objdir,&quot;way&quot;:way}
+    result=&quot;&quot;
+
+    for i in objdir:            
+        try :
+            if &#39;_&#39; == i[0]:
+                continue
+            if getattr(obj, &#39;__module__&#39;, None)!=None and getattr(obj, &#39;__module__&#39;, None).split(&#39;.&#39;)[0] == django.__name__:
+                result+=get_dict(getattr(obj,i,None),way+&quot;.&quot;+i,depth+1) 
+        except TypeError:
+            pass
+
+    if &quot;SECRET_KEY&quot; in objdir or &quot;settings&quot; in objdir:
+        print(way)
+        return result+way+&quot;\n&quot;
+    return result</code></pre>
+<p>这个是把所有符合条件的都输出,你可以通过修改递归深度和返回条件来加快,不然要等个几分钟</p>
+<h2 id="顺便说下踩到的坑"><a href="#顺便说下踩到的坑" class="headerlink" title="顺便说下踩到的坑"></a>顺便说下踩到的坑</h2><p>因为不知道dir()和<code>__dict__</code>的区别,一直以为<code>__dict__</code>==dir,然后就boomm</p>
+<p>dir()和<code>__dict__</code>的区别</p>
+<p>最简单的一句发\话是<code>__dict__</code>是dir的子集合</p>
+<p> <a href="https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981" target="_blank" rel="noopener">https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981</a> </p>
+<p>所以以后查看对象的所有属性一定要用dir()</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/21/django快速查找配置/">https://explorersss.github.io/2019/12/21/django快速查找配置/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://explorersss.github.io/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/" data-id="ck4eeyrtu0000ccv071r8d1bx" data-title="django快速查找配置" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-jwt攻击方式" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" class="article-date">
@@ -1453,7 +1542,7 @@ int main()
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li></ul>
     </div>
   </div>
 
@@ -1464,6 +1553,10 @@ int main()
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/04/01/3%E6%9C%88%E5%81%9A%E9%A2%98/">3月做题</a>
+          </li>
         
           <li>
             <a href="/2020/03/30/volgactf/">volgactf</a>
@@ -1479,10 +1572,6 @@ int main()
         
           <li>
             <a href="/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/">docker部署awvs</a>
-          </li>
-        
-          <li>
-            <a href="/2020/03/10/xctf%E9%AB%98%E6%A0%A1%E6%8A%97%E7%96%AB/">xctf高校抗疫</a>
           </li>
         
       </ul>
