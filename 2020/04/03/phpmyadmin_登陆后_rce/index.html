@@ -4,15 +4,28 @@
   <meta charset="utf-8">
   
   
-  <title>Tag: 域渗透 | oxcccccc</title>
+  <title>phpmyadmin_登陆后_rce | oxcccccc</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="oxcccccc">
-<meta property="og:url" content="https:&#x2F;&#x2F;explorersss.github.io&#x2F;tags&#x2F;%E5%9F%9F%E6%B8%97%E9%80%8F&#x2F;index.html">
+  <meta name="description" content="phpmyadmin登陆后rce漏洞信息 在PHP5.4.7以前，preg_replace的第一个参数可以利用\0进行截断，并将正则模式修改为e。众所周知，e模式的正则支持执行代码，此时将可构造一个任意代码执行漏洞。 以下版本受到影响：  4.0.10.16之前4.0.x版本 4.4.15.7之前4.4.x版本 4.6.3之前4.6.x版本（实际上由于该版本要求PHP5.5+，所以无法复现本漏洞）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="phpmyadmin_登陆后_rce">
+<meta property="og:url" content="https:&#x2F;&#x2F;explorersss.github.io&#x2F;2020&#x2F;04&#x2F;03&#x2F;phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce&#x2F;index.html">
 <meta property="og:site_name" content="oxcccccc">
+<meta property="og:description" content="phpmyadmin登陆后rce漏洞信息 在PHP5.4.7以前，preg_replace的第一个参数可以利用\0进行截断，并将正则模式修改为e。众所周知，e模式的正则支持执行代码，此时将可构造一个任意代码执行漏洞。 以下版本受到影响：  4.0.10.16之前4.0.x版本 4.4.15.7之前4.4.x版本 4.6.3之前4.6.x版本（实际上由于该版本要求PHP5.5+，所以无法复现本漏洞）">
 <meta property="og:locale" content="zh">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;qo5ZbfuJHKA9d6m.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;vnk9IZUxJ5YoMbW.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;JxKS1TioFz4w7ql.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;OhCPcviVT8tm6ZK.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;zT21ymqOYvUf5WE.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;j4JdNfKa8up2BCc.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;FwSzMuNI4nDadBh.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;QZE5fMTnUhPXdqV.png">
+<meta property="article:published_time" content="2020-04-03T13:39:15.744Z">
+<meta property="article:modified_time" content="2020-04-03T13:39:15.744Z">
 <meta property="article:author" content="ccreater">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;i.loli.net&#x2F;2020&#x2F;04&#x2F;03&#x2F;qo5ZbfuJHKA9d6m.png">
   
     <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
   
@@ -64,58 +77,134 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2020" class="archive-year">2020</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/" class="archive-article-date">
-  <time class="dt-published" datetime="2020-02-17T04:33:47.825Z" itemprop="datePublished">Feb 17</time>
+        <section id="main"><article id="post-phpmyadmin_登陆后_rce" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/03/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/" class="article-date">
+  <time class="dt-published" datetime="2020-04-03T13:39:15.744Z" itemprop="datePublished">2020-04-03</time>
 </a>
-      
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/">域渗透</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      phpmyadmin_登陆后_rce
     </h1>
   
 
-    </header>
-  </div>
-</article>
-  
+      </header>
     
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/" class="archive-article-date">
-  <time class="dt-published" datetime="2020-02-17T04:32:09.142Z" itemprop="datePublished">Feb 17</time>
-</a>
+    <div class="e-content article-entry" itemprop="articleBody">
       
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/">vulnstackATT&amp;CK红队评估靶场1渗透记录</a>
-    </h1>
-  
+        <h1 id="phpmyadmin登陆后rce"><a href="#phpmyadmin登陆后rce" class="headerlink" title="phpmyadmin登陆后rce"></a>phpmyadmin登陆后rce</h1><h2 id="漏洞信息"><a href="#漏洞信息" class="headerlink" title="漏洞信息"></a>漏洞信息</h2><blockquote>
+<p>在PHP5.4.7以前，<code>preg_replace</code>的第一个参数可以利用\0进行截断，并将正则模式修改为e。众所周知，e模式的正则支持执行代码，此时将可构造一个任意代码执行漏洞。</p>
+<p>以下版本受到影响：</p>
+<ul>
+<li>4.0.10.16之前4.0.x版本</li>
+<li>4.4.15.7之前4.4.x版本</li>
+<li>4.6.3之前4.6.x版本（实际上由于该版本要求PHP5.5+，所以无法复现本漏洞）</li>
+</ul>
+</blockquote>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>全局搜索preg_replace,发现以下可能有可控变量的位置:</p>
+<p>容易找到</p>
+<p><code>TableSearch.lib.php</code></p>
+<pre><code class="php">function _getRegexReplaceRows($columnIndex, $find, $replaceWith, $charSet)
+    {
+        $column = $this-&gt;_columnNames[$columnIndex];
+        $sql_query = &quot;SELECT &quot;
+            . PMA_Util::backquote($column) . &quot;,&quot;
+            . &quot; 1,&quot; // to add an extra column that will have replaced value
+            . &quot; COUNT(*)&quot;
+            . &quot; FROM &quot; . PMA_Util::backquote($this-&gt;_db)
+            . &quot;.&quot; . PMA_Util::backquote($this-&gt;_table)
+            . &quot; WHERE &quot; . PMA_Util::backquote($column)
+            . &quot; RLIKE &#39;&quot; . PMA_Util::sqlAddSlashes($find) . &quot;&#39; COLLATE &quot;
+            . $charSet . &quot;_bin&quot;; // here we
+            // change the collation of the 2nd operand to a case sensitive
+            // binary collation to make sure that the comparison is case sensitive
+        $sql_query .= &quot; GROUP BY &quot; . PMA_Util::backquote($column)
+            . &quot; ORDER BY &quot; . PMA_Util::backquote($column) . &quot; ASC&quot;;
 
-    </header>
+        $result = $GLOBALS[&#39;dbi&#39;]-&gt;fetchResult($sql_query, 0);
+
+        if (is_array($result)) {
+            foreach ($result as $index=&gt;$row) {
+                $result[$index][1] = preg_replace(
+                    &quot;/&quot; . $find . &quot;/&quot;,
+                    $replaceWith,
+                    $row[0]
+                );
+            }
+        }
+        return $result;
+    }</code></pre>
+<p>如果我们可以控制<code>$result和$replaceWith</code>那么我们就可以执行任意命令</p>
+<p><img src="https://i.loli.net/2020/04/03/qo5ZbfuJHKA9d6m.png" alt="image1674"></p>
+<p>我们先看<code>getReplacePreview</code></p>
+<p><img src="https://i.loli.net/2020/04/03/vnk9IZUxJ5YoMbW.png" alt="image1764"></p>
+<p>再查看调用<code>getReplacePreview</code>的函数</p>
+<p><img src="https://i.loli.net/2020/04/03/JxKS1TioFz4w7ql.png" alt="image1858"></p>
+<p>去看第二个和第三个明显不行,这里就不贴出来了</p>
+<p>再跟进<code>tbl_find_replace.php</code></p>
+<pre><code class="php">if (isset($_POST[&#39;find&#39;])) {
+    $preview = $table_search-&gt;getReplacePreview(
+        $_POST[&#39;columnIndex&#39;],
+        $_POST[&#39;find&#39;],
+        $_POST[&#39;replaceWith&#39;],
+        $_POST[&#39;useRegex&#39;],
+        $connectionCharSet
+    );
+    $response-&gt;addJSON(&#39;preview&#39;, $preview);
+    exit;
+}</code></pre>
+<p>明显白给</p>
+<p>我们再回到<code>_getRegexReplaceRows</code>去查看它的第二个调用函数</p>
+<p><img src="https://i.loli.net/2020/04/03/OhCPcviVT8tm6ZK.png" alt="image2318"></p>
+<p>再查看调用replace的函数</p>
+<p><img src="https://i.loli.net/2020/04/03/zT21ymqOYvUf5WE.png" alt="image2400"></p>
+<p>同样后面两个还是不行</p>
+<p>在跟进<code>tbl_find_replace.php</code></p>
+<p><img src="https://i.loli.net/2020/04/03/j4JdNfKa8up2BCc.png" alt="image2504"></p>
+<p>还是白给,两个调用链都是可以rce的,我们以前面那个为例</p>
+<p>先往表中添加一条数据<code>INSERT INTO</code>flags<code>(</code>username<code>,</code>flag<code>,</code>msgid<code>) VALUES (UNHEX(&#39;302F6500&#39;),1,1);</code></p>
+<p>直接抓包,修改</p>
+<p><img src="https://i.loli.net/2020/04/03/FwSzMuNI4nDadBh.png" alt="image2701"></p>
+<p><img src="https://i.loli.net/2020/04/03/QZE5fMTnUhPXdqV.png" alt="image2768"></p>
+<p>成功</p>
+<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><p>这个poc直接抄个别人的,懒得写了</p>
+<p><code>https://www.exploit-db.com/exploits/40185</code></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/04/03/phpmyadmin_登陆后_rce/">https://explorersss.github.io/2020/04/03/phpmyadmin_登陆后_rce/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://explorersss.github.io/2020/04/03/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/" data-id="ck8k8ipnv00008wv0dw8ub06s" data-title="phpmyadmin_登陆后_rce" class="article-share-link">Share</a>
+      
+      
+      
+    </footer>
   </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/04/01/CTFd%E4%BB%BB%E6%84%8F%E5%AF%86%E7%A0%81%E9%87%8D%E7%BD%AE%E5%A4%8D%E7%8E%B0/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CTFd任意密码重置复现</div>
+    </a>
+  
+</nav>
+
+  
 </article>
-  
-  
-    </div></section>
-  
 
 
 </section>
