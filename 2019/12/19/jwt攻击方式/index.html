@@ -16,8 +16,8 @@
 <meta property="article:published_time" content="2019-12-19T07:07:38.103Z">
 <meta property="article:modified_time" content="2019-12-19T14:02:50.624Z">
 <meta property="article:author" content="ccreater">
-<meta property="article:tag" content="web">
 <meta property="article:tag" content="ctf">
+<meta property="article:tag" content="web">
 <meta name="twitter:card" content="summary">
   
     <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
@@ -138,12 +138,12 @@ print(jwt.decode(encoded_jwt, &#39;key&#39;, algorithms=[&#39;HS256&#39;]))</cod
 <p>(header+’.’+payload，去掉了’.’+signature字段)</p>
 <p>空加密算法的设计初衷是用于调试的，但是如果某天开发人员脑阔瓦特了，在生产环境中开启了空加密算法，缺少签名算法，jwt保证信息不被篡改的功能就失效了。攻击者只需要把alg字段设置为None，就可以在payload中构造身份信息，伪造用户身份。</p>
 <h4 id="修改RSA加密算法为HMAC"><a href="#修改RSA加密算法为HMAC" class="headerlink" title="修改RSA加密算法为HMAC"></a>修改RSA加密算法为HMAC</h4><h3 id="爆破"><a href="#爆破" class="headerlink" title="爆破"></a>爆破</h3><p>工具 <a href="https://github.com/brendan-rius/c-jwt-cracker" target="_blank" rel="noopener">c-jwt-cracker</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2019/12/19/jwt攻击方式/" target="_blank" rel="noopener">https://explorersss.github.io/2019/12/19/jwt攻击方式/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/19/jwt攻击方式/">http://blog.ccreater.top/2019/12/19/jwt攻击方式/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" data-id="ck4cduygj0000rcv03we0djew" data-title="jwt攻击方式" class="article-share-link">Share</a>
+      <a data-url="http://blog.ccreater.top/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" data-id="ck917a7bn001gu8v054692hoh" data-title="jwt攻击方式" class="article-share-link">Share</a>
       
       
       
