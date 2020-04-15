@@ -9,7 +9,7 @@
   <meta name="description" content="tp5rce复现影响范围 本次版本更新主要涉及一个安全更新，由于框架对控制器名没有进行足够的检测会导致在没有开启强制路由的情况下可能的getshell漏洞，受影响的版本包括5.0.23和5.1.31之前的所有版本，推荐尽快更新到最新版本。如果暂时无法更新到最新版本，请开启强制路由并添加相应未定义路由，或者参考commit的修改 增加相关代码。 –来自thinkphp官网  漏洞原理根据官方的公告去">
 <meta property="og:type" content="article">
 <meta property="og:title" content="tp5rce复现">
-<meta property="og:url" content="https:&#x2F;&#x2F;explorersss.github.io&#x2F;2020&#x2F;01&#x2F;28&#x2F;tp5rce%E5%A4%8D%E7%8E%B0&#x2F;index.html">
+<meta property="og:url" content="http:&#x2F;&#x2F;blog.ccreater.top&#x2F;2020&#x2F;01&#x2F;28&#x2F;tp5rce%E5%A4%8D%E7%8E%B0&#x2F;index.html">
 <meta property="og:site_name" content="oxcccccc">
 <meta property="og:description" content="tp5rce复现影响范围 本次版本更新主要涉及一个安全更新，由于框架对控制器名没有进行足够的检测会导致在没有开启强制路由的情况下可能的getshell漏洞，受影响的版本包括5.0.23和5.1.31之前的所有版本，推荐尽快更新到最新版本。如果暂时无法更新到最新版本，请开启强制路由并添加相应未定义路由，或者参考commit的修改 增加相关代码。 –来自thinkphp官网  漏洞原理根据官方的公告去">
 <meta property="og:locale" content="zh">
@@ -65,7 +65,7 @@
         <a id="nav-search-btn" class="nav-icon" title="Search"></a>
       </nav>
       <div id="search-form-wrap">
-        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://explorersss.github.io"></form>
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.ccreater.top"></form>
       </div>
     </div>
   </div>
@@ -160,12 +160,12 @@
 <p><code>http://serverName/index.php（或者其它应用入口文件）?s=/模块/控制器/操作/[参数名/参数值...]</code></p>
 <p>于是有通杀tp5.0.x和tp5.1.x的检测payload</p>
 <p><code>http://127.0.0.1/public/?s=index/think\app/invokefunction&amp;function=call_user_func_array&amp;vars[0]=var_dump&amp;vars[1][]=checktp5rce</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/01/28/tp5rce复现/">https://explorersss.github.io/2020/01/28/tp5rce复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://explorersss.github.io/2020/01/28/tp5rce复现/" target="_blank" rel="noopener">https://explorersss.github.io/2020/01/28/tp5rce复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://explorersss.github.io/2020/01/28/tp5rce%E5%A4%8D%E7%8E%B0/" data-id="ck5xkdwm00000l4v0hfq6g9v1" data-title="tp5rce复现" class="article-share-link">Share</a>
+      <a data-url="http://blog.ccreater.top/2020/01/28/tp5rce%E5%A4%8D%E7%8E%B0/" data-id="ck5xkdwm00000l4v0hfq6g9v1" data-title="tp5rce复现" class="article-share-link">Share</a>
       
       
       
