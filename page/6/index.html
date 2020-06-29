@@ -66,6 +66,96 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-jwt攻击方式" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" class="article-date">
+  <time class="dt-published" datetime="2019-12-19T07:07:38.103Z" itemprop="datePublished">2019-12-19</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/">jwt攻击方式</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="jwt"><a href="#jwt" class="headerlink" title="jwt"></a>jwt</h1><h2 id="文章"><a href="#文章" class="headerlink" title="文章"></a>文章</h2><p> <a href="https://xz.aliyun.com/t/6776" target="_blank" rel="noopener">https://xz.aliyun.com/t/6776</a></p>
+<p>  <a href="https://www.anquanke.com/post/id/145540" target="_blank" rel="noopener">https://www.anquanke.com/post/id/145540</a> </p>
+<h2 id="关于jwt"><a href="#关于jwt" class="headerlink" title="关于jwt"></a>关于jwt</h2><p>JWT的全称是Json Web Token。它遵循JSON格式，将用户信息加密到token里，服务器不保存任何用户信息，只保存密钥信息，通过使用特定加密算法验证token，通过token验证用户身份。基于token的身份验证可以替代传统的cookie+session身份验证方法。</p>
+<p>jwt由三个部分组成：<code>header</code>.<code>payload</code>.<code>signature</code></p>
+<h3 id="header部分"><a href="#header部分" class="headerlink" title="header部分"></a>header部分</h3><p>header部分最常用的两个字段是<code>alg</code>和<code>typ</code>，<code>alg</code>指定了token加密使用的算法（最常用的为<em>HMAC</em>和<em>RSA</em>算法），typ`声明类型为JWT</p>
+<p>header通常会长这个样子：</p>
+<pre><code>{
+        &quot;alg&quot; : &quot;HS256&quot;,
+        &quot;typ&quot; : &quot;jwt&quot;
+}</code></pre><h3 id="payload部分"><a href="#payload部分" class="headerlink" title="payload部分"></a>payload部分</h3><p>payload则为用户数据以及一些元数据有关的声明，用以声明权限，举个例子，一次登录的过程可能会传递以下数据</p>
+<pre><code>{
+        &quot;user_role&quot; : &quot;finn&quot;,    //当前登录用户
+    &quot;iss&quot;: &quot;admin&quot;,          //该JWT的签发者
+    &quot;iat&quot;: 1573440582,        //签发时间
+    &quot;exp&quot;: 1573940267,        //过期时间
+    &quot;nbf&quot;: 1573440582,         //该时间之前不接收处理该Token
+    &quot;domain&quot;: &quot;example.com&quot;,   //面向的用户
+    &quot;jti&quot;: &quot;dff4214121e83057655e10bd9751d657&quot;   //Token唯一标识
+}</code></pre><h3 id="signature部分"><a href="#signature部分" class="headerlink" title="signature部分"></a>signature部分</h3><p>signature的功能是保护token完整性。</p>
+<p>生成方法为将header和payload两个部分联结起来，然后通过header部分指定的算法，计算出签名。</p>
+<p>抽象成公式就是</p>
+<pre><code>signature = HMAC-SHA256(base64urlEncode(header) + &#39;.&#39; + base64urlEncode(payload), secret_key)</code></pre><p>值得注意的是，编码header和payload时使用的编码方式为<code>base64urlencode</code>，<code>base64url</code>编码是<code>base64</code>的修改版，为了方便在网络中传输使用了不同的编码表，它不会在末尾填充”=”号，并将标准Base64中的”+”和”/“分别改成了”-“和”-“。</p>
+<h3 id="完整token生成"><a href="#完整token生成" class="headerlink" title="完整token生成"></a>完整token生成</h3><p>一个完整的jwt格式为(<code>header</code>.<code>payload</code>.<code>signature</code>)，其中header、payload使用base64url编码，signature通过指定算法生成。</p>
+<p>python的<code>Pyjwt</code>使用示例如下</p>
+<pre><code>import jwt
+
+encoded_jwt = jwt.encode({&#39;user_name&#39;: &#39;admin&#39;}, &#39;key&#39;, algorithm=&#39;HS256&#39;)
+print(encoded_jwt)
+print(jwt.decode(encoded_jwt, &#39;key&#39;, algorithms=[&#39;HS256&#39;]))</code></pre><p>生成的token为</p>
+<pre><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9`.`eyJ1c2VyX25hbWUiOiJhZG1pbiJ9.oL5szC7mFoJ_7FI9UVMcKfmisqr6Qlo1dusps5wOUlo</code></pre><h2 id="攻击方式"><a href="#攻击方式" class="headerlink" title="攻击方式"></a>攻击方式</h2><h3 id="加密算法"><a href="#加密算法" class="headerlink" title="加密算法"></a>加密算法</h3><h4 id="空加密算法"><a href="#空加密算法" class="headerlink" title="空加密算法"></a>空加密算法</h4><p>JWT支持使用空加密算法，可以在header中指定alg为<code>None</code></p>
+<p>这样的话，只要把signature设置为空（即不添加signature字段），提交到服务器，任何token都可以通过服务器的验证。举个例子，使用以下的字段</p>
+<pre><code>{
+    &quot;alg&quot; : &quot;None&quot;,
+    &quot;typ&quot; : &quot;jwt&quot;
+}
+
+{
+    &quot;user&quot; : &quot;Admin&quot;
+}</code></pre><p>生成的完整token为<code>ew0KCSJhbGciIDogIk5vbmUiLA0KCSJ0eXAiIDogImp3dCINCn0.ew0KCSJ1c2VyIiA6ICJBZG1pbiINCn0</code></p>
+<p>(header+’.’+payload，去掉了’.’+signature字段)</p>
+<p>空加密算法的设计初衷是用于调试的，但是如果某天开发人员脑阔瓦特了，在生产环境中开启了空加密算法，缺少签名算法，jwt保证信息不被篡改的功能就失效了。攻击者只需要把alg字段设置为None，就可以在payload中构造身份信息，伪造用户身份。</p>
+<h4 id="修改RSA加密算法为HMAC"><a href="#修改RSA加密算法为HMAC" class="headerlink" title="修改RSA加密算法为HMAC"></a>修改RSA加密算法为HMAC</h4><h3 id="爆破"><a href="#爆破" class="headerlink" title="爆破"></a>爆破</h3><p>工具 <a href="https://github.com/brendan-rius/c-jwt-cracker" target="_blank" rel="noopener">c-jwt-cracker</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/19/jwt攻击方式/">http://blog.ccreater.top/2019/12/19/jwt攻击方式/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" data-id="cka3ckr2z002mv4v09vireu1s" data-title="jwt攻击方式" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-pickle" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2019/12/16/pickle/" class="article-date">
@@ -2308,6 +2398,10 @@ while True:
       <ul>
         
           <li>
+            <a href="/2020/06/30/tctf2020/">tctf2020</a>
+          </li>
+        
+          <li>
             <a href="/2020/06/23/%E6%8B%9F%E6%80%81%E9%98%B2%E5%BE%A1%E8%AE%B0%E5%BD%95/">拟态防御记录</a>
           </li>
         
@@ -2321,10 +2415,6 @@ while True:
         
           <li>
             <a href="/2020/05/12/2020%E5%B9%B4%E7%BD%91%E9%BC%8E%E6%9D%AF%E9%9D%92%E9%BE%99%E7%BB%84/">2020年网鼎杯青龙组</a>
-          </li>
-        
-          <li>
-            <a href="/2020/05/06/SpEL%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/">SpEL表达式注入漏洞</a>
           </li>
         
       </ul>
