@@ -4,13 +4,17 @@
   <meta charset="utf-8">
   
   
-  <title>Tag: 漏洞挖掘 | oxcccccc</title>
+  <title>bypass CORS | oxcccccc</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="oxcccccc">
-<meta property="og:url" content="http:&#x2F;&#x2F;blog.ccreater.top&#x2F;tags&#x2F;%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98&#x2F;index.html">
+  <meta name="description" content="bypass CORS什么是CORSCORS: Cross Origin Resource Share,设置在服务端，客户端执行的一种策略。  出于安全原因，浏览器限制从脚本内发起的跨源HTTP请求或者 跨站请求可以正常发起，但是返回结果被浏览器拦截了 。 例如，XMLHttpRequest和Fetch API遵循同源策略。 这意味着使用这些API的Web应用程序只能从加载应用程序的同一个域请求H">
+<meta property="og:type" content="article">
+<meta property="og:title" content="bypass CORS">
+<meta property="og:url" content="http:&#x2F;&#x2F;blog.ccreater.top&#x2F;2020&#x2F;07&#x2F;09&#x2F;bypass%20CORS&#x2F;index.html">
 <meta property="og:site_name" content="oxcccccc">
+<meta property="og:description" content="bypass CORS什么是CORSCORS: Cross Origin Resource Share,设置在服务端，客户端执行的一种策略。  出于安全原因，浏览器限制从脚本内发起的跨源HTTP请求或者 跨站请求可以正常发起，但是返回结果被浏览器拦截了 。 例如，XMLHttpRequest和Fetch API遵循同源策略。 这意味着使用这些API的Web应用程序只能从加载应用程序的同一个域请求H">
 <meta property="og:locale" content="zh">
+<meta property="article:published_time" content="2020-07-09T13:42:48.661Z">
+<meta property="article:modified_time" content="2020-07-09T13:42:48.661Z">
 <meta property="article:author" content="ccreater">
 <meta name="twitter:card" content="summary">
   
@@ -64,39 +68,126 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-  
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2020" class="archive-year">2020</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" class="archive-article-date">
-  <time class="dt-published" datetime="2020-02-11T05:54:56.708Z" itemprop="datePublished">Feb 11</time>
+        <section id="main"><article id="post-bypass CORS" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/07/09/bypass%20CORS/" class="article-date">
+  <time class="dt-published" datetime="2020-07-09T13:42:48.661Z" itemprop="datePublished">2020-07-09</time>
 </a>
-      
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">记一次漏洞挖掘</a>
+    <h1 class="p-name article-title" itemprop="headline name">
+      bypass CORS
     </h1>
   
 
-    </header>
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="bypass-CORS"><a href="#bypass-CORS" class="headerlink" title="bypass CORS"></a>bypass CORS</h1><h2 id="什么是CORS"><a href="#什么是CORS" class="headerlink" title="什么是CORS"></a>什么是CORS</h2><p>CORS: Cross Origin Resource Share,设置在服务端，客户端执行的一种策略。</p>
+<blockquote>
+<p>出于安全原因，浏览器限制从脚本内发起的跨源HTTP请求或者 跨站请求可以正常发起，但是返回结果被浏览器拦截了 。 例如，XMLHttpRequest和Fetch API遵循同源策略。 这意味着使用这些API的Web应用程序只能从加载应用程序的同一个域请求HTTP资源，除非响应报文包含了正确CORS响应头。 </p>
+</blockquote>
+<h2 id="相关的字段"><a href="#相关的字段" class="headerlink" title="相关的字段"></a>相关的字段</h2><p>响应：</p>
+<pre><code>Access-Control-Allow-Origin
+Access-Control-Expose-Headers
+Access-Control-Max-Age
+Access-Control-Allow-Credentials
+Access-Control-Allow-Methods
+Access-Control-Allow-Headers
+</code></pre><p>请求：</p>
+<pre><code>Origin
+Access-Control-Request-Method
+Access-Control-Request-Headers
+</code></pre><h2 id="CORS配置错误"><a href="#CORS配置错误" class="headerlink" title="CORS配置错误"></a>CORS配置错误</h2><h3 id="根据某些字段来设置ACAO头"><a href="#根据某些字段来设置ACAO头" class="headerlink" title="根据某些字段来设置ACAO头"></a>根据某些字段来设置ACAO头</h3><pre><code>GET /sensitive-victim-data HTTP/1.1
+Host: vulnerable-website.com
+Origin: https://malicious-website.com
+Cookie: sessionid=...
+
+根据Origin头来设置Access-Control-Allow-Origin
+
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: https://malicious-website.com
+Access-Control-Allow-Credentials: true</code></pre><h3 id="对Origin头的错误解析"><a href="#对Origin头的错误解析" class="headerlink" title="对Origin头的错误解析"></a>对Origin头的错误解析</h3><p>因为要对子域名的支持，所以有些网站会这样写:</p>
+<pre><code>if Origin.domain startwith &quot;domain.com&quot;:
+    return &quot;Access-Control-Allow-Origin: &quot;+Origin
+</code></pre><p>或者</p>
+<pre><code>if Origin.domain endwith &quot;domain.com&quot;:
+    return &quot;Access-Control-Allow-Origin: &quot;+Origin
+</code></pre><p>像这种都很好绕过：</p>
+<p>domain.com.evildomain.com 或者 evildomain-domain.com</p>
+<h3 id="白名单中存在-null"><a href="#白名单中存在-null" class="headerlink" title="白名单中存在:null"></a>白名单中存在:null</h3><p> Origin支持值null，在某些情况下，浏览器可能会在Origin标头中发送值null：</p>
+<ul>
+<li><p>跨站点重定向</p>
+</li>
+<li><p>来自序列化数据的请求</p>
+</li>
+<li><p>使用<code>file</code>协议的请求</p>
+</li>
+<li><p>沙盒中的跨域请求</p>
+</li>
+</ul>
+<h2 id="利用受信任的域"><a href="#利用受信任的域" class="headerlink" title="利用受信任的域"></a>利用受信任的域</h2><p>在受信任的域上找到xss，就可以绕过CORS</p>
+<h2 id="中间人攻击"><a href="#中间人攻击" class="headerlink" title="中间人攻击"></a>中间人攻击</h2><p>23333</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://portswigger.net/web-security/cors" target="_blank" rel="noopener">https://portswigger.net/web-security/cors</a> </p>
+<p> <a href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Access_control_CORS</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/07/09/bypass">http://blog.ccreater.top/2020/07/09/bypass</a> CORS/](<a href="http://blog.ccreater.top/2020/07/09/bypass">http://blog.ccreater.top/2020/07/09/bypass</a> CORS/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/07/09/bypass%20CORS/" data-id="ckceucv7j0000d4v08qmmgco2" data-title="bypass CORS" class="article-share-link">Share</a>
+      
+	  
+			  
+				  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+  <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+  <script src="/js/md5.min.js"></script>
+<div id="gitalk-container"></div>
+<script type="text/javascript">
+    var gitalk = new Gitalk({
+        clientID: '3fd4b7c51e3cfe6d1f43',
+        clientSecret: 'e3b1162bfd0bc86431672a764a8c801b4dc97929',
+        id: md5(window.location.pathname),
+        repo: 'Explorersss.github.io',
+        owner: 'Explorersss',
+        admin: 'Explorersss',
+        distractionFreeMode: 'true'
+    })
+    gitalk.render('gitalk-container')
+</script>
+				
+	  
+      
+      
+    </footer>
   </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/07/07/sctf2020/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">sctf2020</div>
+    </a>
+  
+</nav>
+
+  
 </article>
-  
-  
-    </div></section>
-  
+
+
 
 
 </section>

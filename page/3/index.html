@@ -66,6 +66,129 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-phpmyadmin_登陆后_rce" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/03/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/" class="article-date">
+  <time class="dt-published" datetime="2020-04-03T13:39:15.744Z" itemprop="datePublished">2020-04-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/04/03/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/">phpmyadmin_登陆后_rce</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="phpmyadmin登陆后rce"><a href="#phpmyadmin登陆后rce" class="headerlink" title="phpmyadmin登陆后rce"></a>phpmyadmin登陆后rce</h1><h2 id="漏洞信息"><a href="#漏洞信息" class="headerlink" title="漏洞信息"></a>漏洞信息</h2><blockquote>
+<p>在PHP5.4.7以前，<code>preg_replace</code>的第一个参数可以利用\0进行截断，并将正则模式修改为e。众所周知，e模式的正则支持执行代码，此时将可构造一个任意代码执行漏洞。</p>
+<p>以下版本受到影响：</p>
+<ul>
+<li>4.0.10.16之前4.0.x版本</li>
+<li>4.4.15.7之前4.4.x版本</li>
+<li>4.6.3之前4.6.x版本（实际上由于该版本要求PHP5.5+，所以无法复现本漏洞）</li>
+</ul>
+</blockquote>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>全局搜索preg_replace,发现以下可能有可控变量的位置:</p>
+<p>容易找到</p>
+<p><code>TableSearch.lib.php</code></p>
+<pre><code class="php">function _getRegexReplaceRows($columnIndex, $find, $replaceWith, $charSet)
+    {
+        $column = $this-&gt;_columnNames[$columnIndex];
+        $sql_query = &quot;SELECT &quot;
+            . PMA_Util::backquote($column) . &quot;,&quot;
+            . &quot; 1,&quot; // to add an extra column that will have replaced value
+            . &quot; COUNT(*)&quot;
+            . &quot; FROM &quot; . PMA_Util::backquote($this-&gt;_db)
+            . &quot;.&quot; . PMA_Util::backquote($this-&gt;_table)
+            . &quot; WHERE &quot; . PMA_Util::backquote($column)
+            . &quot; RLIKE &#39;&quot; . PMA_Util::sqlAddSlashes($find) . &quot;&#39; COLLATE &quot;
+            . $charSet . &quot;_bin&quot;; // here we
+            // change the collation of the 2nd operand to a case sensitive
+            // binary collation to make sure that the comparison is case sensitive
+        $sql_query .= &quot; GROUP BY &quot; . PMA_Util::backquote($column)
+            . &quot; ORDER BY &quot; . PMA_Util::backquote($column) . &quot; ASC&quot;;
+
+        $result = $GLOBALS[&#39;dbi&#39;]-&gt;fetchResult($sql_query, 0);
+
+        if (is_array($result)) {
+            foreach ($result as $index=&gt;$row) {
+                $result[$index][1] = preg_replace(
+                    &quot;/&quot; . $find . &quot;/&quot;,
+                    $replaceWith,
+                    $row[0]
+                );
+            }
+        }
+        return $result;
+    }</code></pre>
+<p>如果我们可以控制<code>$result和$replaceWith</code>那么我们就可以执行任意命令</p>
+<p><img src="https://i.loli.net/2020/04/03/qo5ZbfuJHKA9d6m.png" alt="image1674"></p>
+<p>我们先看<code>getReplacePreview</code></p>
+<p><img src="https://i.loli.net/2020/04/03/vnk9IZUxJ5YoMbW.png" alt="image1764"></p>
+<p>再查看调用<code>getReplacePreview</code>的函数</p>
+<p><img src="https://i.loli.net/2020/04/03/JxKS1TioFz4w7ql.png" alt="image1858"></p>
+<p>去看第二个和第三个明显不行,这里就不贴出来了</p>
+<p>再跟进<code>tbl_find_replace.php</code></p>
+<pre><code class="php">if (isset($_POST[&#39;find&#39;])) {
+    $preview = $table_search-&gt;getReplacePreview(
+        $_POST[&#39;columnIndex&#39;],
+        $_POST[&#39;find&#39;],
+        $_POST[&#39;replaceWith&#39;],
+        $_POST[&#39;useRegex&#39;],
+        $connectionCharSet
+    );
+    $response-&gt;addJSON(&#39;preview&#39;, $preview);
+    exit;
+}</code></pre>
+<p>明显白给</p>
+<p>我们再回到<code>_getRegexReplaceRows</code>去查看它的第二个调用函数</p>
+<p><img src="https://i.loli.net/2020/04/03/OhCPcviVT8tm6ZK.png" alt="image2318"></p>
+<p>再查看调用replace的函数</p>
+<p><img src="https://i.loli.net/2020/04/03/zT21ymqOYvUf5WE.png" alt="image2400"></p>
+<p>同样后面两个还是不行</p>
+<p>在跟进<code>tbl_find_replace.php</code></p>
+<p><img src="https://i.loli.net/2020/04/03/j4JdNfKa8up2BCc.png" alt="image2504"></p>
+<p>还是白给,两个调用链都是可以rce的,我们以前面那个为例</p>
+<p>先往表中添加一条数据<code>INSERT INTO</code>flags<code>(</code>username<code>,</code>flag<code>,</code>msgid<code>) VALUES (UNHEX(&#39;302F6500&#39;),1,1);</code></p>
+<p>直接抓包,修改</p>
+<p><img src="https://i.loli.net/2020/04/03/FwSzMuNI4nDadBh.png" alt="image2701"></p>
+<p><img src="https://i.loli.net/2020/04/03/QZE5fMTnUhPXdqV.png" alt="image2768"></p>
+<p>成功</p>
+<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><p>这个poc直接抄个别人的,懒得写了</p>
+<p><code>https://www.exploit-db.com/exploits/40185</code></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/04/03/phpmyadmin_登陆后_rce/">http://blog.ccreater.top/2020/04/03/phpmyadmin_登陆后_rce/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/04/03/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/" data-id="cka3ckr38003fv4v0bdtl7mnw" data-title="phpmyadmin_登陆后_rce" class="article-share-link">Share</a>
+      
+	  
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-CTFd任意密码重置复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/04/01/CTFd%E4%BB%BB%E6%84%8F%E5%AF%86%E7%A0%81%E9%87%8D%E7%BD%AE%E5%A4%8D%E7%8E%B0/" class="article-date">
@@ -2742,283 +2865,6 @@ f2.write(t2)
 
 
   
-    <article id="post-js原型链污染" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/" class="article-date">
-  <time class="dt-published" datetime="2020-02-18T10:18:01.991Z" itemprop="datePublished">2020-02-18</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/web/">web</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/">js原型链污染</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="js原型链污染"><a href="#js原型链污染" class="headerlink" title="js原型链污染"></a>js原型链污染</h1><p> <a href="https://www.leavesongs.com/PENETRATION/javascript-prototype-pollution-attack.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/javascript-prototype-pollution-attack.html</a> </p>
-<h2 id="什么是原型链"><a href="#什么是原型链" class="headerlink" title="什么是原型链"></a>什么是原型链</h2><p> 每个实例对象（ object ）都有一个私有属性（称之为 <strong>proto</strong> ）指向它的构造函数的原型对象（<strong>prototype</strong> ）。该原型对象也有一个自己的原型对象( <strong>proto</strong> ) ，层层向上直到一个对象的原型对象为 <code>null</code>。根据定义，<code>null</code> 没有原型，并作为这个<strong>原型链</strong>中的最后一个环节。 </p>
-<pre><code class="javascript">function Foo
-{
-
-    this.a=&quot;456&quot;;
-    this.c=&quot;777&quot;
-}
-Foo.prototype.b=&quot;123&quot;;
-Foo.prototype.c=&quot;789&quot;;
-var foo=new Foo();
-console.log(foo.a);//456    
-console.log(foo.b);//123
-console.log(foo.c);//777</code></pre>
-<p>当在当前对象找不到属性或方法时便会向上(<code>__proto__</code>中)寻找</p>
-<ol>
-<li>在对象foo中寻找b</li>
-<li>如果找不到，则在<code>foo.__proto__</code>中寻找b</li>
-<li>如果仍然找不到，则继续在<code>foo.__proto__.__proto__</code>中寻找b</li>
-<li>依次寻找，直到找到<code>null</code>结束。比如，<code>Object.prototype</code>的<code>__proto__</code>就是<code>null</code></li>
-</ol>
-<p>JavaScript的这个查找的机制，被运用在面向对象的继承中，被称作prototype继承链。</p>
-<p>以上就是最基础的JavaScript面向对象编程，我们并不深入研究更细节的内容，只要牢记以下几点即可：</p>
-<ol>
-<li>每个构造函数(constructor)都有一个原型对象(prototype)</li>
-<li>对象的<code>__proto__</code>属性，指向类的原型对象<code>prototype</code></li>
-<li>JavaScript使用prototype链实现继承机制</li>
-</ol>
-<h2 id="什么时原型链污染"><a href="#什么时原型链污染" class="headerlink" title="什么时原型链污染"></a>什么时原型链污染</h2><p>当我们修改对象的<code>__proto__</code>属性时,就相当于修改对象的父类</p>
-<p>当调用不存在的方法或属性时便会在父类中寻找,就变相的控制了这个类</p>
-<pre><code class="javascript">let foo = {bar: 1}
-
-// foo.bar 此时为1
-console.log(foo.bar)
-
-// 修改foo的原型（即Object）
-foo.__proto__.bar = 2
-
-// 由于查找顺序的原因，foo.bar仍然是1
-console.log(foo.bar)
-
-// 此时再用Object创建一个空的zoo对象
-let zoo = {}
-
-// 查看zoo.bar
-console.log(zoo.bar)</code></pre>
-<h2 id="哪些情况原型链会被污染"><a href="#哪些情况原型链会被污染" class="headerlink" title="哪些情况原型链会被污染"></a>哪些情况原型链会被污染</h2><h3 id="merge"><a href="#merge" class="headerlink" title="merge"></a>merge</h3><h3 id="clone"><a href="#clone" class="headerlink" title="clone"></a>clone</h3><h3 id="JSON-parse"><a href="#JSON-parse" class="headerlink" title="JSON.parse"></a>JSON.parse</h3><h3 id="jQuery-extend"><a href="#jQuery-extend" class="headerlink" title="jQuery.extend"></a>jQuery.extend</h3><p><em>$</em>.extend( target [, object1 ] [, objectN ] )</p>
-<p>指示是否深度合并</p>
-<p><em>$</em>.extend( [deep ], target, object1 [, objectN ] )</p>
-<p><strong>警告:</strong> 不支持第一个参数传递 false 。</p>
-<table>
-<thead>
-<tr>
-<th align="left">参数</th>
-<th align="left">描述</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="left"><em>deep</em></td>
-<td align="left">可选。 Boolean类型 指示是否深度合并对象，默认为false。如果该值为true，且多个对象的某个同名属性也都是对象，则该”属性对象”的属性也将进行合并。</td>
-</tr>
-<tr>
-<td align="left"><em>target</em></td>
-<td align="left">Object类型 目标对象，其他对象的成员属性将被附加到该对象上。</td>
-</tr>
-<tr>
-<td align="left"><em>object1</em></td>
-<td align="left">可选。 Object类型 第一个被合并的对象。</td>
-</tr>
-<tr>
-<td align="left"><em>objectN</em></td>
-<td align="left">可选。 Object类型 第N个被合并的对象。</td>
-</tr>
-</tbody></table>
-<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>题目代码</p>
-<p>car.class.js</p>
-<pre><code class="javascript">class Car {
-    constructor(type, model, color, pic, key=&quot;&quot;) {
-        this.type = type
-        this.model = model
-        this.color = color
-        this.key = key
-        this.pic = pic
-
-        let started = false
-        this.start = () =&gt; {
-            started = true
-        }
-        this.isStarted = () =&gt; {
-            return started
-        }
-    }
-    powerOn() {
-        if (this.isStarted()) {
-            infobox(`Well Done!`)
-            nextCar()
-
-        } else {
-            $(&#39;.chargeup&#39;)[0].play()
-        }
-    }
-    info() {
-        infobox(`This car is a ${this.type} ${this.model} in ${this.color}. It looks very nice! But it seems to be broken ...`)
-    }
-    repair() {
-        if(urlParams.has(&#39;repair&#39;)) {
-            $.extend(true, this, JSON.parse(urlParams.get(&#39;repair&#39;)))
-        }
-    }
-    light() {
-        infobox(`You turn on the lights ... Nothing happens.`)
-    }
-    battery() {
-        infobox(`Hmmm, the battery is almost empty ... Maybe i can repair this somehow.`)
-    }
-    ignition() {
-        if (this.key == &quot;&quot;) {
-            infobox(`Looks like the key got lost. No wonder the car is not starting ...`)
-        }
-        if (this.key == &quot;🔑&quot;) {
-            infobox(`The car started!`)
-            this.start()
-        }
-    }
-}</code></pre>
-<p>util.js</p>
-<pre><code class="javascript">const urlParams = new URLSearchParams(window.location.search)
-const h = location.hash.slice(1)
-const bugatti = new Car(&#39;Bugatti&#39;, &#39;T35&#39;, &#39;green&#39;, &#39;assets/images/bugatti.png&#39;)
-const porsche = new Car(&#39;Porsche&#39;, &#39;911&#39;, &#39;yellow&#39;, &#39;assets/images/porsche.png&#39;)
-
-const cars = [bugatti, porsche]
-
-porsche.repair = () =&gt; {
-    if(!bugatti.isStarted()){
-        infobox(`Not so fast. Repair the other car first!`)
-    }
-    else if($.md5(porsche) == &#39;9cdfb439c7876e703e307864c9167a15&#39;){
-        if(urlParams.has(&#39;help&#39;)) {
-            repairWithHelper(urlParams.get(&#39;help&#39;))
-        }
-    }
-    else{
-        infobox(`Repairing this is not that easy.`)
-    }
-}
-porsche.ignition = () =&gt; {
-    infobox(`Hmm ... WTF!`)
-}
-
-$(document).ready(() =&gt; {
-    const [car] = cars
-    $(&#39;.fa-power-off&#39;).click(() =&gt; car.powerOn())
-    $(&#39;.fa-car&#39;).click(() =&gt; car.info())
-    $(&#39;.fa-lightbulb-o&#39;).click(() =&gt; car.light())
-    $(&#39;.fa-battery-quarter&#39;).click(() =&gt; car.battery())
-    $(&#39;.fa-key&#39;).click(() =&gt; car.ignition())
-    $(&#39;.fa-wrench&#39;).click(() =&gt; car.repair())
-
-    $(&#39;.fa-step-forward&#39;).click(() =&gt; nextCar())
-
-    if(h.includes(&#39;Bugatti&#39;))
-        autoStart(bugatti)
-    if(h.includes(&#39;Porsche&#39;))
-        autoStart(porsche)
-})
-
-
-const nextCar = () =&gt; {
-    cars.push(cars.shift())
-    $(&quot;.image&quot;).attr(&#39;src&#39;, cars[0].pic);
-}
-
-
-const autoStart = (car) =&gt; {
-    car.repair()
-    car.ignition()
-    car.powerOn()
-}
-
-
-const repairWithHelper = (src) =&gt; {
-    /* who needs csp anyways !? */
-    urlRegx = /^\w{4,5}:\/\/car-repair-shop\.fluxfingersforfuture\.fluxfingers\.net\/[\w\d]+\/.+\.js$/;
-    if (urlRegx.test(src)) {
-        let s = document.createElement(&#39;script&#39;)
-        s.src = src
-        $(&#39;head&#39;).append(s)
-    }
-}
-
-
-const infobox = (text) =&gt; {
-    $(&#39;a&#39;).css({&#39;pointer-events&#39;: &#39;none&#39;, &#39;border&#39;: &#39;none&#39;})
-    $(&#39;.infobox&#39;).addClass(&#39;infoAnimate&#39;)
-        .text(text)
-        .on(&#39;animationend&#39;, function() {
-            $(this).removeClass(&#39;infoAnimate&#39;)
-            $(&#39;a&#39;).css({&#39;pointer-events&#39;: &#39;all&#39;, &#39;border&#39;: &#39;solid 1px rgba(255, 255, 255, .25)&#39;})
-    })
-
-}</code></pre>
-<p>阅读代码发现car类的repair方法会调用</p>
-<p><code>$.extend(true, this, JSON.parse(urlParams.get(&#39;repair&#39;)))</code></p>
-<p>可以进行原型链污染</p>
-<p>而这一题我们的目标时进行xss</p>
-<p>阅读代码发现对象<code>porsche</code>的repairWithHelper中可以进行xss</p>
-<p>而调用repairWithHelper方法就需要调用porsche的repair方法</p>
-<pre><code>if($.md5(porsche) == &#39;9cdfb439c7876e703e307864c9167a15&#39;){
-        if(urlParams.has(&#39;help&#39;)) {
-            repairWithHelper(urlParams.get(&#39;help&#39;))
-        }
-}</code></pre><p>我们用控制porsche.toString()==’lol’(lol的md5是9cdfb439c7876e703e307864c9167a15)，我们可以通过原型链污染来让上层为<code>[&#39;lol&#39;]</code>([‘lol’].toString()==’lol’)</p>
-<p>通过autoStart来调用bugatti.repair(原型链污染)和porsche.repair(调用repairWithHelper方法)</p>
-<p>所以构造payload:<code>http://127.0.0.1/?repair={&quot;started&quot;:true,&quot;__proto__&quot;:{&quot;__proto__&quot;:[&quot;lol&quot;]}}</code></p>
-<p>接下来就是利用repairWithHelper来进行xss</p>
-<pre><code class="javascript">const repairWithHelper = (src) =&gt; {
-    /* who needs csp anyways !? */
-    urlRegx = /^\w{4,5}:\/\/car-repair-shop\.fluxfingersforfuture\.fluxfingers\.net\/[\w\d]+\/.+\.js$/;
-    if (urlRegx.test(src)) {
-        let s = document.createElement(&#39;script&#39;)
-        s.src = src
-        $(&#39;head&#39;).append(s)
-    }
-}</code></pre>
-<p>虽然这里对url的域名进行了限制不能远程文件包含</p>
-<p>但是我们可以利用data协议来绕过正则从而直接执行命令</p>
-<p>data协议格式</p>
-<pre><code>data:[&lt;mime type&gt;][;charset=&lt;charset&gt;][;base64],&lt;encoded data&gt;</code></pre><p>最后的payload:<code>http://127.0.0.1/?repair={&quot;key&quot;:&quot;🔑&quot;,&quot;__proto__&quot;:{&quot;__proto__&quot;:[&quot;lol&quot;]}}&amp;help=data://car-repair-shop.fluxfingersforfuture.fluxfingers.net/asdfsdf/asdf,alert(&quot;123&quot;)%23.js#BugattiPorsche</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/18/js原型链污染/">http://blog.ccreater.top/2020/02/18/js原型链污染/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/" data-id="cka3ckr2w002fv4v0chqz240g" data-title="js原型链污染" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -3076,6 +2922,10 @@ const infobox = (text) =&gt; {
       <ul>
         
           <li>
+            <a href="/2020/07/09/bypass%20CORS/">bypass CORS</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/07/sctf2020/">sctf2020</a>
           </li>
         
@@ -3089,10 +2939,6 @@ const infobox = (text) =&gt; {
         
           <li>
             <a href="/2020/06/23/%E6%8B%9F%E6%80%81%E9%98%B2%E5%BE%A1%E8%AE%B0%E5%BD%95/">拟态防御记录</a>
-          </li>
-        
-          <li>
-            <a href="/2020/05/24/2020%E7%AC%AC%E4%B8%89%E5%B1%8ABJDCTF/">2020第三届BJDCTF</a>
           </li>
         
       </ul>
