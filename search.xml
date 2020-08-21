@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>ciscn2020easyphp出题笔记</title>
+      <link href="/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/"/>
+      <url>/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/</url>
+      
+        <content type="html"><![CDATA[<h1 id="easyphp出题笔记"><a href="#easyphp出题笔记" class="headerlink" title="easyphp出题笔记"></a>easyphp出题笔记</h1><p>这题原意是想让大家写脚本来fuzz来发现CUFA/CUF中对引用处理不恰当而造成的崩溃，特意禁止了pcntl可是由于没有认真测试，忘记了还有CUF这个函数，结果有人直接绕过了。</p><p>出题人想干的事情就是我们不让他干成就是对这种情况的最好解释。最后看到自己的题目被解成那样，我也是自闭了。</p><p>继续正题吧。</p><h2 id="来由"><a href="#来由" class="headerlink" title="来由"></a>来由</h2><p>之所以会出现这题是因为前段时间的wmctf的webweb反序列化出有这样一处的利用点，我为了找到合适的函数就采取fuzz，东西没发现倒是发现php崩溃了。</p><h2 id="漏洞细节"><a href="#漏洞细节" class="headerlink" title="漏洞细节"></a>漏洞细节</h2><p>直接去看<a href="https://bugs.php.net/bug.php?id=79979" target="_blank" rel="noopener">bugs.php</a> 上面的，会不会是因为交到bugs.php上的原因导致这么多人解了？</p><h2 id="原解"><a href="#原解" class="headerlink" title="原解"></a>原解</h2><p>阅读代码我们发现:<code>if(!pcntl_wifexited($status)){phpinfo();}</code>，及fork的子进程报错就会执行phpinfo，而phpinfo里面通常包含敏感信息，和一些对我们题目有帮助的信息。</p><p>fork子进程执行的代码是：</p><pre><code class="php">if(isset($_GET[&#39;a&#39;])&amp;&amp;is_string($_GET[&#39;a&#39;])&amp;&amp;!preg_match(&quot;/[:\\\\]|exec|pcntl/i&quot;,$_GET[&#39;a&#39;])){            call_user_func_array($_GET[&#39;a&#39;],[$_GET[&#39;b&#39;],false,true]);</code></pre><p>而这里调用了非常敏感的call_user_func_array，所以无论是想让子进程报错还是直接执行代码这里都是非常好的选择。因此我们先要写个fuzz脚本：</p><pre><code class="php">&lt;?php    $payloads=[        &quot;ls&quot;,//shell命令执行测试        &quot;index.php&quot;,//读取文件测试        &quot;asdfasldfjaklsdfjl.php&quot;,//创建文件/文件夹测试        &quot;echo 123;&quot;//php命令执行测试    ];    $str=file_get_contents(&quot;fatalerr.log&quot;);    if(!$str){        $str=&quot;[]&quot;;    }    $fatalerror=eval(&quot;return &quot;.$str.&quot;;&quot;);    function show_result($func,$r,$v){        if($r==NULL){        }        try{            echo &quot;$func($v,false,true) return value:&quot;;            var_dump($r);            echo &quot;&lt;br /&gt;&quot;;        }catch(Exception $e){}    }    function brute_func($a){        global $payloads;        global $fatalerror;        foreach($a as $val){            if(is_array($val)){                brute_func($val);                continue;            }            if(in_array($val,$fatalerror)){                continue;            }            array_push($fatalerror,$val);            file_put_contents(&quot;fatalerr.log&quot;,var_export($fatalerror,TRUE));            foreach($payloads as $v){                $r=NULL;                $r=call_user_func_array($val,[$v,false,true]);                show_result($val,$r,$v);            }            array_pop($fatalerror);        }    };    $arr=get_defined_functions();    brute_func($arr);?&gt;</code></pre><p>多次执行发现：</p><pre><code class="php">stream_socket_serverexecstream_socket_client</code></pre><p>这三个函数会引起segment_fault 且 exec虽然会引起segment  fault但是仍然执行了代码，但是这里我禁用了exec所以我们用另外两个函数引起segment fault查看phpinfo，在phpinfo中找到flag。</p><h2 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h2><p>希望有师傅有不同的解可以留个言啥的谢谢啦</p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/08/21/ciscn2020easyphp出题笔记/">http://blog.ccreater.top/2020/08/21/ciscn2020easyphp出题笔记/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 杂 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> ctf </tag>
+            
+            <tag> web </tag>
+            
+            <tag> 出题笔记 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>wmctf2020</title>
       <link href="/2020/08/04/wmctf2020/"/>
       <url>/2020/08/04/wmctf2020/</url>
