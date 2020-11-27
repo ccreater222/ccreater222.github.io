@@ -234,11 +234,11 @@ curl -X GET -o &quot;/tmp/obj1&quot; -H &quot;Authorization: Bearer ya29.c.KpcB5
 </blockquote>
 <p>题目提供了源码，阅读后发现以下可能作为关键点的地方：</p>
 <p>变量覆盖：</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201116142917.jpg" alt="image6755"></p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201116142917.jpg" alt="image6764"></p>
 <p>任意命令执行：</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201116142948.jpg" alt="image6889"></p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201116142948.jpg" alt="image6898"></p>
 <p>修改全局变量cmd</p>
-<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201116143051.jpg" alt="image7025"></p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201116143051.jpg" alt="image7034"></p>
 <p>但是题目给反序列化的数据加上了一个限制：不能出现<code>*</code>(protect变量就需要<code>*</code>号)</p>
 <p>实际测试一下发现，并不能用public,private的同名变量来代替protect变量，这是难点一</p>
 <p>还有就是其他类的<code>__wakeup</code>方法会禁止我们通过L5D_Upload来任意变量覆盖，然后L5D_Upload又必须在其他的<code>__destruct</code>方法前执行，这是难点二</p>
